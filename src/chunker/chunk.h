@@ -3,7 +3,7 @@
 
 namespace voxigen
 {
-
+template<typename _Cell>
 class Chunk():public BoundingBox
 {
 public:
@@ -12,6 +12,7 @@ public:
 private:
     bool m_loaded;
 
+    std::vector<_Cell> m_cells;
 };
 
 } //namespace voxigen
