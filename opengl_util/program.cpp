@@ -163,12 +163,12 @@ Uniform &Program::uniform(std::string key)
     return *(m_uniformMap[key]);
 }
 
-bool Program::attachAndLoadShader(const std::string &shaderFile, GLenum shaderType, std::string &error)
+bool Program::attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error)
 {
-    return attachAndLoadShader(shaderFile, shaderType, "", error);
+    return attachAndLoadShader(shaderSource, shaderType, "", error);
 }
 
-bool Program::attachAndLoadShader(const std::string &shaderFile, GLenum shaderType, std::string insert, std::string &error)
+bool Program::attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string insert, std::string &error)
 {
     bool success=false;
     Shader *shader=new Shader(shaderType);
@@ -191,18 +191,18 @@ bool Program::attachAndLoadShader(const std::string &shaderFile, GLenum shaderTy
             break;
     }
 
-    if(success && shader->load(shaderFile, insert, error))
+    if(success && shader->load(shaderSource, insert, error))
         return true;
     return false;
 }
 
 
 
-bool Program::attachLoadAndCompileShaders(const std::string &vertFile, const std::string &fragFile, std::string &error)
+bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error)
 {
-    if(attachAndLoadShader(vertFile, GL_VERTEX_SHADER, error))
+    if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, error))
     {
-        if(attachAndLoadShader(fragFile, GL_FRAGMENT_SHADER, error))
+        if(attachAndLoadShader(fragSource, GL_FRAGMENT_SHADER, error))
         {
             if(compile(error))
                 return true;
@@ -213,13 +213,13 @@ bool Program::attachLoadAndCompileShaders(const std::string &vertFile, const std
 
 
 
-bool Program::attachLoadAndCompileShaders(const std::string &vertFile, const std::string &geomFile, const std::string &fragFile, std::string &error)
+bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error)
 {
-    if(attachAndLoadShader(vertFile, GL_VERTEX_SHADER, error))
+    if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, error))
     {
-        if(attachAndLoadShader(geomFile, GL_GEOMETRY_SHADER, error))
+        if(attachAndLoadShader(geomSource, GL_GEOMETRY_SHADER, error))
         {
-            if(attachAndLoadShader(fragFile, GL_FRAGMENT_SHADER, error))
+            if(attachAndLoadShader(fragSource, GL_FRAGMENT_SHADER, error))
             {
                 if(compile(error))
                     return true;
@@ -265,11 +265,11 @@ bool Program::attachFragShader(Shader *shader, std::string &error)
 
 
 
-bool Program::attachGeomShader(Shader *pShader, std::string &error)
+bool Program::attachGeomShader(Shader *shader, std::string &error)
 {
-    if(pShader && pShader->type() == GL_GEOMETRY_SHADER)
+    if(shader && shader->type() == GL_GEOMETRY_SHADER)
     {
-        if(attachShader(pShader, error))
+        if(attachShader(shader, error))
             return true;
     }
     else

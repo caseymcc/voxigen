@@ -2,7 +2,11 @@
 #define _voxigen_simpleRenderer_h_
 
 #include "voxigen/voxigen_export.h"
+#include "voxigen/initGlew.h"
+
 #include <string>
+#include <glm/glm.hpp>
+#include <opengl_util/program.h>
 
 namespace voxigen
 {
@@ -19,6 +23,7 @@ public:
     
     void build(unsigned int instanceVerticies, unsigned int instanceTexCoords);
     void update();
+
 private:
     Chunk<_Block> *chunk;
 
@@ -35,7 +40,6 @@ void SimpleChunkRenderer<_Block>build(unsigned int instanceVerticies, unsigned i
 
     glGenBuffers(1, &m_offsetVBO);
     update();
-
 
     glBindVertexArray(m_vertexArrayID);
 
@@ -71,6 +75,8 @@ public:
 
     void build();
     void update();
+    void updateProjection();
+    void updateView();
     void draw();
 
 private:
@@ -82,6 +88,7 @@ private:
 
     std::vector<SimpleChunkRenderer> m_chunkRenders;
 
+    opengl_util::Program m_program;
     glm::mat4 m_projectionMat;
     glm::mat4 m_viewMat;
 
@@ -124,7 +131,7 @@ template<typename _Block>
 SimpleRenderer<_Block>::SimpleRenderer(World<_Block> *world):
 m_world(world),
 m_position(0.0f, 0.0f, 0.0),
-m_viewRadius(200.0f);
+m_viewRadius(200.0f)
 {
 
 }
@@ -138,6 +145,14 @@ SimpleRenderer<_Block>::~SimpleRenderer()
 template<typename _Block>
 void SimpleRenderer<_Block>::build()
 {
+    initGlew();
+    
+    std::string error;
+
+    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
+    {
+        return;
+    }
 
     unsigned int instanceVBO;
     
@@ -145,6 +160,12 @@ void SimpleRenderer<_Block>::build()
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*100, &translations[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+template<typename _Block>
+void SimpleRenderer<_Block>::update()
+{
+
 }
 
 template<typename _Block>
@@ -156,7 +177,7 @@ void SimpleRenderer<_Block>::updateProjection()
 }
 
 template<typename _Block>
-void SimpleRenderer<_Block>::updateProjection()
+void SimpleRenderer<_Block>::updateView()
 {
 }
 
@@ -169,10 +190,9 @@ void SimpleRenderer<_Block>::draw()
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    m_world->getChunkFromWorldPos(m_position);
-
-
-    m_world->getChunks()
+    m_program.use();
+//    m_world->getChunkFromWorldPos(m_position);
+//    m_world->getChunks()
 }
 
 }//namespace voxigen

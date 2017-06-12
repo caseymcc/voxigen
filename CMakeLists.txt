@@ -21,6 +21,10 @@ hunter_add_package(glm)
 find_package(glm CONFIG REQUIRED)
 hunter_add_package(glfw)
 find_package(glfw3 REQUIRED)
+hunter_add_package(glew)
+find_package(glew CONFIG REQUIRED)
+
+add_subdirectory(opengl_util)
 
 #hack for bullet
 set(BULLET_INCLUDES ${URHO3D_DIR}/Source/ThirdParty/Bullet)
@@ -41,6 +45,7 @@ set(voxigen_headers
     include/voxigen/chunk.h
     include/voxigen/chunkCache.h
     include/voxigen/chunkHandler.h
+    include/voxigen/initGlew.h
     include/voxigen/simpleRenderer.h
     include/voxigen/world.h
     include/voxigen/worldGenerator.h
@@ -54,19 +59,23 @@ set(voxigen_sources
     src/data/block.cpp
     src/data/world.cpp
     src/generator/worldGenerator.cpp
-    src/renderer/simpleRenderer.cpp
+    src/rendering/initGlew.cpp
+    src/rendering/simpleRenderer.cpp
 )
 
 set(voxigen_libraries
     glm
     ${BULLET_LIBS}
     ${LIBNOISE_LIBS}
+    opengl_util
+    glew::glew
 )
 
 add_library(voxigen SHARED
     ${voxigen_headers}
     ${voxigen_sources}
 )
+
 
 #include_directories(${GLM_INCLUDES})
 #include_directories(${GLFW_INCLUDES})
@@ -85,5 +94,3 @@ set(testApp_sources
 
 add_executable(testApp ${testApp_sources})
 target_link_libraries(testApp voxigen glfw)
-
-add_subdirectory(opengl_util)

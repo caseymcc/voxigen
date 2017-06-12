@@ -1,5 +1,8 @@
 project(opengl_util)
 
+hunter_add_package(glew)
+find_package(glew CONFIG REQUIRED)
+
 #remove min and max macro declares from windows builds, causes issues with std::min/max
 add_definitions(-DNOMINMAX)
 
@@ -29,19 +32,20 @@ add_library(opengl_util SHARED
     ${opengl_util_headers}
 )
 
-include_directories(${GLM_INCLUDE_DIRS})
+#include_directories(${GLM_INCLUDE_DIRS})
 
 target_link_libraries(opengl_util ${opengl_util_libraries})
 
-set_target_properties(opengl_util PROPERTIES FOLDER "libraries")
+#set_target_properties(opengl_util PROPERTIES FOLDER "libraries")
 
-create_target_launcher(opengl_util
-    RUNTIME_LIBRARY_DIRS ${RUNTIME_LIBS}
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-)
+#create_target_launcher(opengl_util
+#    RUNTIME_LIBRARY_DIRS ${RUNTIME_LIBS}
+#    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+#)
 
 include(GenerateExportHeader)
 generate_export_header(opengl_util)
 
 target_include_directories(opengl_util PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(opengl_util PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+

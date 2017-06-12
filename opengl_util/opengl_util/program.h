@@ -58,18 +58,18 @@ public:
 
     Uniform &uniform(std::string key);
 
-    bool attachAndLoadShader(const std::string &shaderFile, GLenum shaderType, std::string &error);
-    bool attachAndLoadShader(const std::string &shaderFile, GLenum shaderType, std::string insert, std::string &error);
+    bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error);
+    bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string insert, std::string &error);
 
 
-    bool attachLoadAndCompileShaders(const std::string &vertFile, const std::string &fragFile, std::string &error);
-    bool attachLoadAndCompileShaders(const std::string &vertFile, const std::string &geomFile, const std::string &fragFile, std::string &error);
+    bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error);
+    bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error);
 
-    bool attachVertShader(Shader *pShader, std::string &error);
-    bool attachFragShader(Shader *pShader, std::string &error);
-    bool attachGeomShader(Shader *pShader, std::string &error);
+    bool attachVertShader(Shader *shader, std::string &error);
+    bool attachFragShader(Shader *shader, std::string &error);
+    bool attachGeomShader(Shader *shader, std::string &error);
 
-    bool attachShader(Shader *pShader, std::string &error);
+    bool attachShader(Shader *shader, std::string &error);
 
     bool compile(std::string &error);
     void use();
