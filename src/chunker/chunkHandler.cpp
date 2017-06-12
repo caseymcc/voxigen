@@ -1,6 +1,11 @@
-#include "chunckHandler.h"
+#include "voxigen/chunkHandler.h"
 
-ChunkHandler::ChunkHandler(std::string name, glm::mat4 transform, glm::vec3i chunkSize)
+namespace voxigen
+{
+
+ChunkHandler::ChunkHandler(glm::ivec3 chunkSize)
 {
 
 }
+
+}//namespace voxigen

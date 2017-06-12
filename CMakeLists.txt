@@ -22,27 +22,45 @@ find_package(glm CONFIG REQUIRED)
 hunter_add_package(glfw)
 find_package(glfw3 REQUIRED)
 
+#hack for bullet
+set(BULLET_INCLUDES ${URHO3D_DIR}/Source/ThirdParty/Bullet)
+set(BULLET_LIBS optimized ${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Release/Bullet.lib debug ${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Debug/Bullet.lib)
+
+#hack for libnoise, need to add to hunter
+set(LIBNOISE_INCLUDES ${LIBNOISE_ROOT_DIR}/src)
+set(LIBNOISE_LIBS optimized ${LIBNOISE_ROOT_DIR}/_buildx64/src/Release/noise.lib debug ${LIBNOISE_ROOT_DIR}/_buildx64/src/Debug/noise.lib)
+
 if(MSVC)
 	add_definitions(-DNOMINMAX)
 endif()
 
 set(voxigen_headers
-	include/voxigen/boundingBox.h
+    include/voxigen/biome.h
+    include/voxigen/block.h
+    include/voxigen/boundingBox.h
     include/voxigen/chunk.h
-	include/voxigen/chunkCache.h
+    include/voxigen/chunkCache.h
     include/voxigen/chunkHandler.h
+    include/voxigen/simpleRenderer.h
+    include/voxigen/world.h
+    include/voxigen/worldGenerator.h
 )
 
 set(voxigen_sources
-	src/chunker/boundingBox.cpp
     src/chunker/chunk.cpp
-	src/chunker/chunkCache.cpp
+    src/chunker/chunkCache.cpp
     src/chunker/chunkHandler.cpp
+    src/data/biome.cpp
+    src/data/block.cpp
+    src/data/world.cpp
+    src/generator/worldGenerator.cpp
+    src/renderer/simpleRenderer.cpp
 )
 
 set(voxigen_libraries
-	${GLFW_LIBRARIES}
-    bullet.lib
+    glm
+    ${BULLET_LIBS}
+    ${LIBNOISE_LIBS}
 )
 
 add_library(voxigen SHARED
@@ -50,15 +68,13 @@ add_library(voxigen SHARED
     ${voxigen_sources}
 )
 
-include_directories(${GLM_INCLUDES})
-include_directories(${GLFW_INCLUDES})
-include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
-
-#use bullet from urho3D
-include_directories(${URHO3D_DIR}/Source/ThirdParty/Bullet)
-link_directories(${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Debug ${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Release)
-
+#include_directories(${GLM_INCLUDES})
+#include_directories(${GLFW_INCLUDES})
+include_directories(${LIBNOISE_INCLUDES})
+include_directories(${BULLET_INCLUDES})
 include_directories(${POLYVOX_DIR}/include)
+
+include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 target_link_libraries(voxigen ${voxigen_libraries})
 
@@ -68,4 +84,6 @@ set(testApp_sources
 )
 
 add_executable(testApp ${testApp_sources})
-target_link_libraries(testApp voxigen)
+target_link_libraries(testApp voxigen glfw)
+
+add_subdirectory(opengl_util)
