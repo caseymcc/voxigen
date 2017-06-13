@@ -2,6 +2,9 @@
 #define _voxigen_worldGenerator_h_
 
 #include "voxigen/voxigen_export.h"
+#include "voxigen/chunk.h"
+#include "voxigen/worldDescriptors.h"
+
 #include <noise/noise.h>
 
 namespace voxigen
@@ -11,7 +14,7 @@ template<typename _Block>
 class VOXIGEN_EXPORT WorldGenerator
 {
 public:
-    WorldGenerator();
+    WorldGenerator(int seed);
     ~WorldGenerator();
 
     void setWorldDiscriptors(WorldDescriptors descriptors);
@@ -20,18 +23,19 @@ public:
     UniqueChunk<_Block> generateChunk(glm::ivec3 chunkIndex);
 
 private:
-    WorldDescriptors descriptors
+    WorldDescriptors descriptors;
 
+    noise::module::Perlin m_perlin;
     noise::module::Perlin m_continentPerlin;
     noise::module::Curve m_continentCurve;
 };
 
-}//namespace voxigen
-
 template<typename _Block>
-WorldGenerator::WorldGenerator(int seed)
+WorldGenerator<_Block>::WorldGenerator(int seed)
 {
     m_seed=seed;
+
+    m_perlin.SetSeed(m_seed+0);
 
     m_continentPerlin.SetSeed(m_seed+0);
     m_continentPerlin.SetFrequency(m_contientFrequency);
@@ -52,11 +56,21 @@ WorldGenerator::WorldGenerator(int seed)
     m_continentCurve.AddControlPoint(2.0000+m_seaLevel, 0.500+m_seaLevel);
 }
 
-WorldGenerator::~WorldGenerator()
+template<typename _Block>
+WorldGenerator<_Block>::~WorldGenerator()
 {}
 
-void WorldGenerator::generateWorldOverview()
+template<typename _Block>
+void WorldGenerator<_Block>::setWorldDiscriptors(WorldDescriptors descriptors)
 {
+
+}
+
+template<typename _Block>
+void WorldGenerator<_Block>::generateWorldOverview()
+{
+    noise::utils::NoiseMap map;
+
     //    utils::NoiseMapBuilderSphere planet;
     //    utils::NoiseMap elevGrid;
     //
@@ -64,4 +78,13 @@ void WorldGenerator::generateWorldOverview()
     //    planet.SetBounds(-90, 90, -180, 180);
     //    planet.SetDestSize(m_gridWidth, m_gridHeight);
 }
+
+template<typename _Block>
+UniqueChunk<_Block> WorldGenerator<_Block>::generateChunk(glm::ivec3 chunkIndex)
+{
+
+}
+
+}//namespace voxigen
+
 #endif //_voxigen_worldGenerator_h_

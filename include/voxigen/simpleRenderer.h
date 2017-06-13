@@ -3,6 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/initGlew.h"
+#include "voxigen/world.h"
 
 #include <string>
 #include <glm/glm.hpp>
@@ -10,6 +11,11 @@
 
 namespace voxigen
 {
+
+struct SimpleCube
+{
+    static std::vector<float> vertCoords;
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleChunkRenderer
@@ -21,7 +27,7 @@ public:
     SimpleChunkRenderer(Chunk<_Block> *chunk) {}
     ~SimpleChunkRenderer() {}
     
-    void build(unsigned int instanceVerticies, unsigned int instanceTexCoords);
+    void build(unsigned int instanceData);
     void update();
 
 private:
@@ -34,7 +40,7 @@ private:
 };
 
 template<typename _Block>
-void SimpleChunkRenderer<_Block>build(unsigned int instanceVerticies, unsigned int instanceTexCoords)
+void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
 {
     glGenVertexArrays(1, &m_vertextArray);
 
@@ -44,20 +50,20 @@ void SimpleChunkRenderer<_Block>build(unsigned int instanceVerticies, unsigned i
     glBindVertexArray(m_vertexArrayID);
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVerticies);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceData);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)0);
 
-    glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceTexCoords);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*3));
 
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(1, 1);
 }
 
 template<typename _Block>
-void SimpleChunkRenderer<_Block>update()
+void SimpleChunkRenderer<_Block>::update()
 {
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*100, &translations[0], GL_STATIC_DRAW);
@@ -81,12 +87,14 @@ public:
 
 private:
     static std::string vertShader;
+    static std::string fragmentShader;
+
     glm::vec3 m_position;
     float m_viewRadius;
 
     World<_Block> *m_world;
 
-    std::vector<SimpleChunkRenderer> m_chunkRenders;
+    std::vector<SimpleChunkRenderer<_Block>> m_chunkRenders;
 
     opengl_util::Program m_program;
     glm::mat4 m_projectionMat;
@@ -156,9 +164,9 @@ void SimpleRenderer<_Block>::build()
 
     unsigned int instanceVBO;
     
-    glGenBuffers(1, &instanceVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*100, &translations[0], GL_STATIC_DRAW);
+    glGenBuffers(1, &m_instanceVertices);
+    glBindBuffer(GL_ARRAY_BUFFER, m_instanceVertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*SimpleCube::vertCoords.size(), SimpleCube::vertCoords.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

@@ -3,6 +3,8 @@
 
 #include "voxigen/biome.h"
 #include "voxigen/chunk.h"
+#include "voxigen/worldDescriptors.h"
+#include "voxigen/worldGenerator.h"
 
 #include <noise/noise.h>
 
@@ -10,20 +12,6 @@
 
 namespace voxigen
 {
-
-struct VOXIGEN_EXPORT WorldDescriptors
-{
-    unsigned int m_seed;
-
-    glm::ivec3 m_size;
-    glm::ivec3 m_chunkSize;
-
-    double m_contientFrequency;
-    double m_contientLacunarity;
-
-    double m_seaLevel;
-    double m_continentaShelf;
-};
 
 template<typename _Block>
 using ChunkMap=std::unordered_map<unsigned int, UniqueChunk<_Block>>;
