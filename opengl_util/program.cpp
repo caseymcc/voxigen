@@ -123,8 +123,10 @@ void Program::addUniform(std::string key, Uniform::Type type, GLuint location)
 
     if(uniform!=nullptr)
     {
+        size_t id=m_uniforms.size();
+
         m_uniforms.push_back(uniform);
-        m_uniformMap.insert(UniformMap::value_type(key, uniform));
+        m_uniformIdMap.insert(UniformIdMap::value_type(key, id));
     }
 }
 
@@ -157,10 +159,24 @@ bool Program::useUniformBuffer(UniformBuffer *buffer)
 
 }
 
+size_t Program::getUniformId(std::string key)
+{
+    assert(m_uniformIdMap.find(key)!=m_uniformIdMap.end()); //uniform does not exist in program
+    return m_uniformIdMap[key];
+}
+
+Uniform &Program::uniform(size_t id)
+{
+    assert(id>=0 && id<m_uniforms.size());
+    return *(m_uniforms[id]);
+}
+
 Uniform &Program::uniform(std::string key)
 {
-    assert(m_uniformMap.find(key) != m_uniformMap.end()); //uniform does not exist in program
-    return *(m_uniformMap[key]);
+    assert(m_uniformIdMap.find(key)!=m_uniformIdMap.end()); //uniform does not exist in program
+    
+    size_t id=m_uniformIdMap[key];
+    return *(m_uniforms[id]);
 }
 
 bool Program::attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error)

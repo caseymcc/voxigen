@@ -10,6 +10,8 @@
 namespace opengl_util
 {
 
+typedef std::unordered_map<std::string, size_t> UniformIdMap;
+
 struct OPENGL_UTIL_EXPORT AttributeDetail
 {
     AttributeDetail(std::string key, Uniform::Type type, GLuint index):key(key), type(type), index(index){}
@@ -56,6 +58,9 @@ public:
     UniformBuffer *createUniformBuffer(std::string name);
     bool useUniformBuffer(UniformBuffer *buffer);
 
+    size_t getUniformId(std::string key);
+
+    Uniform &uniform(size_t id);
     Uniform &uniform(std::string key);
 
     bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error);
@@ -92,7 +97,7 @@ protected:
     AttributeDetailMap m_attributeDetails;
     UniformBufferDetailMap m_uniformBufferDetails;
 
-	UniformMap m_uniformMap;
+    UniformIdMap m_uniformIdMap;
     Uniforms m_uniforms;
 };
 typedef std::shared_ptr<Program> SharedProgram;

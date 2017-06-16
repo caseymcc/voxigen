@@ -11,16 +11,12 @@ struct VOXIGEN_EXPORT BlockDescriptor
 
 };
 
-class VOXIGEN_EXPORT Block
+struct VOXIGEN_EXPORT Block
 {
-public:
-    Block(unsigned int type);
+    unsigned int type;
 
-private:
-    unsigned int m_type;
-
-    unsigned int m_damage;
-    unsigned int m_age;
+    unsigned int damage;
+    unsigned int age;
 };
 
 }//namesapce voxigen

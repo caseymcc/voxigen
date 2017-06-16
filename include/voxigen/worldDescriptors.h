@@ -9,16 +9,25 @@ namespace voxigen
 
 struct VOXIGEN_EXPORT WorldDescriptors
 {
-    unsigned int m_seed;
+    WorldDescriptors();
+    void init();
 
-    glm::ivec3 m_size;
-    glm::ivec3 m_chunkSize;
+    unsigned int chunkHash(const glm::ivec3 &chunkIndex) const;
+    glm::ivec3 chunkIndex(unsigned int chunkHash) const;
 
-    double m_contientFrequency;
-    double m_contientLacunarity;
+    unsigned int seed;
 
-    double m_seaLevel;
-    double m_continentaShelf;
+    glm::ivec3 size;
+    glm::ivec3 chunkSize;
+    glm::ivec3 chunkCount;//calculated
+    glm::ivec3 chunkStride;//calculated
+
+    float noiseScale;
+    double contientFrequency;
+    double contientLacunarity;
+
+    double seaLevel;
+    double continentaShelf;
 };
 
 }//namespace voxigen
