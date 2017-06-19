@@ -95,26 +95,54 @@ void WorldGenerator<_Block>::generateWorldOverview()
 template<typename _Block>
 UniqueChunk<_Block> WorldGenerator<_Block>::generateChunk(glm::ivec3 chunkIndex)
 {
-    glm::vec3 offset=glm::vec3(m_descriptors->chunkSize*chunkIndex)*m_descriptors->noiseScale;
-    glm::vec3 position=offset;
+    glm::vec3 offset=glm::vec3(m_descriptors->chunkSize*chunkIndex);
+    glm::vec3 scaledOffset=offset*m_descriptors->noiseScale;
+    glm::vec3 position=scaledOffset;
 
-    UniqueChunk<_Block> chunk=std::make_unique<Chunk<_Block>>(m_descriptors, chunkIndex);
+    UniqueChunk<_Block> chunk=std::make_unique<Chunk<_Block>>(m_descriptors, chunkIndex, offset);
     Chunk<_Block>::Blocks &blocks=chunk->getBlocks();
 
+    std::vector<float> heightMap(m_descriptors->chunkSize.x*m_descriptors->chunkSize.y);
+
+    int heightIndex=0;
+    position.z=0.0f;
+    for(int y=0; y<m_descriptors->chunkSize.y; ++y)
+    {
+        position.x=scaledOffset.x;
+        for(int x=0; x<m_descriptors->chunkSize.x; ++x)
+        {
+            double  value=(m_continentPerlin.GetValue(position.x, position.y, m_descriptors->noiseScale))+1.0;
+            double blockHeight=value*(m_descriptors->size.z/2);
+
+            heightMap[heightIndex]=blockHeight*m_descriptors->noiseScale;
+
+//            heightMap[heightIndex]=(m_continentPerlin.GetValue(position.x, position.y, m_descriptors->noiseScale))*(m_descriptors->size.z/2)*m_descriptors->noiseScale;
+            heightIndex++;
+            position.x+=m_descriptors->noiseScale;
+        }
+        position.y+=m_descriptors->noiseScale;
+    }
+
     int index=0;
+    position.z=scaledOffset.z;
     for(int z=0; z<m_descriptors->chunkSize.z; ++z)
     {
-        position.y=offset.y;
+        heightIndex=0;
+        position.y=scaledOffset.y;
         for(int y=0; y<m_descriptors->chunkSize.y; ++y)
         {
-            position.x=offset.x;
+            position.x=scaledOffset.x;
             for(int x=0; x<m_descriptors->chunkSize.x; ++x)
             {
-                float height=(m_continentCurve.GetValue(position.x, position.y, position.z))*(m_descriptors->size.z/2)*m_descriptors->noiseScale;
-                float blockType=m_layersPerlin.GetValue(position.x, position.y, position.z+height);
+                float blockType;
 
-                blocks[index].type=floor((blockType+1.0f)*5);
+                if(position.z > heightMap[heightIndex]) //larger than height map, air
+                    blockType=0;
+                else
+                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
+
                 index++;
+                heightIndex++;
                 position.x+=m_descriptors->noiseScale;
             }
             position.y+=m_descriptors->noiseScale;

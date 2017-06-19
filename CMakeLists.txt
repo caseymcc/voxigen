@@ -46,6 +46,7 @@ set(voxigen_headers
     include/voxigen/chunkCache.h
     include/voxigen/chunkHandler.h
     include/voxigen/initGlew.h
+    include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
     include/voxigen/world.h
     include/voxigen/worldDescriptors.h
@@ -62,6 +63,7 @@ set(voxigen_sources
     src/data/worldDescriptors.cpp
     src/generator/worldGenerator.cpp
     src/rendering/initGlew.cpp
+    src/rendering/simpleChunkRenderer.cpp
     src/rendering/simpleRenderer.cpp
 )
 

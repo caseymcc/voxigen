@@ -40,6 +40,8 @@ public:
 
     WorldDescriptors &getDescriptors() { return m_descriptors; }
 
+    glm::mat4 &getTransform() { return m_transform; }
+
 private:
     typename UniqueChunkMap<_Block>::iterator generateChunk(glm::ivec3 chunkIndex);
 
@@ -47,6 +49,8 @@ private:
 
     WorldDescriptors m_descriptors;
     std::unique_ptr<WorldGenerator<_Block>> m_generator;
+
+    glm::mat4 m_transform;
 
     std::vector<Biome> m_biomes;
     UniqueChunkMap<_Block> m_chunks;
@@ -56,6 +60,10 @@ template<typename _Block>
 World<_Block>::World(std::string name):
 m_name(name)
 {
+    m_transform=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, -1, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 template<typename _Block>
@@ -70,7 +78,7 @@ void World<_Block>::load()
     //generate
     m_descriptors.seed=0;
     m_descriptors.size=glm::ivec3(1024, 1024, 256);
-    m_descriptors.chunkSize=glm::ivec3(64, 64, 16);
+    m_descriptors.chunkSize=glm::ivec3(16, 16, 16);
 
     m_descriptors.init();
     

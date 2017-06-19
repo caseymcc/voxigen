@@ -11,7 +11,7 @@ namespace voxigen
 struct VOXIGEN_EXPORT SimpleCamera
 {
     glm::vec3 position;
-    glm::vec3 forward;
+    glm::vec3 direction;
     glm::vec3 up;
 };
 

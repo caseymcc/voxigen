@@ -7,9 +7,12 @@ WorldDescriptors::WorldDescriptors()
 {
     seed=0;
     size=glm::ivec3(1024, 1024, 256);
-    chunkSize=glm::ivec3(64, 64, 16);
+    chunkSize=glm::ivec3(16, 16, 16);
 
     noiseScale=0.00001;
+
+    contientFrequency=1.0;
+    contientLacunarity=2.208984375;
 
     seaLevel=0.0f;
 }

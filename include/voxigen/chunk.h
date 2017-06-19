@@ -14,13 +14,15 @@ template<typename _Block>
 class Chunk//:public BoundingBox
 {
 public:
-    Chunk(WorldDescriptors *descriptors, const glm::ivec3 &m_position);
+    Chunk(WorldDescriptors *descriptors, const glm::ivec3 &index, glm::vec3 worldOffset);
 
     typedef std::vector<_Block> Blocks;
     
     unsigned int getHash() const { return m_hash; }
     Blocks &getBlocks() { return m_blocks; }
-    const glm::ivec3 &getPosition() const{ return m_position; }
+    
+    const glm::ivec3 &getIndex() const{ return m_index; }
+    const glm::vec3 &getWorldOffset() const { return m_worldOffset; }
 
     _Block &getBlock(const glm::vec3 &position);
 
@@ -29,7 +31,8 @@ private:
     bool m_loaded;
 
     Blocks m_blocks;
-    glm::ivec3 m_position;
+    glm::ivec3 m_index;
+    glm::vec3 m_worldOffset;
     unsigned int m_hash;
 };
 
@@ -38,12 +41,13 @@ using UniqueChunk=std::unique_ptr<Chunk<_Block>>;
 
 
 template<typename _Block>
-Chunk<_Block>::Chunk(WorldDescriptors *descriptors, const glm::ivec3 &position):
+Chunk<_Block>::Chunk(WorldDescriptors *descriptors, const glm::ivec3 &index, glm::vec3 worldOffset):
 //BoundingBox(dimensions, transform),
 m_descriptors(descriptors),
-m_position(position)
+m_index(index),
+m_worldOffset(worldOffset)
 {
-    m_hash=descriptors->chunkHash(position);
+    m_hash=descriptors->chunkHash(m_index);
     glm::ivec3 &chunkSize=m_descriptors->chunkSize;
 
     m_blocks.resize(chunkSize.x*chunkSize.y*chunkSize.z);

@@ -1,9 +1,11 @@
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #include "voxigen/block.h"
 #include "voxigen/world.h"
 #include "voxigen/simpleRenderer.h"
 
-#include <GLFW/glfw3.h>
-#include <GL/glew.h>
 
 int main(int argc, char ** argv)
 {
@@ -35,22 +37,28 @@ int main(int argc, char ** argv)
 
     world.load();
     
-    glm::ivec3 worldMiddle=world.getDescriptors().size/2;
+    glm::ivec3 worldMiddle=(world.getDescriptors().size)/2;
 
     voxigen::SimpleCamera player;
 
     player.position=glm::vec3(worldMiddle);
-    player.forward=glm::vec3(1.0f, 0.0f, 0.0f);
+//    player.position=glm::vec3(0.0f, -20.0f, 1.0f);
+    player.direction=glm::vec3(0.0f, 1.0f, 0.0f);
     player.up=glm::vec3(0.0f, 0.0f, 1.0f);
+
+//    player.position=glm::vec3(0.0f, 0.0f, 20.0f);
+//    player.direction=glm::vec3(0.0f, 0.0f, -1.0f);
+//    player.up=glm::vec3(0.0f, 1.0f, 0.0f);
 
     voxigen::SimpleRenderer<voxigen::Block> renderer(&world);
 
     renderer.build();
     
-//    renderer.updateProjection(width, height);
-//    renderer.setCamera(player);
-//
-//    renderer.updateChunks();
+    renderer.updateProjection(width, height);
+    renderer.setCamera(player);
+    renderer.setViewRadius(128.0f);
+
+    renderer.updateChunks();
     while(!glfwWindowShouldClose(window))
     {
         /* Render here */
