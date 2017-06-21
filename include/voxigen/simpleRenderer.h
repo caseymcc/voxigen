@@ -33,7 +33,7 @@ public:
     void updateView();
     void draw();
 
-    void setCamera(SimpleCamera &camera);
+    void setCamera(SimpleFpsCamera *camera);
     void setViewRadius(float radius);
     void updateChunks();
 
@@ -42,7 +42,7 @@ private:
     static std::string fragmentShader;
     
     float m_viewRadius;
-    SimpleCamera m_camera;
+    SimpleFpsCamera *m_camera;
     glm::vec3 m_lastUpdatePosition;
 
     World<_Block> *m_world;
@@ -96,8 +96,8 @@ std::string SimpleRenderer<_Block>::fragmentShader=
 "void main()\n"
 "{\n"
 "   float value=texCoords.z/10.0f;"
-"//   color=vec3(value, value, value);\n"
-"   color=vec3(1.0, 0.0, 0.0);\n"
+"   color=vec3(value, value, value);\n"
+"//   color=vec3(1.0, 0.0, 0.0);\n"
 "}\n"
 "";
 
@@ -106,7 +106,8 @@ SimpleRenderer<_Block>::SimpleRenderer(World<_Block> *world):
 m_world(world),
 m_viewRadius(60.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
-m_projectionViewMatUpdated(true)
+m_projectionViewMatUpdated(true),
+m_camera(nullptr)
 {
     m_projectionMat=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
                               0.0f, 1.0f, 0.0f, 0.0f,
@@ -203,10 +204,12 @@ void SimpleRenderer<_Block>::build()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 ////////////////////////////////////////////////////////////////
 
-//    glGenBuffers(1, &m_instanceVertices);
-//    glBindBuffer(GL_ARRAY_BUFFER, m_instanceVertices);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*SimpleCube::vertCoords.size(), SimpleCube::vertCoords.data(), GL_STATIC_DRAW);
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    size_t verticies=SimpleCube::vertCoords.size();
+
+    glGenBuffers(1, &m_instanceVertices);
+    glBindBuffer(GL_ARRAY_BUFFER, m_instanceVertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*SimpleCube::vertCoords.size(), SimpleCube::vertCoords.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 //    setViewRadius(m_viewRadius);
 }
@@ -241,8 +244,10 @@ void SimpleRenderer<_Block>::draw()
 
     m_program.use();
 
-    if(m_projectionViewMatUpdated)
-        m_program.uniform(m_uniformProjectionViewId)=m_projectionViewMat;
+//    if(m_projectionViewMatUpdated)
+//        m_program.uniform(m_uniformProjectionViewId)=m_projectionViewMat;
+    if(m_camera->isDirty())
+        m_program.uniform(m_uniformProjectionViewId)=m_camera->getProjectionViewMat();
 //    m_world->getChunkFromWorldPos(m_position);
 //    m_world->getChunks()
     for(int i=0; i<m_chunkRenderers.size(); ++i)
@@ -252,25 +257,25 @@ void SimpleRenderer<_Block>::draw()
 
 ////////////////////////////////////////////////////////////////
 //Simple test
-    glBindVertexArray(m_vertexArray);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
+//    glBindVertexArray(m_vertexArray);
+//    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
 ////////////////////////////////////////////////////////////////
 }
 
 template<typename _Block>
-void SimpleRenderer<_Block>::setCamera(SimpleCamera &camera)
+void SimpleRenderer<_Block>::setCamera(SimpleFpsCamera *camera)
 {
     m_camera=camera;
 
-    m_viewMat=glm::lookAt(m_camera.position, m_camera.position+m_camera.direction, m_camera.up);
-    m_projectionViewMat=m_projectionMat*m_viewMat;
-    
-    m_projectionViewMatUpdated=true;
+//    m_viewMat=glm::lookAt(m_camera.position, m_camera.position+m_camera.direction, m_camera.up);
+//    m_projectionViewMat=m_projectionMat*m_viewMat;
+//    
+//    m_projectionViewMatUpdated=true;
 
-    if(glm::distance(m_camera.position, m_lastUpdatePosition)>8.0f)
+    if(glm::distance(m_camera->getPosition(), m_lastUpdatePosition)>8.0f)
     {
 //        updateChunks();
-        m_lastUpdatePosition=m_camera.position;
+        m_lastUpdatePosition=m_camera->getPosition();
     }
 }
 
@@ -317,7 +322,7 @@ void SimpleRenderer<_Block>::setViewRadius(float radius)
 template<typename _Block>
 void SimpleRenderer<_Block>::updateChunks()
 {
-    glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera.position);
+    glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera->getPosition());
 
     if(m_chunkRenderers.size()!=m_chunkIndicies.size())
     {

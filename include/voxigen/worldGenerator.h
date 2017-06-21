@@ -141,6 +141,7 @@ UniqueChunk<_Block> WorldGenerator<_Block>::generateChunk(glm::ivec3 chunkIndex)
                 else
                     blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
 
+                blocks[index].type=blockType;
                 index++;
                 heightIndex++;
                 position.x+=m_descriptors->noiseScale;

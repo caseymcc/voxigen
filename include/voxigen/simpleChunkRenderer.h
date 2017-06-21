@@ -27,13 +27,13 @@ template<typename _Block>
 class SimpleChunkRenderer
 {
 public:
-    SimpleChunkRenderer():m_state(Invalid){}
+    SimpleChunkRenderer():m_state(Init), m_chunk(nullptr){}
     ~SimpleChunkRenderer() {}
     
     enum State
     {
-        Invalid,
         Init,
+        Invalid,
         Dirty,
         Built,
         Empty
@@ -75,13 +75,15 @@ template<typename _Block>
 void SimpleChunkRenderer<_Block>::setChunk(Chunk<_Block> *chunk)
 {
     m_chunk=chunk;
-    m_state=Dirty;
+
+    if(m_state!=Init)
+        m_state=Dirty;
 }
 
 template<typename _Block>
 void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
 {
-    if(m_state != Init)
+    if(m_state !=Init)
         return;
 
     glGenVertexArrays(1, &m_vertexArray);
@@ -93,16 +95,22 @@ void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, instanceData);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)0);
 
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*3));
 
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glVertexAttribDivisor(1, 1);
-    m_state=Dirty;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*4096, nullptr, GL_STATIC_DRAW);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(2, 1);
+    
+    if(m_chunk != nullptr)
+        m_state=Dirty;
+    else
+        m_state=Invalid;
+
 }
 
 template<typename _Block>
@@ -151,6 +159,7 @@ void SimpleChunkRenderer<_Block>::update()
 
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*index, translations.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     m_state=Built;
 }
 

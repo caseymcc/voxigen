@@ -45,7 +45,10 @@ set(voxigen_headers
     include/voxigen/chunk.h
     include/voxigen/chunkCache.h
     include/voxigen/chunkHandler.h
+#    include/voxigen/entity.h
     include/voxigen/initGlew.h
+#    include/voxigen/object.h
+    include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
     include/voxigen/world.h
@@ -59,10 +62,13 @@ set(voxigen_sources
     src/chunker/chunkHandler.cpp
     src/data/biome.cpp
     src/data/block.cpp
+#    src/data/entity.cpp
+#    src/data/object.cpp
     src/data/world.cpp
     src/data/worldDescriptors.cpp
     src/generator/worldGenerator.cpp
     src/rendering/initGlew.cpp
+    src/rendering/simpleCamera.cpp
     src/rendering/simpleChunkRenderer.cpp
     src/rendering/simpleRenderer.cpp
 )
