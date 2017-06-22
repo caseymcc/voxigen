@@ -48,6 +48,7 @@ public:
     void invalidate();
 
     void draw();
+    void drawOutline();
 
     const unsigned int getHash() { return m_chunk->getHash(); }
     const glm::ivec3 &getPosition() { return m_chunk->getPosition(); }
@@ -95,16 +96,19 @@ void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, instanceData);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)0);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
 
     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
+
+    glEnableVertexAttribArray(3);
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*4096, nullptr, GL_STATIC_DRAW);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glVertexAttribDivisor(2, 1);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(3, 1);
     
     if(m_chunk != nullptr)
         m_state=Dirty;
@@ -176,9 +180,55 @@ void SimpleChunkRenderer<_Block>::draw()
         return;
 
     glBindVertexArray(m_vertexArray);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 12, m_validBlocks);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, m_validBlocks);
 
+}
 
+template<typename _Block>
+void SimpleChunkRenderer<_Block>::drawOutline()
+{
+//    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
+//    glm::vec3 position=m_chunk->getWorldOffset();
+//
+//    glLineWidth(2.5);
+//
+//    glBegin(GL_LINES);
+//        glVertex3f(position.x, position.y, position.z);
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
+//
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
+//            
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
+//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
+//
+//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
+//        glVertex3f(position.x, position.y, position.z);
+//
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
+//            
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//            
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
+//
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
+//
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
+//        glVertex3f(position.x, position.y, position.z);
+//  
+//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
+//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
+//    glEnd();
 }
 
 }//namespace voxigen

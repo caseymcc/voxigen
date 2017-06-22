@@ -9,9 +9,9 @@ namespace voxigen
 SimpleFpsCamera::SimpleFpsCamera(glm::vec3 position, glm::vec3 direction):
 m_projectionDirty(true),
 m_viewDirty(true),
-m_fov(60.0f),
+m_fov(glm::radians(60.0f)),
 m_near(0.1f),
-m_far(100.0f),
+m_far(1000.0f),
 m_width(640),
 m_height(480),
 m_worldUp(0.0f, 0.0f, 1.0f)
@@ -43,22 +43,24 @@ void SimpleFpsCamera::setView(size_t width, size_t height)
 
 void SimpleFpsCamera::setYaw(float angle)
 {
-    m_yaw+=angle;
+    m_yaw=angle;
     
     if(m_yaw<0.0)
         m_yaw+=glm::two_pi<float>();
     else if(m_yaw>glm::two_pi<float>())
         m_yaw-=glm::two_pi<float>();
+    m_viewDirty=true;
 }
 
 void SimpleFpsCamera::setPitch(float angle)
 {
-    m_pitch+=angle;
+    m_pitch=angle;
 
-    if(m_pitch<0.0)
-        m_pitch+=glm::two_pi<float>();
-    else if(m_pitch>glm::two_pi<float>())
-        m_pitch-=glm::two_pi<float>();
+//    if(m_pitch<0.0)
+//        m_pitch+=glm::two_pi<float>();
+//    else if(m_pitch>glm::two_pi<float>())
+//        m_pitch-=glm::two_pi<float>();
+    m_viewDirty=true;
 }
 
 void SimpleFpsCamera::move(const glm::vec3 &velocity)

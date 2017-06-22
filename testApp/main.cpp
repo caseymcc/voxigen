@@ -7,6 +7,7 @@
 #include "voxigen/simpleRenderer.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 bool key_w=false;
@@ -25,8 +26,8 @@ int main(int argc, char ** argv)
     if(!glfwInit())
         return -1;
 
-    size_t width=640;
-    size_t height=480;
+    size_t width=1920;
+    size_t height=1080;
 
     window=glfwCreateWindow(width, height, "TestApp", NULL, NULL);
     
@@ -42,6 +43,8 @@ int main(int argc, char ** argv)
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
     
     glewInit();
     glViewport(0, 0, width, height);
@@ -53,18 +56,12 @@ int main(int argc, char ** argv)
     glm::ivec3 worldMiddle=(world.getDescriptors().size)/2;
 
     worldMiddle.z+=5.0f;
-//    player.position=glm::vec3(worldMiddle);
-////    player.position=glm::vec3(0.0f, -20.0f, 1.0f);
-//    player.direction=glm::vec3(0.0f, 1.0f, 0.0f);
-//    player.up=glm::vec3(0.0f, 0.0f, 1.0f);
-
-//    player.position=glm::vec3(0.0f, 0.0f, 20.0f);
-//    player.direction=glm::vec3(0.0f, 0.0f, -1.0f);
-//    player.up=glm::vec3(0.0f, 1.0f, 0.0f);
     player.setPosition(worldMiddle);
+//    player.setPosition(glm::vec3(-3.0f, 0.0f, 0.3f));
     player.setYaw(0.0f);
     player.setPitch(0.0f);
 
+    
     voxigen::SimpleRenderer<voxigen::Block> renderer(&world);
 
     renderer.setCamera(&player);
@@ -73,8 +70,7 @@ int main(int argc, char ** argv)
     renderer.setViewRadius(64.0f);
     renderer.updateChunks();
 
-    float turnSpeed=0.5;
-    float movementSpeed=2;
+    float movementSpeed=100;
 
     float lastFrame=glfwGetTime();
     float currentFrame;
@@ -127,7 +123,7 @@ int main(int argc, char ** argv)
         glEnable(GL_DEPTH_TEST);
 //        glDepthFunc(GL_LESS);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 //        renderer.setCamera(player);
@@ -149,6 +145,49 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
     player.setView(width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    static bool firstMouse=true;
+    static float lastX;
+    static float lastY;
+    static float yaw=0.0f;
+    static float pitch=0.0f;
+
+    if(firstMouse)
+    {
+        lastX=xpos;
+        lastY=ypos;
+        firstMouse=false;
+    }
+
+    float xoffset=lastX-xpos;
+    float yoffset=lastY-ypos;
+
+    lastX=xpos;
+    lastY=ypos;
+
+    float sensitivity=0.1;
+
+    xoffset*=sensitivity;
+    yoffset*=sensitivity;
+
+    yaw+=xoffset;
+    pitch+=yoffset;
+
+    if(yaw > 360.0f)
+        yaw-=360.0f;
+    if(yaw < 0)
+        yaw+=360.0f;
+
+    if(pitch > 89.0f)
+        pitch=89.0f;
+    if(pitch < -89.0f)
+        pitch=-89.0f;
+
+    player.setYaw(glm::radians(yaw));
+    player.setPitch(glm::radians(pitch));
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)

@@ -40,10 +40,15 @@ public:
 private:
     static std::string vertShader;
     static std::string fragmentShader;
+
+    static std::string vertOutlineShader;
+    static std::string fragmentOutlineShader;
     
     float m_viewRadius;
     SimpleFpsCamera *m_camera;
     glm::vec3 m_lastUpdatePosition;
+
+    bool m_outlineChunks;
 
     World<_Block> *m_world;
 
@@ -52,6 +57,11 @@ private:
 
     opengl_util::Program m_program;
     size_t m_uniformProjectionViewId;
+    opengl_util::Program m_outlineProgram;
+    size_t m_uniformOutlintProjectionViewId;
+
+    size_t m_lightPositionId;
+    size_t m_lighColorId;
 
     bool m_projectionViewMatUpdated;
     glm::mat4 m_projectionViewMat;
@@ -71,9 +81,12 @@ template<typename _Block>
 std::string SimpleRenderer<_Block>::vertShader=
 "#version 330 core\n"
 "layout (location = 0) in vec3 blockvertex;\n"
-"layout (location = 1) in vec2 blockTexCoord;\n"
-"layout (location = 2) in vec4 blockOffset;\n"
+"layout (location = 1) in vec3 blockNormal;\n"
+"layout (location = 2) in vec2 blockTexCoord;\n"
+"layout (location = 3) in vec4 blockOffset;\n"
 "\n"
+"out vec3 position;\n"
+"out vec3 normal;\n"
 "out vec3 texCoords;\n"
 "\n"
 "uniform mat4 projectionView;\n"
@@ -81,8 +94,11 @@ std::string SimpleRenderer<_Block>::vertShader=
 "void main()\n"
 "{\n"
 "//   gl_Position=vec4(blockOffset.xyz+blockvertex, 1.0);\n"
-"   gl_Position=projectionView*vec4(blockOffset.xyz+blockvertex, 1.0);\n"
+"   position=blockOffset.xyz+blockvertex;\n"
+"   normal=blockNormal;\n"
 "   texCoords=vec3(blockTexCoord, blockOffset.w);\n"
+"   gl_Position=projectionView*vec4(position, 1.0);\n"
+
 "}\n"
 "";
 
@@ -90,14 +106,56 @@ template<typename _Block>
 std::string SimpleRenderer<_Block>::fragmentShader=
 "#version 330 core\n"
 "\n"
+"in vec3 position;\n"
+"in vec3 normal;\n"
 "in vec3 texCoords;\n"
 "out vec3 color;\n"
+"\n"
+"uniform vec3 lightPos;\n"
+"uniform vec3 lightColor;\n"
 "\n"
 "void main()\n"
 "{\n"
 "   float value=texCoords.z/10.0f;"
-"   color=vec3(value, value, value);\n"
+"//   color=vec3(texCoords.x, 0.0, texCoords.y);"
+"   // ambient\n"
+"   float ambientStrength=0.5;\n"
+"   vec3 ambient=ambientStrength * lightColor;\n"
+"   \n"
+"   // diffuse \n"
+"   vec3 lightDir=normalize(lightPos-position); \n"
+"   float diff=max(dot(normal, lightDir), 0.0); \n"
+"   vec3 diffuse=diff * lightColor; \n"
+"   color=(ambient+diffuse)*vec3(value, value, value);\n"
+"   "
 "//   color=vec3(1.0, 0.0, 0.0);\n"
+"}\n"
+"";
+
+
+
+template<typename _Block>
+std::string SimpleRenderer<_Block>::vertOutlineShader=
+"#version 330 core\n"
+"layout (location = 0) in vec3 vertex;\n"
+"\n"
+"uniform mat4 projectionView;\n"
+"\n"
+"void main()\n"
+"{\n"
+"   gl_Position=projectionView*vec4(vertex, 1.0);\n"
+"}\n"
+"";
+
+template<typename _Block>
+std::string SimpleRenderer<_Block>::fragmentOutlineShader=
+"#version 330 core\n"
+"\n"
+"out vec3 color;\n"
+"\n"
+"void main()\n"
+"{\n"
+"   color=vec3(1.0, 1.0, 0.0);\n"
 "}\n"
 "";
 
@@ -107,7 +165,8 @@ m_world(world),
 m_viewRadius(60.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
-m_camera(nullptr)
+m_camera(nullptr),
+m_outlineChunks(true)
 {
     m_projectionMat=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
                               0.0f, 1.0f, 0.0f, 0.0f,
@@ -140,6 +199,20 @@ void SimpleRenderer<_Block>::build()
     }
 
     m_uniformProjectionViewId=m_program.getUniformId("projectionView");
+    m_lightPositionId=m_program.getUniformId("lightPos");
+    m_lighColorId=m_program.getUniformId("lightColor");
+
+    m_program.use();
+    m_program.uniform(m_lighColorId)=glm::vec3(1.0f, 1.0f, 1.0f);
+
+    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
+    {
+        assert(false);
+        return;
+    }
+
+    m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
+
 
 ////////////////////////////////////////////////////////////////
 //Simple test
@@ -247,12 +320,26 @@ void SimpleRenderer<_Block>::draw()
 //    if(m_projectionViewMatUpdated)
 //        m_program.uniform(m_uniformProjectionViewId)=m_projectionViewMat;
     if(m_camera->isDirty())
+    {
         m_program.uniform(m_uniformProjectionViewId)=m_camera->getProjectionViewMat();
+        m_program.uniform(m_lightPositionId)=m_camera->getPosition();
+        m_outlineProgram.uniform(m_uniformOutlintProjectionViewId)=m_camera->getProjectionViewMat();
+    }
 //    m_world->getChunkFromWorldPos(m_position);
 //    m_world->getChunks()
+
     for(int i=0; i<m_chunkRenderers.size(); ++i)
     {
         m_chunkRenderers[i].draw();
+    }
+
+    if(m_outlineChunks)
+    {
+        m_outlineProgram.use();
+        for(int i=0; i<m_chunkRenderers.size(); ++i)
+        {
+            m_chunkRenderers[i].drawOutline();
+        }
     }
 
 ////////////////////////////////////////////////////////////////
