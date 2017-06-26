@@ -1,29 +1,88 @@
 #ifndef _voxigen_chunkHandler_h_
 #define _voxigen_chunkHandler_h_
 
-#include "voxigen/voxigen_export.h"
-#include "voxigen/boundingBox.h"
 #include "voxigen/chunk.h"
-#include "voxigen/block.h"
+#include "voxigen/worldDescriptors.h"
 
-#include <vector>
+#include <thread>
+#include <memory>
+#include <unordered_map>
 
 namespace voxigen
 {
 
-class VOXIGEN_EXPORT ChunkHandler:public BoundingBox
+template<typename _Chunk>
+struct ChunkHandle
+{
+    typedef _Chunk ChunkType;
+    typedef std::unique_ptr<ChunkType> UniqueChunk;
+
+    enum Status
+    {
+        Unknown,
+        Cached,
+        Loading
+        Memory,
+    };
+
+    UniqueChunk chunk;
+};
+
+template<typename _Chunk>
+class ChunkHandler
 {
 public:
-    ChunkHandler(glm::ivec3 chunkSize);
+    typedef _Chunk ChunkType;
+    typedef std::unique_ptr<ChunkType> UniqueChunk;
 
-//    glm::vec3 chunks();
+    typedef std::unordered_map<unsigned int, UniqueChunk> ChunkHandleMap;
 
+    ChunkHandler(WorldDescriptors *descriptors);
 
+    void init();
+
+    void ioThread();
+    void generatorThread();
+    
+
+    UniqueChunk getChunk(unsigned int hash);
 private:
-    std::vector<Chunk<Block>> m_chunks;
+    WorldDescriptors *m_descriptors;
 
-    glm::ivec3 m_chunkSize;
+    std::thread m_ioThread;
+    std::thread m_generatorThread;
+
+    ChunkHandleMap m_chunks;
 };
+
+template<typename _Chunk>
+ChunkHandler<_Chunk>::ChunkHandler(WorldDescriptors *descriptors):
+m_descriptors(descriptors)
+{
+
+}
+
+template<typename _Chunk>
+void ChunkHandler<_Chunk>::init()
+{
+    m_ioThread=std::thread(std::bind(&ChunkHandler<_Chunk>::ioThread, this));
+    m_generatorThread=std::thread(std::bind(&ChunkHandler<_Chunk>::generatorThread, this));
+}
+
+template<typename _Chunk>
+void ChunkHandler<_Chunk>::ioThread()
+{
+}
+
+template<typename _Chunk>
+void ChunkHandler<_Chunk>::generatorThread()
+{
+}
+
+UniqueChunk getChunk(unsigned int hash)
+{
+
+}
 
 } //namespace voxigen
 

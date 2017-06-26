@@ -49,7 +49,8 @@ int main(int argc, char ** argv)
     glewInit();
     glViewport(0, 0, width, height);
 
-    voxigen::World<voxigen::Block> world("TestWorld");
+    typedef voxigen::World<voxigen::Block, 16, 16, 16> World;
+    World world("TestWorld");
 
     world.load();
     
@@ -62,7 +63,7 @@ int main(int argc, char ** argv)
     player.setPitch(0.0f);
 
     
-    voxigen::SimpleRenderer<voxigen::Block> renderer(&world);
+    voxigen::SimpleRenderer<World> renderer(&world);
 
     renderer.setCamera(&player);
     renderer.build();

@@ -6,17 +6,21 @@
 
 #include <vector>
 #include <memory>
+#include <type_traits>
 
 namespace voxigen
 {
 
-template<typename _Block>
+template<typename _Block, size_t _x, size_t _y, size_t _z>
 class Chunk//:public BoundingBox
 {
 public:
-    Chunk(WorldDescriptors *descriptors, const glm::ivec3 &index, glm::vec3 worldOffset);
+    Chunk(unsigned int, const glm::ivec3 &index, glm::vec3 worldOffset);
 
     typedef std::vector<_Block> Blocks;
+    typedef std::integral_constant<size_t, _x> sizeX;
+    typedef std::integral_constant<size_t, _y> sizeY;
+    typedef std::integral_constant<size_t, _z> sizeZ;
     
     unsigned int getHash() const { return m_hash; }
     Blocks &getBlocks() { return m_blocks; }
@@ -27,7 +31,6 @@ public:
     _Block &getBlock(const glm::vec3 &position);
 
 private:
-    WorldDescriptors *m_descriptors;
     bool m_loaded;
 
     Blocks m_blocks;
@@ -36,29 +39,25 @@ private:
     unsigned int m_hash;
 };
 
-template<typename _Block>
-using UniqueChunk=std::unique_ptr<Chunk<_Block>>;
+template<typename _Block, size_t _x, size_t _y, size_t _z>
+using UniqueChunk=std::unique_ptr<Chunk<_Block, _x, _y, _z>>;
 
 
-template<typename _Block>
-Chunk<_Block>::Chunk(WorldDescriptors *descriptors, const glm::ivec3 &index, glm::vec3 worldOffset):
+template<typename _Block, size_t _x, size_t _y, size_t _z>
+Chunk<_Block, _x, _y, _z>::Chunk(unsigned int hash, const glm::ivec3 &index, glm::vec3 worldOffset):
 //BoundingBox(dimensions, transform),
-m_descriptors(descriptors),
+m_hash(hash),
 m_index(index),
 m_worldOffset(worldOffset)
 {
-    m_hash=descriptors->chunkHash(m_index);
-    glm::ivec3 &chunkSize=m_descriptors->chunkSize;
-
-    m_blocks.resize(chunkSize.x*chunkSize.y*chunkSize.z);
+    m_blocks.resize(_x*_y*_z);
 }
 
-template<typename _Block>
-_Block &Chunk<_Block>::getBlock(const glm::vec3 &position)
+template<typename _Block, size_t _x, size_t _y, size_t _z>
+_Block &Chunk<_Block, _x, _y, _z>::getBlock(const glm::vec3 &position)
 {
-    glm::ivec3 &chunkSize=m_descriptors->chunkSize;
     glm::ivec3 &blockPos=glm::floor(position);
-    unsigned int index=(chunkSize.x*chunkSize.y)*blockPos.y+chunkSize.x*blockPos.y+blockPos.x;
+    unsigned int index=(_x*_y)*blockPos.y+_x*blockPos.y+blockPos.x;
 
     assert(index>=0);
     assert(index<m_blocks.size());

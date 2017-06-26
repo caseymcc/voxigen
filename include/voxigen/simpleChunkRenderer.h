@@ -3,6 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/chunk.h"
+#include "voxigen/chunkInfo.h"
 
 #include <string>
 #include <vector>
@@ -12,9 +13,6 @@
 namespace voxigen
 {
 
-template<typename _Block>
-class SimpleRenderer;
-
 struct VOXIGEN_EXPORT SimpleCube
 {
     static std::vector<float> vertCoords;
@@ -23,10 +21,14 @@ struct VOXIGEN_EXPORT SimpleCube
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleChunkRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
-template<typename _Block>
+//template<typename _Block>
+template<typename _Parent, typename _Chunk>
 class SimpleChunkRenderer
 {
 public:
+    typedef _Parent RenderType;
+    typedef _Chunk ChunkType;
+
     SimpleChunkRenderer():m_state(Init), m_chunk(nullptr){}
     ~SimpleChunkRenderer() {}
     
@@ -41,8 +43,8 @@ public:
 
     State getState() { return m_state; }
 
-    void setParent(SimpleRenderer<_Block> *parent);
-    void setChunk(Chunk<_Block> *chunk);
+    void setParent(RenderType *parent);
+    void setChunk(ChunkType *chunk);
     void build(unsigned int instanceData);
     void update();
     void invalidate();
@@ -54,26 +56,26 @@ public:
     const glm::ivec3 &getPosition() { return m_chunk->getPosition(); }
     
 private:
-    SimpleRenderer<_Block> *m_parent;
+    RenderType *m_parent;
 
     State m_state;
-    Chunk<_Block> *m_chunk;
+    ChunkType *m_chunk;
     bool m_empty;
 
     unsigned int m_validBlocks;
     unsigned int m_vertexArray;
     unsigned int m_offsetVBO;
-    std::vector<glm::vec4> m_blockOffset;
+    std::vector<glm::vec4> m_ChunkInfoOffset;
 };
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::setParent(SimpleRenderer<_Block> *parent)
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setParent(RenderType *parent)
 {
     m_parent=parent;
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::setChunk(Chunk<_Block> *chunk)
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(ChunkType *chunk)
 {
     m_chunk=chunk;
 
@@ -81,8 +83,8 @@ void SimpleChunkRenderer<_Block>::setChunk(Chunk<_Block> *chunk)
         m_state=Dirty;
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
 {
     if(m_state !=Init)
         return;
@@ -117,28 +119,29 @@ void SimpleChunkRenderer<_Block>::build(unsigned int instanceData)
 
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::update()
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::update()
 {
     if(m_state!=Dirty)
         return;
 
     auto &blocks=m_chunk->getBlocks();
-    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
-    std::vector<glm::vec4> translations(chunkSize.x*chunkSize.y*chunkSize.z);
+//    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
+//    std::vector<glm::vec4> translations(chunkSize.x*chunkSize.y*chunkSize.z);
+    std::vector<glm::vec4> translations(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value);
 //    glm::ivec3 position=m_chunk->getPosition();
     glm::vec3 position=m_chunk->getWorldOffset();
     glm::ivec3 pos=position;
 
     int index=0;
     
-    for(int z=0; z<chunkSize.z; ++z)
+    for(int z=0; z<ChunkType::sizeZ::value; ++z)
     {
         pos.y=position.y;
-        for(int y=0; y<chunkSize.y; ++y)
+        for(int y=0; y<ChunkType::sizeY::value; ++y)
         {
             pos.x=position.x;
-            for(int x=0; x<chunkSize.x; ++x)
+            for(int x=0; x<ChunkType::sizeX::value; ++x)
             {
                 unsigned int type=blocks[index].type;
 
@@ -167,14 +170,14 @@ void SimpleChunkRenderer<_Block>::update()
     m_state=Built;
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::invalidate()
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 {
     m_state=Invalid;
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::draw()
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::draw()
 {
     if(m_state!=Built)
         return;
@@ -184,8 +187,8 @@ void SimpleChunkRenderer<_Block>::draw()
 
 }
 
-template<typename _Block>
-void SimpleChunkRenderer<_Block>::drawOutline()
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline()
 {
 //    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
 //    glm::vec3 position=m_chunk->getWorldOffset();

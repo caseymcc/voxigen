@@ -18,14 +18,21 @@ namespace voxigen
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
-template<typename _Block>
+//template<typename _Block, int _ChunkSizeX, int _ChunkSizeY, int _ChunkSizeZ>
+template<typename _World>
 class SimpleRenderer
 {
 public:
-    SimpleRenderer(World<_Block> *world);
+    typedef _World WorldType;
+    typedef typename _World::ChunkType ChunkType;
+    typedef SimpleChunkRenderer<SimpleRenderer, ChunkType> ChunkRenderType;
+//    typedef World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> WorldType;
+    
+
+    SimpleRenderer(WorldType *world);
     ~SimpleRenderer();
     
-    World<_Block> *getWorld(){ return m_world; }
+    WorldType *getWorld(){ return m_world; }
 
     void build();
     void update();
@@ -50,10 +57,10 @@ private:
 
     bool m_outlineChunks;
 
-    World<_Block> *m_world;
+    WorldType *m_world;
 
     std::vector<glm::ivec3> m_chunkIndicies;
-    std::vector<SimpleChunkRenderer<_Block>> m_chunkRenderers;
+    std::vector<ChunkRenderType> m_chunkRenderers;
 
     opengl_util::Program m_program;
     size_t m_uniformProjectionViewId;
@@ -77,8 +84,8 @@ private:
     unsigned int m_offsetVBO;
 };
 
-template<typename _Block>
-std::string SimpleRenderer<_Block>::vertShader=
+template<typename _World>
+std::string SimpleRenderer<_World>::vertShader=
 "#version 330 core\n"
 "layout (location = 0) in vec3 blockvertex;\n"
 "layout (location = 1) in vec3 blockNormal;\n"
@@ -102,8 +109,8 @@ std::string SimpleRenderer<_Block>::vertShader=
 "}\n"
 "";
 
-template<typename _Block>
-std::string SimpleRenderer<_Block>::fragmentShader=
+template<typename _World>
+std::string SimpleRenderer<_World>::fragmentShader=
 "#version 330 core\n"
 "\n"
 "in vec3 position;\n"
@@ -134,8 +141,8 @@ std::string SimpleRenderer<_Block>::fragmentShader=
 
 
 
-template<typename _Block>
-std::string SimpleRenderer<_Block>::vertOutlineShader=
+template<typename _World>
+std::string SimpleRenderer<_World>::vertOutlineShader=
 "#version 330 core\n"
 "layout (location = 0) in vec3 vertex;\n"
 "\n"
@@ -147,8 +154,8 @@ std::string SimpleRenderer<_Block>::vertOutlineShader=
 "}\n"
 "";
 
-template<typename _Block>
-std::string SimpleRenderer<_Block>::fragmentOutlineShader=
+template<typename _World>
+std::string SimpleRenderer<_World>::fragmentOutlineShader=
 "#version 330 core\n"
 "\n"
 "out vec3 color;\n"
@@ -159,8 +166,8 @@ std::string SimpleRenderer<_Block>::fragmentOutlineShader=
 "}\n"
 "";
 
-template<typename _Block>
-SimpleRenderer<_Block>::SimpleRenderer(World<_Block> *world):
+template<typename _World>
+SimpleRenderer<_World>::SimpleRenderer(_World *world):
 m_world(world),
 m_viewRadius(60.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
@@ -179,14 +186,14 @@ m_outlineChunks(true)
                         0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-template<typename _Block>
-SimpleRenderer<_Block>::~SimpleRenderer()
+template<typename _World>
+SimpleRenderer<_World>::~SimpleRenderer()
 {
 
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::build()
+template<typename _World>
+void SimpleRenderer<_World>::build()
 {
 //    initGlew();
     
@@ -287,13 +294,13 @@ void SimpleRenderer<_Block>::build()
 //    setViewRadius(m_viewRadius);
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::update()
+template<typename _World>
+void SimpleRenderer<_World>::update()
 {
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::updateProjection(size_t width, size_t height)
+template<typename _World>
+void SimpleRenderer<_World>::updateProjection(size_t width, size_t height)
 {
     m_projectionMat=glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
 
@@ -301,13 +308,13 @@ void SimpleRenderer<_Block>::updateProjection(size_t width, size_t height)
     m_projectionViewMatUpdated=true;
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::updateView()
+template<typename _World>
+void SimpleRenderer<_World>::updateView()
 {
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::draw()
+template<typename _World>
+void SimpleRenderer<_World>::draw()
 {
 //    glEnable(GL_DEPTH_TEST);
 //    glDepthFunc(GL_LESS);
@@ -349,8 +356,8 @@ void SimpleRenderer<_Block>::draw()
 ////////////////////////////////////////////////////////////////
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::setCamera(SimpleFpsCamera *camera)
+template<typename _World>
+void SimpleRenderer<_World>::setCamera(SimpleFpsCamera *camera)
 {
     m_camera=camera;
 
@@ -366,8 +373,8 @@ void SimpleRenderer<_Block>::setCamera(SimpleFpsCamera *camera)
     }
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::setViewRadius(float radius)
+template<typename _World>
+void SimpleRenderer<_World>::setViewRadius(float radius)
 {
     m_viewRadius=radius;
 
@@ -406,8 +413,8 @@ void SimpleRenderer<_Block>::setViewRadius(float radius)
 //    updateChunks();
 }
 
-template<typename _Block>
-void SimpleRenderer<_Block>::updateChunks()
+template<typename _World>
+void SimpleRenderer<_World>::updateChunks()
 {
     glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera->getPosition());
 
@@ -447,9 +454,9 @@ void SimpleRenderer<_Block>::updateChunks()
 
     for(size_t i=0; i<size; ++i)
     {
-        SimpleChunkRenderer<_Block> &chunkRenderer=m_chunkRenderers[i];
+        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
 
-        if(chunkRenderer.getState()==SimpleChunkRenderer<_Block>::Invalid)
+        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
             continue;
 
         unsigned int chunkHash=chunkRenderer.getHash();
@@ -467,9 +474,9 @@ void SimpleRenderer<_Block>::updateChunks()
     
     for(size_t i=0; i<size; ++i)
     {
-        SimpleChunkRenderer<_Block> &chunkRenderer=m_chunkRenderers[i];
+        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
 
-        if(chunkRenderer.getState()==SimpleChunkRenderer<_Block>::Invalid)
+        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
         {
             invalidatedRenderers[i]=true;
             continue;
@@ -492,9 +499,9 @@ void SimpleRenderer<_Block>::updateChunks()
             if(!invalidatedRenderers[j])
                 continue;
 
-            SimpleChunkRenderer<_Block> &chunkRenderer=m_chunkRenderers[j];
+            ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
 
-            Chunk<_Block> *chunk=&m_world->getChunk(chunks[i]);
+            ChunkType *chunk=&m_world->getChunk(chunks[i]);
 
             chunkRenderer.setChunk(chunk);
             chunkRenderer.update();

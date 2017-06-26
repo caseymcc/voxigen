@@ -24,6 +24,7 @@ struct VOXIGEN_EXPORT WorldDescriptors
 
     float noiseScale;
     double contientFrequency;
+    int contientOctaves;
     double contientLacunarity;
 
     double seaLevel;

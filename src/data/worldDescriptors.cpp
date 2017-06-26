@@ -11,8 +11,10 @@ WorldDescriptors::WorldDescriptors()
 
     noiseScale=0.0001;
 
-    contientFrequency=1.0;
-    contientLacunarity=2.208984375;
+//    contientFrequency=1.0;
+    contientFrequency=0.005;
+    contientOctaves=2;
+    contientLacunarity=2.2;
 
     seaLevel=0.0f;
 }

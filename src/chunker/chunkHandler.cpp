@@ -3,9 +3,6 @@
 namespace voxigen
 {
 
-ChunkHandler::ChunkHandler(glm::ivec3 chunkSize)
-{
 
-}
 
 }//namespace voxigen

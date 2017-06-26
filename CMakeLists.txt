@@ -45,6 +45,7 @@ set(voxigen_headers
     include/voxigen/chunk.h
     include/voxigen/chunkCache.h
     include/voxigen/chunkHandler.h
+    include/voxigen/coords.h
 #    include/voxigen/entity.h
     include/voxigen/initGlew.h
 #    include/voxigen/object.h
@@ -54,6 +55,7 @@ set(voxigen_headers
     include/voxigen/world.h
     include/voxigen/worldDescriptors.h
     include/voxigen/worldGenerator.h
+    include/voxigen/noise/FastNoiseSIMD.h
 )
 
 set(voxigen_sources
@@ -66,11 +68,19 @@ set(voxigen_sources
 #    src/data/object.cpp
     src/data/world.cpp
     src/data/worldDescriptors.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_avx2.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_avx512.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_internal.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_neon.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_sse2.cpp
+    src/FastNoiseSIMD/FastNoiseSIMD_sse41.cpp
     src/generator/worldGenerator.cpp
     src/rendering/initGlew.cpp
     src/rendering/simpleCamera.cpp
     src/rendering/simpleChunkRenderer.cpp
     src/rendering/simpleRenderer.cpp
+    src/utils/coords.cpp
 )
 
 set(voxigen_libraries
