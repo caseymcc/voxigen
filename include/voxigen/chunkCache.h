@@ -1,20 +1,35 @@
 #ifndef _voxigen_chunkCache_h_
 #define _voxigen_chunkCache_h_
 
-#include "voxigen/voxigen_export.h"
-
 namespace voxigen
 {
 
-//class ChunkCache()
-//{
-//public:
-//    Chunk(glm::vec3 &dimensions, glm::mat4 &transform):BoundingBox(dimensions, transform);
-//
-//private:
-//    bool m_loaded;
-//
-//};
+template<typename _Chunk>
+class ChunkCache()
+{
+public:
+    typedef _Chunk ChunkType;
+
+    ChunkCache();
+
+    void load();
+
+    void updateCache(ChunkType *chunk);
+private:
+    
+};
+
+template<typename _Chunk>
+ChunkCache<_Chunk>::ChunkCache()
+{
+
+}
+
+template<typename _Chunk>
+void ChunkCache<_Chunk>::updateCache(ChunkType *chunk)
+{
+
+}
 
 } //namespace voxigen
 

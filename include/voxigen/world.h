@@ -5,6 +5,8 @@
 #include "voxigen/chunk.h"
 #include "voxigen/worldDescriptors.h"
 #include "voxigen/worldGenerator.h"
+#include "voxigen/chunkHandler.h"
+#include "voxigen/entity.h"
 
 #include <noise/noise.h>
 
@@ -27,6 +29,8 @@ public:
 
     typedef Chunk<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> ChunkType;
     typedef UniqueChunkMap<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> UniqueChunkMap;
+    typedef std::shared_ptr<ChunkType> SharedChunk;
+    typedef std::unordered_map<unsigned int, SharedChunk> SharedChunkMap;
 
     void load();
     void save();
@@ -51,12 +55,13 @@ private:
     std::string m_name;
 
     WorldDescriptors m_descriptors;
-    std::unique_ptr<WorldGenerator<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>> m_generator;
+    std::unique_ptr<WorldGenerator<ChunkType>> m_generator;
 
     glm::mat4 m_transform;
 
+    Entity m_player;
     std::vector<Biome> m_biomes;
-    UniqueChunkMap m_chunks;
+    SharedChunkMap m_chunks;
 };
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>

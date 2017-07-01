@@ -15,13 +15,13 @@ namespace voxigen
 template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
 class World;
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
+template<typename _Chunk>
 class WorldGenerator
 {
 public:
-    typedef World<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ> WorldType;
-    typedef Chunk<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ> ChunkType;
-    typedef UniqueChunk<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ> UniqueChunkType;
+    typedef World<typename _Chunk::_Block, _Chunk::SizeX, _Chunk::SizeY, _Chunk::SizeZ> WorldType;
+    typedef _Chunk ChunkType;
+    typedef std::unique_ptr<_Chunk> UniqueChunkType;
 
     WorldGenerator(WorldType *world);
     ~WorldGenerator();
@@ -30,7 +30,10 @@ public:
 //    void setWorldDiscriptors(WorldDescriptors descriptors);
     
     void generateWorldOverview();
+
+    UniqueChunkType generateChunk(unsigned int hash);
     UniqueChunkType generateChunk(glm::ivec3 chunkIndex);
+    UniqueChunkType generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex);
 
 private:
     WorldType *m_world;
@@ -46,8 +49,8 @@ private:
 //    noise::module::Perlin m_layersPerlin;
 };
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::WorldGenerator(WorldType *world):
+template<typename _Chunk>
+WorldGenerator<_Chunk>::WorldGenerator(WorldType *world):
 m_world(world),
 m_descriptors(&world->getDescriptors())
 {
@@ -67,64 +70,49 @@ m_descriptors(&world->getDescriptors())
     m_layersPerlin->SetFrequency(m_descriptors->contientFrequency);
     m_layersPerlin->SetFractalLacunarity(m_descriptors->contientLacunarity);
     m_layersPerlin->SetFractalOctaves(m_descriptors->contientOctaves);
-
-//    m_perlin.SetSeed(seed+0);
-//
-//    m_continentPerlin.SetSeed(seed+0);
-//    m_continentPerlin.SetFrequency(m_descriptors->contientFrequency);
-//    m_continentPerlin.SetPersistence(0.5);
-//    m_continentPerlin.SetLacunarity(m_descriptors->contientLacunarity);
-//    m_continentPerlin.SetOctaveCount(14);
-//    m_continentPerlin.SetNoiseQuality(noise::QUALITY_STD);
-//
-//    double seaLevel=m_descriptors->seaLevel;
-//
-//    m_continentCurve.SetSourceModule(0, m_continentPerlin);
-//    m_continentCurve.AddControlPoint(-2.0000+seaLevel, -1.625+seaLevel);
-//    m_continentCurve.AddControlPoint(-1.0000+seaLevel, -1.375+seaLevel);
-//    m_continentCurve.AddControlPoint(0.0000+seaLevel, -0.375+seaLevel);
-//    m_continentCurve.AddControlPoint(0.0625+seaLevel, 0.125+seaLevel);
-//    m_continentCurve.AddControlPoint(0.1250+seaLevel, 0.250+seaLevel);
-//    m_continentCurve.AddControlPoint(0.2500+seaLevel, 1.000+seaLevel);
-//    m_continentCurve.AddControlPoint(0.5000+seaLevel, 0.250+seaLevel);
-//    m_continentCurve.AddControlPoint(0.7500+seaLevel, 0.250+seaLevel);
-//    m_continentCurve.AddControlPoint(1.0000+seaLevel, 0.500+seaLevel);
-//    m_continentCurve.AddControlPoint(2.0000+seaLevel, 0.500+seaLevel);
-//
-//    m_layersPerlin.SetSeed(seed+1);
-//    //    m_layersPerlin.SetFrequency(m_contientFrequency);
-//    //    m_layersPerlin.SetPersistence(0.5);
-//    //    m_layersPerlin.SetLacunarity(m_contientLacunarity);
-//    //    m_layersPerlin.SetOctaveCount(14);
-//    //    m_layersPerlin.SetNoiseQuality(noise::QUALITY_STD);
-
 }
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::~WorldGenerator()
+template<typename _Chunk>
+WorldGenerator<_Chunk>::~WorldGenerator()
 {}
 
-//template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-//void WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::setWorldDiscriptors(WorldDescriptors descriptors)
+//template<typename _Chunk>
+//void WorldGenerator<_Chunk>::setWorldDiscriptors(WorldDescriptors descriptors)
 //{
 //
 //}
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-void WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::generateWorldOverview()
+template<typename _Chunk>
+void WorldGenerator<_Chunk>::generateWorldOverview()
 {
 
 }
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-typename WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::UniqueChunkType WorldGenerator<_Block, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ>::generateChunk(glm::ivec3 chunkIndex)
+template<typename _Chunk>
+typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash)
+{
+    glm::ivec3 chunkIndex=m_descriptors->chunkIndex(hash);
+
+    return generateChunk(hash, chunkIndex);
+}
+
+template<typename _Chunk>
+typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(glm::ivec3 chunkIndex)
+{
+    unsigned int hash=m_descriptors->chunkHash(chunkIndex);
+
+    return generateChunk(hash, chunkIndex);
+}
+
+template<typename _Chunk>
+typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex)
 {
     glm::vec3 offset=glm::ivec3(_ChuckSizeX, _ChuckSizeY, _ChuckSizeZ)*chunkIndex;
     glm::vec3 scaledOffset=offset*m_descriptors->noiseScale;
     glm::vec3 position=scaledOffset;
-    unsigned int hash=m_descriptors->chunkHash(chunkIndex);
     
-    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, chunkIndex, offset);
+   
+    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, offset);
     ChunkType::Blocks &blocks=chunk->getBlocks();
 
     int heightMapSize=FastNoiseSIMD::AlignedSize(_ChuckSizeX*_ChuckSizeY);

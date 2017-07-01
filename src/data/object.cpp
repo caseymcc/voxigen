@@ -14,14 +14,14 @@ m_position(0.0f, 0.0f, 0.0f)
     setOrientation(glm::quat(0.0f, 1.0f, 0.0f, 0.0f));
 }
 
-Object::Object(glm::vec3 &position):
+Object::Object(const glm::vec3 &position):
 m_position(position)
 {
     setOrientation(glm::quat(0.0f, 1.0f, 0.0f, 0.0f));
 }
 
 Object::Object(const glm::vec3 &position, const glm::vec3 &direction, const glm::vec3 &up):
-m_position(position),
+m_position(position)
 {
     setOrientation(direction, up);
 }
@@ -38,8 +38,8 @@ void Object::setOrientation(const glm::vec3 &direction)
         setOrientation(glm::angleAxis(glm::pi<float>(), m_worldUp));
     else
     {
-        glm::quat rotation=rotateTo(currentDirection, direction);
-        setOrientation(rotation*orientation);
+//        glm::quat rotation=rotateTo(currentDirection, direction);
+//        setOrientation(rotation*orientation);
     }
 }
 
@@ -53,13 +53,13 @@ void Object::setOrientation(const glm::vec3 &direction, const glm::vec3 &up)
         forwardOrientation=glm::angleAxis(glm::pi<float>(), m_worldUp);
     else
     {
-        glm::quat rotation=rotateTo(currentDirection, direction);
-        forwardOrientation=rotation*orientation;
+//        glm::quat rotation=rotateTo(currentDirection, direction);
+//        forwardOrientation=rotation*orientation;
     }
 
     glm::vec3 currentUp=forwardOrientation*m_worldUp;
 
-    glm::quat upRotation=rotateTo(currentUp, up);
-    setOrientation(upRotation*forwardOrientation);
+//    glm::quat upRotation=rotateTo(currentUp, up);
+//    setOrientation(upRotation*forwardOrientation);
 }
 
