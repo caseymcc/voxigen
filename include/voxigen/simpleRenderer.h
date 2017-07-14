@@ -8,6 +8,7 @@
 #include "voxigen/SimpleChunkRenderer.h"
 
 #include <string>
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <opengl_util/program.h>
@@ -24,9 +25,11 @@ class SimpleRenderer
 {
 public:
     typedef _World WorldType;
-    typedef typename _World::ChunkType ChunkType;
-    typedef SimpleChunkRenderer<SimpleRenderer, ChunkType> ChunkRenderType;
+//    typedef typename _World::ChunkType ChunkType;
+    typedef typename _World::SharedChunkHandle SharedChunkHandle;
+    typedef SimpleChunkRenderer<SimpleRenderer, typename _World::ChunkType> ChunkRenderType;
 //    typedef World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> WorldType;
+    typedef std::unordered_map<unsigned int, size_t> ChunkRendererMap;
     
 
     SimpleRenderer(WorldType *world);
@@ -61,6 +64,8 @@ private:
 
     std::vector<glm::ivec3> m_chunkIndicies;
     std::vector<ChunkRenderType> m_chunkRenderers;
+    ChunkRendererMap m_chunkRendererMap;
+    std::vector<unsigned int> m_chunksUpdated;
 
     opengl_util::Program m_program;
     size_t m_uniformProjectionViewId;
@@ -334,7 +339,31 @@ void SimpleRenderer<_World>::draw()
     }
 //    m_world->getChunkFromWorldPos(m_position);
 //    m_world->getChunks()
+    if(m_chunksUpdated.empty())
+        m_chunksUpdated=m_world->getUpdatedChunks();
 
+    //update any chunks that may have changed
+    if(!m_chunksUpdated.empty())
+    {
+        //only update at max 10 per frame, better to be done in thread
+        size_t maxUpdates=std::min((size_t)10, m_chunksUpdated.size());
+
+        for(size_t i=0; i<maxUpdates; ++i)
+        {
+//            if(renderer.getState()==ChunkRenderType::Invalid)
+//                continue;
+            unsigned int hash=m_chunksUpdated[i];
+
+            auto iter=std::find_if(m_chunkRenderers.begin(), m_chunkRenderers.end(), [&hash](auto &renderer){return (renderer.getHash()==hash); });
+
+            if(iter!=m_chunkRenderers.end())
+                iter->update();
+        }
+
+        m_chunksUpdated.erase(m_chunksUpdated.begin(), m_chunksUpdated.begin()+maxUpdates);
+    }
+
+    //draw all chunks
     for(int i=0; i<m_chunkRenderers.size(); ++i)
     {
         m_chunkRenderers[i].draw();
@@ -413,6 +442,105 @@ void SimpleRenderer<_World>::setViewRadius(float radius)
 //    updateChunks();
 }
 
+//template<typename _World>
+//void SimpleRenderer<_World>::updateChunks()
+//{
+//    glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera->getPosition());
+//
+//    if(m_chunkRenderers.size()!=m_chunkIndicies.size())
+//    {
+//        //depending on how often this happens (should only be on viewRadius change), 
+//        //might want to move any renderers outside the new size to invalid render locations
+//        //lower in the vector, then resize (otherwise they will get rebuilt)
+//
+//        bool buildRenderers=(m_chunkRenderers.size()<m_chunkIndicies.size());
+//        size_t buildIndex=m_chunkRenderers.size();
+//
+//        m_chunkRenderers.resize(m_chunkIndicies.size());
+//        if(buildRenderers)
+//        {
+//            //need to setup buffers for new chunks
+//            for(size_t i=buildIndex; i<m_chunkRenderers.size(); ++i)
+//            {
+//                m_chunkRenderers[i].setParent(this);
+//                m_chunkRenderers[i].build(m_instanceVertices);
+//            }
+//        }
+//    }
+//
+//    int size=m_chunkRenderers.size();
+//
+//    std::vector<bool> invalidatedRenderers(size);
+//    std::vector<unsigned int> chunks(size);
+//    std::vector<bool> inUse(size);
+//    
+//    for(size_t i=0; i<size; ++i)
+//    {
+//        chunks[i]=m_world->chunkHash(chunkIndex+m_chunkIndicies[i]);
+//        invalidatedRenderers[i]=true;
+//        inUse[i]=false;
+//    }
+//
+//    for(size_t i=0; i<size; ++i)
+//    {
+//        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
+//
+//        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
+//            continue;
+//
+//        unsigned int chunkHash=chunkRenderer.getHash();
+//
+//        for(size_t j=0; j<size; ++j)
+//        {
+//            if(chunks[j]==chunkHash)
+//            {
+//                invalidatedRenderers[i]=false;
+//                inUse[j]=true;
+//                break;
+//            }
+//        }
+//    }
+//    
+//    for(size_t i=0; i<size; ++i)
+//    {
+//        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
+//
+//        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
+//        {
+//            invalidatedRenderers[i]=true;
+//            continue;
+//        }
+//        
+//        if(invalidatedRenderers[i])
+//            chunkRenderer.invalidate();
+//    }
+//
+//    size_t invalidatedIndex=0;
+//
+//    for(size_t i=0; i<size; ++i)
+//    {
+//        if(inUse[i])
+//            continue;
+//
+//        //find invalid renderer and update chuck
+//        for(size_t j=invalidatedIndex; j<size; ++j)
+//        {
+//            if(!invalidatedRenderers[j])
+//                continue;
+//
+//            ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
+//
+//            SharedChunkHandle chunkHandle=m_world->getChunk(chunks[i]);
+//
+//            chunkRenderer.setChunk(chunkHandle);
+//            chunkRenderer.update();
+//
+//            invalidatedIndex=j+1;
+//            break;
+//        }
+//    }
+//}
+
 template<typename _World>
 void SimpleRenderer<_World>::updateChunks()
 {
@@ -440,6 +568,10 @@ void SimpleRenderer<_World>::updateChunks()
     }
 
     int size=m_chunkRenderers.size();
+    size_t mapSize=m_chunkRendererMap.size();
+
+//    ChunkRendererMap invalidatedRenderers(m_chunkRendererMap);
+//    int index=0;
 
     std::vector<bool> invalidatedRenderers(size);
     std::vector<unsigned int> chunks(size);
@@ -454,24 +586,16 @@ void SimpleRenderer<_World>::updateChunks()
 
     for(size_t i=0; i<size; ++i)
     {
-        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
+        auto &iter=m_chunkRendererMap.find(chunks[i]);
 
-        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
-            continue;
-
-        unsigned int chunkHash=chunkRenderer.getHash();
-
-        for(size_t j=0; j<size; ++j)
+        if(iter!=m_chunkRendererMap.end())
         {
-            if(chunks[j]==chunkHash)
-            {
-                invalidatedRenderers[i]=false;
-                inUse[j]=true;
-                break;
-            }
+            invalidatedRenderers[iter->second]=false;
+            inUse[i]=true;
         }
     }
-    
+
+    //invalidate renderers not in use
     for(size_t i=0; i<size; ++i)
     {
         ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
@@ -481,13 +605,21 @@ void SimpleRenderer<_World>::updateChunks()
             invalidatedRenderers[i]=true;
             continue;
         }
-        
+
         if(invalidatedRenderers[i])
+        {
+            auto &iter=m_chunkRendererMap.find(chunkRenderer.getHash());
+
+            if(iter!=m_chunkRendererMap.end())
+                m_chunkRendererMap.erase(iter);
+
             chunkRenderer.invalidate();
+        }
     }
 
     size_t invalidatedIndex=0;
 
+    //add missing chunks
     for(size_t i=0; i<size; ++i)
     {
         if(inUse[i])
@@ -500,10 +632,11 @@ void SimpleRenderer<_World>::updateChunks()
                 continue;
 
             ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
+            m_chunkRendererMap.insert(ChunkRendererMap::value_type(chunks[i], j));
 
-            ChunkType *chunk=&m_world->getChunk(chunks[i]);
+            SharedChunkHandle chunkHandle=m_world->getChunk(chunks[i]);
 
-            chunkRenderer.setChunk(chunk);
+            chunkRenderer.setChunk(chunkHandle);
             chunkRenderer.update();
 
             invalidatedIndex=j+1;

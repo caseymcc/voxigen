@@ -83,6 +83,10 @@ void Urho3DApp::Start()
     SubscribeToEvent(Urho3D::E_KEYDOWN, URHO3D_HANDLER(Urho3DApp, onKeyDown));
     // Subscribe scene update event
     SubscribeToEvent(Urho3D::E_UPDATE, URHO3D_HANDLER(Urho3DApp, onUpdate));
+
+    m_world=new voxigen::World<voxigen::Block, 16, 16, 16>("test");
+    m_world->load();
+
 }
 
 void Urho3DApp::CreateConsoleAndDebugHud()
@@ -124,8 +128,14 @@ void Urho3DApp::createScene()
     // optimizing manner
     m_scene->CreateComponent<Urho3D::Octree>();
     
-    Urho3D::DebugRenderer* debug=m_scene->CreateComponent<Urho3D::DebugRenderer>();
+#ifndef NDEBUG
+    Urho3D::DebugRenderer *debug=m_scene->CreateComponent<Urho3D::DebugRenderer>();
     
+    debug->AddLine(Urho3D::Vector3(0.0f, 0.0f, 0.0f), Urho3D::Vector3(10.0f, 0.0f, 0.0f), Urho3D::Color(1.0f, 0.0f, 0.0f));
+    debug->AddLine(Urho3D::Vector3(0.0f, 0.0f, 0.0f), Urho3D::Vector3(0.0f, 10.0f, 0.0f), Urho3D::Color(0.0f, 1.0f, 0.0f));
+    debug->AddLine(Urho3D::Vector3(0.0f, 0.0f, 0.0f), Urho3D::Vector3(0.0f, 0.0f, 10.0f), Urho3D::Color(0.0f, 0.0f, 1.0f));
+#endif //NDEBUG
+
     m_scene->CreateComponent<Urho3D::PhysicsWorld>();
 
 
@@ -148,6 +158,7 @@ void Urho3DApp::createScene()
 
     // Set an initial position for the camera scene node above the plane
 //    m_cameraNode->SetPosition(Urho3D::Vector3(0.0, 50.0, 0.0));
+//    m_cameraNode->LookAt(Urho3D::Vector3::FORWARD, Urho3D::Vector3::UP, Urho3D::TS_WORLD);
 
     // Create a red directional light (sun)
     Urho3D::Node *sunNode=m_scene->CreateChild();
@@ -209,14 +220,27 @@ void Urho3DApp::onUpdate(Urho3D::StringHash eventType, Urho3D::VariantMap &event
 
     Urho3D::Input *input=GetSubsystem<Urho3D::Input>();
 
+//    if(input->GetKeyDown('W'))
+//        m_cameraNode->Translate(Urho3D::Vector3(0, 0, 1)*MOVE_SPEED*timeStep);
+//    if(input->GetKeyDown('S'))
+//        m_cameraNode->Translate(Urho3D::Vector3(0, 0, -1)*MOVE_SPEED*timeStep);
+//    if(input->GetKeyDown('A'))
+//        m_cameraNode->Translate(Urho3D::Vector3(-1, 0, 0)*MOVE_SPEED*timeStep);
+//    if(input->GetKeyDown('D'))
+//        m_cameraNode->Translate(Urho3D::Vector3(1, 0, 0)*MOVE_SPEED*timeStep);
     if(input->GetKeyDown('W'))
-        m_cameraNode->Translate(Urho3D::Vector3(0, 0, 1)*MOVE_SPEED*timeStep);
+        m_cameraNode->Translate(Urho3D::Vector3::FORWARD*MOVE_SPEED*timeStep);
     if(input->GetKeyDown('S'))
-        m_cameraNode->Translate(Urho3D::Vector3(0, 0, -1)*MOVE_SPEED*timeStep);
+        m_cameraNode->Translate(Urho3D::Vector3::BACK*MOVE_SPEED*timeStep);
     if(input->GetKeyDown('A'))
-        m_cameraNode->Translate(Urho3D::Vector3(-1, 0, 0)*MOVE_SPEED*timeStep);
+        m_cameraNode->Translate(Urho3D::Vector3::LEFT*MOVE_SPEED*timeStep);
     if(input->GetKeyDown('D'))
-        m_cameraNode->Translate(Urho3D::Vector3(1, 0, 0)*MOVE_SPEED*timeStep);
+        m_cameraNode->Translate(Urho3D::Vector3::RIGHT*MOVE_SPEED*timeStep);
+    if(input->GetKeyDown(Urho3D::KEY_SPACE))
+        m_cameraNode->Translate(Urho3D::Vector3::UP*MOVE_SPEED*timeStep);
+    if(input->GetKeyDown(Urho3D::KEY_SHIFT))
+        m_cameraNode->Translate(Urho3D::Vector3::DOWN*MOVE_SPEED*timeStep);
+
     if(input->GetKeyDown(Urho3D::KEY_ESCAPE))
         engine_->Exit();
 
@@ -232,8 +256,11 @@ void Urho3DApp::onUpdate(Urho3D::StringHash eventType, Urho3D::VariantMap &event
         pitch_=Urho3D::Clamp(pitch_, -90.0f, 90.0f);
         // Reset rotation and set yaw and pitch again
         m_cameraNode->SetDirection(Urho3D::Vector3::FORWARD);
-        m_cameraNode->Yaw(yaw_);
+//        m_cameraNode->LookAt(m_cameraNode->GetWorldPosition()+Urho3D::Vector3::FORWARD, Urho3D::Vector3::UP, Urho3D::TS_WORLD);
+//        m_cameraNode->Yaw(yaw_);
+        m_cameraNode->Roll(yaw_);
         m_cameraNode->Pitch(pitch_);
+        
     }
 
 }

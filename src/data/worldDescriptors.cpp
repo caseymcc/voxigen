@@ -9,7 +9,7 @@ WorldDescriptors::WorldDescriptors()
     size=glm::ivec3(1024, 1024, 256);
     chunkSize=glm::ivec3(16, 16, 16);
 
-    noiseScale=0.0001;
+    noiseScale=0.001;
 
 //    contientFrequency=1.0;
     contientFrequency=0.005;

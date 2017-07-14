@@ -12,15 +12,23 @@ public:
 
     ChunkCache();
 
-    void load();
+    void load(std::string directory);
 
     void updateCache(ChunkType *chunk);
 private:
+
+
     
 };
 
 template<typename _Chunk>
 ChunkCache<_Chunk>::ChunkCache()
+{
+
+}
+
+template<typename _Chunk>
+void ChunkCache<_Chunk>::load(std::string directory)
 {
 
 }

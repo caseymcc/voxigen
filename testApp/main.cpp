@@ -17,6 +17,7 @@ bool key_s=false;
 bool key_space=false;
 bool key_left_shift=false;
 voxigen::SimpleFpsCamera player;
+unsigned int playerChunk;
 
 int main(int argc, char ** argv)
 {
@@ -61,14 +62,14 @@ int main(int argc, char ** argv)
 //    player.setPosition(glm::vec3(-3.0f, 0.0f, 0.3f));
     player.setYaw(0.0f);
     player.setPitch(0.0f);
-
+    playerChunk=world.getChunkHash(player.getPosition());
     
     voxigen::SimpleRenderer<World> renderer(&world);
 
     renderer.setCamera(&player);
     renderer.build();
 //    renderer.updateProjection(width, height);
-    renderer.setViewRadius(64.0f);
+    renderer.setViewRadius(128.0f);
     renderer.updateChunks();
 
     float movementSpeed=100;
@@ -118,7 +119,62 @@ int main(int argc, char ** argv)
         }
 
         if(move)
+        {
+            unsigned int chunkHash;
+
             player.move(direction*movementSpeed*deltaTime);
+
+            glm::ivec3 worldSize=world.getDescriptors().size;
+            glm::vec3 playerPos=player.getPosition();
+
+            bool resetPos=false;
+
+            if(playerPos.x<0.0f)
+            {
+                playerPos.x=0.0f;
+                resetPos=true;
+            }
+            else if(playerPos.x>worldSize.x)
+            {
+                playerPos.x=worldSize.x;
+                resetPos=true;
+            }
+            
+            if(playerPos.y<0.0f)
+            {
+                playerPos.y=0.0f;
+                resetPos=true;
+            }
+            else if(playerPos.y>worldSize.y)
+            {
+                playerPos.y=worldSize.y;
+                resetPos=true;
+            }
+
+            if(playerPos.z<0.0f)
+            {
+                playerPos.z=0.0f;
+                resetPos=true;
+            }
+            else if(playerPos.z>worldSize.z)
+            {
+                playerPos.z=worldSize.z;
+                resetPos=true;
+            }
+
+            if(resetPos)
+                player.setPosition(playerPos);
+
+            chunkHash=world.getChunkHash(player.getPosition());
+
+            if(playerChunk!=chunkHash)
+            {
+                renderer.updateChunks();
+                playerChunk=chunkHash;
+            }
+        }
+
+
         /* Render here */
 //        glClear(GL_COLOR_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);

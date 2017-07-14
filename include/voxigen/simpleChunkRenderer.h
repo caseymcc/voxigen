@@ -3,6 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/chunk.h"
+#include "voxigen/chunkHandle.h"
 #include "voxigen/chunkInfo.h"
 
 #include <string>
@@ -28,8 +29,11 @@ class SimpleChunkRenderer
 public:
     typedef _Parent RenderType;
     typedef _Chunk ChunkType;
+    typedef ChunkHandle<ChunkType> ChunkHandleType;
+    typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
+//    typedef std::shared_ptr<ChunkType> SharedChunk;
 
-    SimpleChunkRenderer():m_state(Init), m_chunk(nullptr){}
+    SimpleChunkRenderer():m_state(Init){}
     ~SimpleChunkRenderer() {}
     
     enum State
@@ -44,7 +48,7 @@ public:
     State getState() { return m_state; }
 
     void setParent(RenderType *parent);
-    void setChunk(ChunkType *chunk);
+    void setChunk(SharedChunkHandle chunk);
     void build(unsigned int instanceData);
     void update();
     void invalidate();
@@ -52,14 +56,14 @@ public:
     void draw();
     void drawOutline();
 
-    const unsigned int getHash() { return m_chunk->getHash(); }
-    const glm::ivec3 &getPosition() { return m_chunk->getPosition(); }
+    const unsigned int getHash() { return m_chunkHandle->hash; }
+    const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
     
 private:
     RenderType *m_parent;
 
     State m_state;
-    ChunkType *m_chunk;
+    SharedChunkHandle m_chunkHandle;
     bool m_empty;
 
     unsigned int m_validBlocks;
@@ -75,9 +79,9 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setParent(RenderType *parent)
 }
 
 template<typename _Parent, typename _Chunk>
-void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(ChunkType *chunk)
+void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(SharedChunkHandle chunk)
 {
-    m_chunk=chunk;
+    m_chunkHandle=chunk;
 
     if(m_state!=Init)
         m_state=Dirty;
@@ -108,11 +112,11 @@ void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
 
     glEnableVertexAttribArray(3);
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*4096, nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value, nullptr, GL_STATIC_DRAW);
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glVertexAttribDivisor(3, 1);
     
-    if(m_chunk != nullptr)
+    if(m_chunkHandle)
         m_state=Dirty;
     else
         m_state=Invalid;
@@ -125,15 +129,21 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
     if(m_state!=Dirty)
         return;
 
-    auto &blocks=m_chunk->getBlocks();
+    if(m_chunkHandle->status!=ChunkHandleType::Memory) //not loaded yet need to wait
+        return;
+
+    ChunkType *chunk=m_chunkHandle->chunk.get();
+
+    auto &blocks=chunk->getBlocks();
 //    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
 //    std::vector<glm::vec4> translations(chunkSize.x*chunkSize.y*chunkSize.z);
     std::vector<glm::vec4> translations(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value);
 //    glm::ivec3 position=m_chunk->getPosition();
-    glm::vec3 position=m_chunk->getWorldOffset();
+    glm::vec3 position=chunk->getWorldOffset();
     glm::ivec3 pos=position;
 
     int index=0;
+    int validBlocks=0;
     
     for(int z=0; z<ChunkType::sizeZ::value; ++z)
     {
@@ -147,25 +157,26 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 
                 if(type>0)
                 {
-                    translations[index]=glm::vec4(pos, type);
-                    index++;
+                    translations[validBlocks]=glm::vec4(pos, type);
+                    validBlocks++;
                 }
                 pos.x+=1.0;
+                index++;
             }
             pos.y+=1.0;
         }
         pos.z+=1.0;
     }
 
-    m_validBlocks=index;
-    if(index==0)
+    m_validBlocks=validBlocks;
+    if(validBlocks==0)
     {
         m_state=Empty;
         return;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*index, translations.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*validBlocks, translations.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     m_state=Built;
 }

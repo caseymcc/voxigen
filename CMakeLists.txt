@@ -23,6 +23,10 @@ hunter_add_package(glfw)
 find_package(glfw3 REQUIRED)
 hunter_add_package(glew)
 find_package(glew CONFIG REQUIRED)
+hunter_add_package(RapidJSON)
+find_package(RapidJSON CONFIG REQUIRED)
+hunter_add_package(Boost COMPONENTS filesystem system)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 add_subdirectory(opengl_util)
 
@@ -45,7 +49,7 @@ set(LIBNOISE_INCLUDES ${LIBNOISE_ROOT_DIR}/src)
 set(LIBNOISE_LIBS optimized ${LIBNOISE_ROOT_DIR}/_buildx64/src/Release/noise.lib debug ${LIBNOISE_ROOT_DIR}/_buildx64/src/Debug/noise.lib)
 
 if(MSVC)
-	add_definitions(-DNOMINMAX)
+    add_definitions(-DNOMINMAX)
 endif()
 
 set(voxigen_headers
@@ -54,6 +58,7 @@ set(voxigen_headers
     include/voxigen/boundingBox.h
     include/voxigen/chunk.h
     include/voxigen/chunkCache.h
+    include/voxigen/chunkHandle.h
     include/voxigen/chunkHandler.h
     include/voxigen/coords.h
     include/voxigen/entity.h
@@ -99,6 +104,9 @@ set(voxigen_libraries
     ${LIBNOISE_LIBS}
     opengl_util
     glew::glew
+    RapidJSON::rapidjson
+    Boost::filesystem
+    Boost::system
 )
 
 add_library(voxigen SHARED

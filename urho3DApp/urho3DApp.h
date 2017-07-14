@@ -4,6 +4,8 @@
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Scene/Scene.h>
 
+#include "voxigen/world.h"
+
 class Urho3DApp: public Urho3D::Application
 {
 public:
@@ -28,6 +30,8 @@ private:
 
     Urho3D::SharedPtr<Urho3D::Scene> m_scene;
     Urho3D::SharedPtr<Urho3D::Node> m_cameraNode;
+
+    voxigen::World<voxigen::Block, 16, 16, 16> *m_world;
 
     unsigned int m_frameCount;
     float m_time;

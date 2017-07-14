@@ -19,11 +19,11 @@ template<typename _Chunk>
 class WorldGenerator
 {
 public:
-    typedef World<typename _Chunk::_Block, _Chunk::SizeX, _Chunk::SizeY, _Chunk::SizeZ> WorldType;
+    typedef World<typename _Chunk::BlockType, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value> WorldType;
     typedef _Chunk ChunkType;
     typedef std::unique_ptr<_Chunk> UniqueChunkType;
 
-    WorldGenerator(WorldType *world);
+    WorldGenerator(WorldDescriptors *descriptors);
     ~WorldGenerator();
 
 //    void setWorld(WorldDescriptors descriptors);
@@ -50,9 +50,8 @@ private:
 };
 
 template<typename _Chunk>
-WorldGenerator<_Chunk>::WorldGenerator(WorldType *world):
-m_world(world),
-m_descriptors(&world->getDescriptors())
+WorldGenerator<_Chunk>::WorldGenerator(WorldDescriptors *descriptors):
+m_descriptors(descriptors)
 {
     int seed=m_descriptors->seed;
 
@@ -107,7 +106,7 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
 template<typename _Chunk>
 typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex)
 {
-    glm::vec3 offset=glm::ivec3(_ChuckSizeX, _ChuckSizeY, _ChuckSizeZ)*chunkIndex;
+    glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
     glm::vec3 scaledOffset=offset*m_descriptors->noiseScale;
     glm::vec3 position=scaledOffset;
     
@@ -115,7 +114,7 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
     UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, offset);
     ChunkType::Blocks &blocks=chunk->getBlocks();
 
-    int heightMapSize=FastNoiseSIMD::AlignedSize(_ChuckSizeX*_ChuckSizeY);
+    int heightMapSize=FastNoiseSIMD::AlignedSize(_Chunk::sizeX::value*_Chunk::sizeY::value);
     std::vector<float> heightMap(heightMapSize);
     std::vector<float> xMap(heightMapSize);
     std::vector<float> yMap(heightMapSize);
@@ -125,15 +124,16 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
     glm::vec3 mapPos;
 
     mapPos.z=m_descriptors->size.x/2;
-    for(int y=0; y<_ChuckSizeY; ++y)
+    for(int y=0; y<_Chunk::sizeY::value; ++y)
     {
         mapPos.y=offset.y+y;
-        for(int x=0; x<_ChuckSizeX; ++x)
+        for(int x=0; x<_Chunk::sizeX::value; ++x)
         {
             mapPos.x=offset.x+x;
 
             glm::vec3 pos=getCylindricalCoords(m_descriptors->size.x, m_descriptors->size.y, mapPos);
 
+//            pos*=m_descriptors->noiseScale;
             xMap[index]=pos.x;
             yMap[index]=pos.y;
             zMap[index]=pos.z;
@@ -141,33 +141,41 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
         }
     }
 
-    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), _ChuckSizeX, _ChuckSizeY, 1);
+    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), _Chunk::sizeX::value, _Chunk::sizeY::value, 1);
 
-    int chunkMapSize=FastNoiseSIMD::AlignedSize(_ChuckSizeX*_ChuckSizeY*_ChuckSizeZ);
+    int chunkMapSize=FastNoiseSIMD::AlignedSize(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value);
 
     std::vector<float> layerMap(chunkMapSize);
 
-    m_layersPerlin->FillNoiseSet(layerMap.data(), offset.x, offset.y, offset.z, _ChuckSizeX, _ChuckSizeY, _ChuckSizeZ);
+//    m_layersPerlin->FillNoiseSet(layerMap.data(), offset.x, offset.y, offset.z, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value);
+
+    int seaLevel=(m_descriptors->size.z/2);
+    float heightScale=(m_descriptors->size.z/2);
 
     index=0;
     size_t heightIndex=0;
     position.z=scaledOffset.z;
-    for(int z=0; z<_ChuckSizeZ; ++z)
+    for(int z=0; z<_Chunk::sizeZ::value; ++z)
     {
         heightIndex=0;
         position.y=scaledOffset.y;
-        for(int y=0; y<_ChuckSizeY; ++y)
+
+        int blockZ=offset.z+z;
+        for(int y=0; y<_Chunk::sizeY::value; ++y)
         {
             position.x=scaledOffset.x;
-            for(int x=0; x<_ChuckSizeX; ++x)
+            for(int x=0; x<_Chunk::sizeX::value; ++x)
             {
-                float blockType;
+                unsigned int blockType;
+                int blockHeight=heightMap[heightIndex]*heightScale+seaLevel;
 
-                if(position.z > heightMap[heightIndex]) //larger than height map, air
+//                if(position.z > heightMap[heightIndex]) //larger than height map, air
+                if(blockZ>blockHeight)
                     blockType=0;
                 else
-//                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
-                    blockType=floor((layerMap[index]+1.0f)*5.0f)+1;
+                    //                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
+                    //                    blockType=floor((layerMap[index]+1.0f)*5.0f)+1;
+                    blockType=(blockHeight-blockZ)/13;
 
                 blocks[index].type=blockType;
                 index++;
