@@ -24,7 +24,7 @@ template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkS
 class World
 {
 public:
-    World(std::string name);
+    World();
     ~World();
 
     typedef Chunk<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> ChunkType;
@@ -35,7 +35,8 @@ public:
     typedef std::shared_ptr<ChunkType> SharedChunk;
     typedef std::unordered_map<unsigned int, SharedChunk> SharedChunkMap;
 
-    void load();
+    void create(std::string directory, std::string name);
+    void load(std::string directory);
     void save();
 
     Biome &getBiome(glm::ivec3 block);
@@ -59,6 +60,7 @@ public:
 private:
 //    typename UniqueChunkMap::iterator generateChunk(glm::ivec3 chunkIndex);
 
+    std::string m_directory;
     std::string m_name;
 
     WorldDescriptors m_descriptors;
@@ -73,16 +75,13 @@ private:
 };
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::World(std::string name):
-m_name(name),
+World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::World():
 m_chunkHandler(&m_descriptors)
 {
     m_transform=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 0.0f, -1, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f);
-
-    m_chunkHandler.initialize();
 }
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
@@ -92,23 +91,59 @@ World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::~World()
 }
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::load()
+void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::create(std::string directory, std::string name)
 {
-    //load if exists, otherwise generate
+    m_name=name;
+    m_directory=directory;
 
-    //generate
-    m_descriptors.seed=0;
-    m_descriptors.size=glm::ivec3(1024, 1024, 256);
-    m_descriptors.chunkSize=glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
+    m_descriptors.create(name, 0, glm::ivec3(1024, 1024, 256), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
+
+//    //generate
+//    m_descriptors.seed=0;
+//    m_descriptors.size=glm::ivec3(1024, 1024, 256);
+//    m_descriptors.chunkSize=glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
 
     m_descriptors.init();
+
+    std::string configFile=directory+"/worldConfig.json";
+    m_descriptors.save(configFile);
+    
+    std::string chunksDirectory=directory+"/chunks";
+    fs::path chunksPath(chunksDirectory);
+
+    fs::create_directory(chunksPath);
+    m_chunkHandler.load(chunksDirectory);
+    m_chunkHandler.initialize();
+}
+
+template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
+void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::load(std::string directory)
+{
+    //load if exists, otherwise generate
+    m_directory=directory;
+
+    std::string configFile=directory+"/worldConfig.json";
+    m_descriptors.load(configFile);
+//    //generate
+//    m_descriptors.seed=0;
+//    m_descriptors.size=glm::ivec3(1024, 1024, 256);
+//    m_descriptors.chunkSize=glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
+//
+//    m_descriptors.init();
     
 //    m_generator=std::make_unique<WorldGenerator<ChunkType>>(this);
+    std::string chunkDirectory=directory+"/chunks";
+
+    m_chunkHandler.load(chunkDirectory);
+    m_chunkHandler.initialize();
 }
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::save()
-{}
+{
+    std::string configFile=directory+"/worldConfig.json";
+    m_descriptors.save(configFile)
+}
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 Biome &World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getBiome(glm::ivec3 block)
@@ -171,7 +206,7 @@ unsigned int World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::chunkHash(con
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 glm::ivec3 World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getChunkIndex(const glm::vec3 &position)
 {
-    glm::vec3 chunkSize(m_descriptors.chunkSize);
+    glm::vec3 chunkSize(m_descriptors.m_chunkSize);
 
     return glm::floor(position/chunkSize);
 }

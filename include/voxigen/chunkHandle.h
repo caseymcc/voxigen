@@ -23,14 +23,15 @@ struct ChunkHandle
         Memory
     };
 
-    ChunkHandle(unsigned int hash):hash(hash), status(Unknown), cachedOnDisk(false){}
+    ChunkHandle(unsigned int hash):hash(hash), status(Unknown), cachedOnDisk(false), empty(false){}
 
     Status status;
     unsigned int hash;
     UniqueChunk chunk;
 
     bool cachedOnDisk;
-    std::string cacheFile;
+    bool empty;
+//    std::string cacheFile;
 };
 
 } //namespace voxigen

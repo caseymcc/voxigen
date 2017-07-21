@@ -407,7 +407,7 @@ void SimpleRenderer<_World>::setViewRadius(float radius)
 {
     m_viewRadius=radius;
 
-    glm::ivec3 &chunkSize=m_world->getDescriptors().chunkSize;
+    glm::ivec3 &chunkSize=m_world->getDescriptors().m_chunkSize;
     glm::ivec3 chunkRadius=glm::ceil(glm::vec3(m_viewRadius/chunkSize.x, m_viewRadius/chunkSize.y, m_viewRadius/chunkSize.z));
 
     m_chunkIndicies.clear();

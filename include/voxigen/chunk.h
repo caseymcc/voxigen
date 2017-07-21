@@ -26,6 +26,9 @@ public:
     unsigned int getHash() const { return m_hash; }
     Blocks &getBlocks() { return m_blocks; }
     
+    unsigned int validBlockCount() { return m_validBlocks; }
+    void setValidBlockCount(unsigned int count) { m_validBlocks=count; }
+    
     const glm::ivec3 &getIndex() const{ return m_index; }
     const glm::vec3 &getWorldOffset() const { return m_worldOffset; }
 
@@ -38,6 +41,7 @@ private:
     Blocks m_blocks; //block info
     glm::ivec3 m_index; //world index
     glm::vec3 m_worldOffset; //offset in world coords
+    unsigned int m_validBlocks;
     
 };
 
@@ -51,7 +55,8 @@ Chunk<_Block, _x, _y, _z>::Chunk(unsigned int hash, unsigned int revision, const
 m_hash(hash),
 m_revision(revision),
 m_index(index),
-m_worldOffset(worldOffset)
+m_worldOffset(worldOffset),
+m_validBlocks(0)
 {
     m_blocks.resize(_x*_y*_z);
 }

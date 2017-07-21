@@ -1,33 +1,135 @@
 #include "voxigen/worldDescriptors.h"
 
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/document.h>
+
 namespace voxigen
 {
 
 WorldDescriptors::WorldDescriptors()
 {
-    seed=0;
-    size=glm::ivec3(1024, 1024, 256);
-    chunkSize=glm::ivec3(16, 16, 16);
+    m_seed=0;
+    m_size=glm::ivec3(1024, 1024, 256);
+//    m_chunkSize=glm::ivec3(16, 16, 16);
 
-    noiseScale=0.001;
+    m_noiseScale=0.001;
 
 //    contientFrequency=1.0;
-    contientFrequency=0.005;
-    contientOctaves=2;
-    contientLacunarity=2.2;
+    m_contientFrequency=0.005;
+    m_contientOctaves=2;
+    m_contientLacunarity=2.2;
 
-    seaLevel=0.0f;
+    m_seaLevel=0.0f;
+}
+
+void WorldDescriptors::create(std::string name, int seed, const glm::ivec3 &size, const glm::ivec3 &chunkSize)
+{
+    m_name=name;
+    m_seed=seed;
+    m_size=size;
+    m_chunkSize=chunkSize;
+
+    init();
+}
+
+void WorldDescriptors::load(std::string fileName)
+{
+    FILE *filePtr=fopen(fileName.c_str(), "rb");
+    char readBuffer[65536];
+
+    rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
+
+    rapidjson::Document document;
+
+    document.ParseStream(readStream);
+
+    assert(document.IsObject());
+
+    m_name=document["name"].GetString();
+    m_seed=document["seed"].GetUint();
+
+    const rapidjson::Value &sizeArray=document["size"];
+
+    m_size.x=sizeArray[0].GetInt();
+    m_size.y=sizeArray[1].GetInt();
+    m_size.z=sizeArray[2].GetInt();
+
+    const rapidjson::Value &chunkSizeArray=document["chunkSize"];
+
+    m_chunkSize.x=chunkSizeArray[0].GetInt();
+    m_chunkSize.y=chunkSizeArray[1].GetInt();
+    m_chunkSize.z=chunkSizeArray[2].GetInt();
+    
+
+    m_noiseScale=document["noiseScale"].GetDouble();
+    m_contientFrequency=document["contientFrequency"].GetDouble();
+    m_contientOctaves=document["contientOctaves"].GetInt();
+    m_contientLacunarity=document["contientLacunarity"].GetDouble();
+    m_seaLevel=document["seaLevel"].GetDouble();
+    m_continentaShelf=document["continentaShelf"].GetDouble();
+
+    fclose(filePtr);
+    init();
+}
+
+void WorldDescriptors::save(std::string fileName)
+{
+    FILE *filePtr=fopen(fileName.c_str(), "wb");
+    char writeBuffer[65536];
+
+    rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
+    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+
+    writer.StartObject();
+
+    writer.Key("name");
+    writer.String(m_name.c_str());
+    writer.Key("seed");
+    writer.Uint(m_seed);
+
+    writer.Key("size");
+    writer.StartArray();
+    writer.Int(m_size.x);
+    writer.Int(m_size.y);
+    writer.Int(m_size.z);
+    writer.EndArray();
+
+    writer.Key("chunkSize");
+    writer.StartArray();
+    writer.Int(m_chunkSize.x);
+    writer.Int(m_chunkSize.y);
+    writer.Int(m_chunkSize.z);
+    writer.EndArray();
+
+    writer.Key("noiseScale");
+    writer.Double(m_noiseScale);
+    writer.Key("contientFrequency");
+    writer.Double(m_contientFrequency);
+    writer.Key("contientOctaves");
+    writer.Int(m_contientOctaves);
+    writer.Key("contientLacunarity");
+    writer.Double(m_contientLacunarity);
+    writer.Key("seaLevel");
+    writer.Double(m_seaLevel);
+    writer.Key("continentaShelf");
+    writer.Double(m_continentaShelf);
+
+    writer.EndObject();
+
+    fclose(filePtr);
 }
 
 void WorldDescriptors::init()
 {
-    chunkCount=size/chunkSize;
-    chunkStride=glm::ivec3(1, chunkCount.x, chunkCount.x*chunkCount.y);
+    m_chunkCount=m_size/m_chunkSize;
+    m_chunkStride=glm::ivec3(1, m_chunkCount.x, m_chunkCount.x*m_chunkCount.y);
 }
 
 unsigned int WorldDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const
 {
-    return (chunkStride.z*chunkIndex.z)+(chunkStride.y*chunkIndex.y)+chunkIndex.x;
+    return (m_chunkStride.z*chunkIndex.z)+(m_chunkStride.y*chunkIndex.y)+chunkIndex.x;
 //    return (chunkStride.x*index.x)+(chunkStride.y*index.y)+index.z;
 }
 
@@ -35,10 +137,10 @@ glm::ivec3 WorldDescriptors::chunkIndex(unsigned int chunkHash) const
 {
     glm::ivec3 index;
 
-    index.z=chunkHash/chunkStride.z;
-    chunkHash=chunkHash-(chunkStride.z*index.z);
-    index.y=chunkHash/chunkStride.y;
-    index.x=chunkHash-(chunkStride.y*index.y);
+    index.z=chunkHash/m_chunkStride.z;
+    chunkHash=chunkHash-(m_chunkStride.z*index.z);
+    index.y=chunkHash/m_chunkStride.y;
+    index.x=chunkHash-(m_chunkStride.y*index.y);
     
     return index;
 }

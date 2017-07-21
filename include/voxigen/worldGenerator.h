@@ -53,22 +53,22 @@ template<typename _Chunk>
 WorldGenerator<_Chunk>::WorldGenerator(WorldDescriptors *descriptors):
 m_descriptors(descriptors)
 {
-    int seed=m_descriptors->seed;
+    int seed=m_descriptors->m_seed;
 
     m_continentPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed));
     
     m_continentPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
-    m_continentPerlin->SetFrequency(m_descriptors->contientFrequency);
-    m_continentPerlin->SetFractalLacunarity(m_descriptors->contientLacunarity);
-    m_continentPerlin->SetFractalOctaves(m_descriptors->contientOctaves);
+    m_continentPerlin->SetFrequency(m_descriptors->m_contientFrequency);
+    m_continentPerlin->SetFractalLacunarity(m_descriptors->m_contientLacunarity);
+    m_continentPerlin->SetFractalOctaves(m_descriptors->m_contientOctaves);
 
 
     m_layersPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed+1));
 
     m_layersPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
-    m_layersPerlin->SetFrequency(m_descriptors->contientFrequency);
-    m_layersPerlin->SetFractalLacunarity(m_descriptors->contientLacunarity);
-    m_layersPerlin->SetFractalOctaves(m_descriptors->contientOctaves);
+    m_layersPerlin->SetFrequency(m_descriptors->m_contientFrequency);
+    m_layersPerlin->SetFractalLacunarity(m_descriptors->m_contientLacunarity);
+    m_layersPerlin->SetFractalOctaves(m_descriptors->m_contientOctaves);
 }
 
 template<typename _Chunk>
@@ -107,8 +107,9 @@ template<typename _Chunk>
 typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex)
 {
     glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
-    glm::vec3 scaledOffset=offset*m_descriptors->noiseScale;
+    glm::vec3 scaledOffset=offset*m_descriptors->m_noiseScale;
     glm::vec3 position=scaledOffset;
+    float noiseScale=m_descriptors->m_noiseScale;
     
    
     UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, offset);
@@ -122,8 +123,9 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
 
     size_t index=0;
     glm::vec3 mapPos;
+    glm::vec3 size=m_descriptors->m_size;
 
-    mapPos.z=m_descriptors->size.x/2;
+    mapPos.z=size.x/2;
     for(int y=0; y<_Chunk::sizeY::value; ++y)
     {
         mapPos.y=offset.y+y;
@@ -131,7 +133,7 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
         {
             mapPos.x=offset.x+x;
 
-            glm::vec3 pos=getCylindricalCoords(m_descriptors->size.x, m_descriptors->size.y, mapPos);
+            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
 
 //            pos*=m_descriptors->noiseScale;
             xMap[index]=pos.x;
@@ -149,8 +151,9 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
 
 //    m_layersPerlin->FillNoiseSet(layerMap.data(), offset.x, offset.y, offset.z, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value);
 
-    int seaLevel=(m_descriptors->size.z/2);
-    float heightScale=(m_descriptors->size.z/2);
+    int seaLevel=(size.z/2);
+    float heightScale=(size.z/2);
+    unsigned int validBlocks=0;
 
     index=0;
     size_t heightIndex=0;
@@ -173,19 +176,24 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
                 if(blockZ>blockHeight)
                     blockType=0;
                 else
+                {
                     //                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
                     //                    blockType=floor((layerMap[index]+1.0f)*5.0f)+1;
                     blockType=(blockHeight-blockZ)/13;
+                    validBlocks++;
+                }
 
                 blocks[index].type=blockType;
                 index++;
                 heightIndex++;
-                position.x+=m_descriptors->noiseScale;
+                position.x+=noiseScale;
             }
-            position.y+=m_descriptors->noiseScale;
+            position.y+=noiseScale;
         }
-        position.z+=m_descriptors->noiseScale;
+        position.z+=noiseScale;
     }
+
+    chunk->setValidBlockCount(validBlocks);
 
 //    int heightIndex=0;
 //    position.z=0.0f;

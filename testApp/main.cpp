@@ -6,6 +6,10 @@
 #include "voxigen/world.h"
 #include "voxigen/simpleRenderer.h"
 
+#include <boost/filesystem.hpp>
+
+namespace fs=boost::filesystem;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -51,11 +55,30 @@ int main(int argc, char ** argv)
     glViewport(0, 0, width, height);
 
     typedef voxigen::World<voxigen::Block, 16, 16, 16> World;
-    World world("TestWorld");
+    World world;
 
-    world.load();
+    fs::path worldsDirectory("worlds");
+
+    if(!fs::exists(worldsDirectory))
+        fs::create_directory(worldsDirectory);
+
+    std::vector<fs::directory_entry> worldDirectories;
+
+    for(auto &entry:fs::directory_iterator(worldsDirectory))
+        worldDirectories.push_back(entry);
+
+    if(worldDirectories.empty())
+    {
+        std::string worldDirectory=worldsDirectory.string()+"/TestApWorld";
+        fs::path worldPath(worldDirectory);
+        
+        fs::create_directory(worldPath);
+        world.create(worldDirectory, "TestApWorld");
+    }
+    else
+        world.load(worldDirectories[0].path().string());
     
-    glm::ivec3 worldMiddle=(world.getDescriptors().size)/2;
+    glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
     worldMiddle.z+=5.0f;
     player.setPosition(worldMiddle);
@@ -124,7 +147,7 @@ int main(int argc, char ** argv)
 
             player.move(direction*movementSpeed*deltaTime);
 
-            glm::ivec3 worldSize=world.getDescriptors().size;
+            glm::ivec3 worldSize=world.getDescriptors().m_size;
             glm::vec3 playerPos=player.getPosition();
 
             bool resetPos=false;
