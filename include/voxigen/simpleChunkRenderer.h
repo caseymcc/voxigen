@@ -132,6 +132,12 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
     if(m_chunkHandle->status!=ChunkHandleType::Memory) //not loaded yet need to wait
         return;
 
+    if(m_chunkHandle->empty)
+    {
+        m_state=Empty;
+        return;
+    }
+
     ChunkType *chunk=m_chunkHandle->chunk.get();
 
     auto &blocks=chunk->getBlocks();

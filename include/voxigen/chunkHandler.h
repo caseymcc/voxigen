@@ -216,10 +216,13 @@ void ChunkHandler<_Chunk>::loadConfig()
     {
         const rapidjson::Value &chunk=chunks[i];
 
-        SharedChunkHandle chunkHandle=std::make_shared<ChunkHandleType>(chunk["id"].GetUint());
+        unsigned int hash=chunk["id"].GetUint();
+        SharedChunkHandle chunkHandle=std::make_shared<ChunkHandleType>(hash);
 
         chunkHandle->cachedOnDisk=true;
         chunkHandle->empty=chunk["empty"].GetBool();
+
+        m_chunkHandles.insert(ChunkHandleMap::value_type(hash, chunkHandle));
     }
 
     fclose(filePtr);
@@ -279,7 +282,9 @@ void ChunkHandler<_Chunk>::addConfig(SharedChunkHandle chunkHandle)
 
         chunks.PushBack(chunk, allocator);
         //    m_configFile=m_worldDirectory.string()+"/chunkConfig.json";
-        FILE *filePtr=fopen(m_configFile.c_str(), "wb");
+
+        std::string tempConfig=m_configFile+".tmp";
+        FILE *filePtr=fopen(tempConfig.c_str(), "wb");
         char writeBuffer[65536];
 
         rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
@@ -287,6 +292,10 @@ void ChunkHandler<_Chunk>::addConfig(SharedChunkHandle chunkHandle)
 
         m_configDocument.Accept(writer);
         fclose(filePtr);
+
+        fs::path configPath(m_configFile);
+        fs::path tempPath(tempConfig);
+        copy_file(tempPath, configPath, fs::copy_option::overwrite_if_exists);
     }
 }
 
@@ -312,6 +321,8 @@ void ChunkHandler<_Chunk>::loadChunkCache()
 
             chunkHandle->cachedOnDisk=true;
             chunkHandle->empty=false;
+
+            m_chunkHandles.insert(ChunkHandleMap::value_type(hash, chunkHandle));
         }
     }
 }
@@ -380,6 +391,11 @@ void ChunkHandler<_Chunk>::readChunk(SharedChunkHandle chunkHandle)
 
         fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash<<".chk";
         std::string fileName=m_worldDirectory+fileNameStream.str();
+
+        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
+        glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+
+        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, offset);
 
         auto &blocks=chunkHandle->chunk->getBlocks();
         std::ifstream file;
