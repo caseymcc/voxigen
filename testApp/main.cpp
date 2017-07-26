@@ -54,7 +54,7 @@ int main(int argc, char ** argv)
     glewInit();
     glViewport(0, 0, width, height);
 
-    typedef voxigen::World<voxigen::Block, 16, 16, 16> World;
+    typedef voxigen::World<voxigen::Block, 64, 64, 16> World;
     World world;
 
     fs::path worldsDirectory("worlds");
@@ -82,7 +82,6 @@ int main(int argc, char ** argv)
 
     worldMiddle.z+=5.0f;
     player.setPosition(worldMiddle);
-//    player.setPosition(glm::vec3(-3.0f, 0.0f, 0.3f));
     player.setYaw(0.0f);
     player.setPitch(0.0f);
     playerChunk=world.getChunkHash(player.getPosition());
@@ -91,7 +90,6 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&player);
     renderer.build();
-//    renderer.updateProjection(width, height);
     renderer.setViewRadius(128.0f);
     renderer.updateChunks();
 
@@ -100,6 +98,11 @@ int main(int argc, char ** argv)
     float lastFrame=glfwGetTime();
     float currentFrame;
     float deltaTime;
+
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -199,12 +202,12 @@ int main(int argc, char ** argv)
 
 
         /* Render here */
-//        glClear(GL_COLOR_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
 //        glDepthFunc(GL_LESS);
 
-        glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
+        
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+        
 
 //        renderer.setCamera(player);
         renderer.draw();
@@ -216,6 +219,9 @@ int main(int argc, char ** argv)
         glfwPollEvents();
 
     }
+
+    //bring renderers down before world is terminated;
+    renderer.destroy();
 
     glfwTerminate();
     return 0;

@@ -145,4 +145,12 @@ glm::ivec3 WorldDescriptors::chunkIndex(unsigned int chunkHash) const
     return index;
 }
 
+glm::vec3 WorldDescriptors::chunkOffset(unsigned int chunkHash) const
+{
+    glm::ivec3 index=chunkIndex(chunkHash);
+    glm::vec3 offset=m_chunkSize*index;
+
+    return offset;
+}
+
 }//namespace voxigen

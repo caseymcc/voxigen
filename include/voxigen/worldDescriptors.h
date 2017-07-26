@@ -21,6 +21,7 @@ struct VOXIGEN_EXPORT WorldDescriptors
 
     unsigned int chunkHash(const glm::ivec3 &chunkIndex) const;
     glm::ivec3 chunkIndex(unsigned int chunkHash) const;
+    glm::vec3 chunkOffset(unsigned int chunkHash) const;
 
     std::string m_name;
     unsigned int m_seed;

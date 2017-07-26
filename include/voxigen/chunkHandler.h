@@ -27,7 +27,7 @@ struct IORequest
 {
     typedef _Chunk ChunkType;
     typedef ChunkHandle<ChunkType> ChunkHandleType;
-    typedef std::shared_ptr<ChunkHandleType> SharedChunkHandleType;
+    typedef std::shared_ptr<ChunkHandleType> SharedChunkHandleType;    
 
     enum Type
     {
@@ -35,9 +35,31 @@ struct IORequest
         Write
     };
 
-    IORequest(Type type, SharedChunkHandleType chunkHandle):type(type), chunkHandle(chunkHandle){}
+    IORequest(Type type, unsigned int priority):type(type), priority(priority) {}
+    bool operator<(const IORequest &rhs) const { return priority<rhs.priority; }
 
     Type type;
+    unsigned int priority;
+    
+};
+
+template<typename _Chunk>
+struct IOReadRequest:public IORequest<_Chunk>
+{
+    typedef std::weak_ptr<ChunkHandleType> WeakChunkHandleType;
+
+    IOReadRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Read, 500), chunkHandle(chunkHandle) {}
+    IOReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Read, priority), chunkHandle(chunkHandle) {}
+
+    WeakChunkHandleType chunkHandle;
+};
+
+template<typename _Chunk>
+struct IOWriteRequest:public IORequest<_Chunk>
+{
+    IOWriteRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Write, 1000), chunkHandle(chunkHandle) {}
+    IOWriteRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Write, priority), chunkHandle(chunkHandle) {}
+
     SharedChunkHandleType chunkHandle;
 };
 
@@ -57,12 +79,15 @@ public:
     typedef std::unordered_map<unsigned int, SharedChunkHandle> ChunkHandleMap;
 
     typedef IORequest<_Chunk> IORequestType;
+    typedef IOReadRequest<_Chunk> IOReadRequestType;
+    typedef IOWriteRequest<_Chunk> IOWriteRequestType;
     typedef std::shared_ptr<IORequestType> SharedIORequest;
 
     ChunkHandler(WorldDescriptors *descriptors);
 
     void initialize();
     void terminate();
+    size_t handlesInUse();
 
     bool load(const std::string &name);
 
@@ -76,9 +101,9 @@ public:
 
 private:
     void addReadEvent(SharedChunkHandle chunkHandle);
-    void readChunk(SharedChunkHandle chunkHandle);
+    void readChunk(IORequestType *request);
     void addWriteEvent(SharedChunkHandle chunkHandle);
-    void writeChunk(SharedChunkHandle chunkHandle);
+    void writeChunk(IORequestType *request);
 
     void addConfig(SharedChunkHandle chunkHandle);
 
@@ -102,7 +127,7 @@ private:
 //IO thread
     std::thread m_ioThread;
     std::mutex m_ioMutex;
-    std::queue<SharedIORequest> m_ioQueue;
+    std::priority_queue<SharedIORequest> m_ioQueue;
     std::condition_variable m_ioEvent;
     bool m_ioThreadRun;
     rapidjson::Document m_configDocument;
@@ -164,6 +189,21 @@ void ChunkHandler<_Chunk>::terminate()
     m_ioThread.join();
     m_generatorThread.join();
     
+}
+
+template<typename _Chunk>
+size_t ChunkHandler<_Chunk>::handlesInUse()
+{
+    std::unique_lock<std::mutex> lock(m_chunkMutex);
+
+    size_t count=0;
+    for(auto iter:m_weakChunkHandles)
+    {
+        if(iter.second.lock())
+            count++;
+    }
+
+    return count;
 }
 
 template<typename _Chunk>
@@ -352,6 +392,9 @@ void ChunkHandler<_Chunk>::ioThread()
         fclose(filePtr);
     }
 
+    std::vector<SharedIORequest> requests;
+
+    requests.reserve(10);
     while(m_ioThreadRun)
     {
         if(m_ioQueue.empty())
@@ -360,31 +403,49 @@ void ChunkHandler<_Chunk>::ioThread()
             continue;
         }
 
-        SharedIORequest request=m_ioQueue.front();
+        SharedIORequest request;
+        size_t count=0;
 
-        m_ioQueue.pop();
-
-        lock.unlock();//drop lock while working
-
-        switch(request->type)
+        while((!m_ioQueue.empty()&&count<10))
         {
-        case IORequestType::Read:
-            readChunk(request->chunkHandle);
-            break;
-        case IORequestType::Write:
-            writeChunk(request->chunkHandle);
-            break;
-        }
-        //drop shared_ptr while out of lock
-        request->chunkHandle.reset();
 
-        lock.lock();
+            requests.push_back(m_ioQueue.top());
+            m_ioQueue.pop();
+            count++;
+        }
+
+        if(!requests.empty())
+        {
+            lock.unlock();//drop lock while working
+
+            for(size_t i=0; i<requests.size(); ++i)
+            {
+                switch(requests[i]->type)
+                {
+                case IORequestType::Read:
+                    readChunk(requests[i].get());
+                    break;
+                case IORequestType::Write:
+                    writeChunk(requests[i].get());
+                    break;
+                }
+            }
+            requests.clear();
+
+            lock.lock();
+        }
     }
 }
 
 template<typename _Chunk>
-void ChunkHandler<_Chunk>::readChunk(SharedChunkHandle chunkHandle)
+void ChunkHandler<_Chunk>::readChunk(IORequestType *request)
 {
+    IOReadRequestType *readRequest=(IOReadRequestType *)request;
+    SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
+
+    if(!chunkHandle) //chunk no longer needed, drop it
+        return;
+
     if(!chunkHandle->empty)
     {
         std::ostringstream fileNameStream;
@@ -412,8 +473,11 @@ void ChunkHandler<_Chunk>::readChunk(SharedChunkHandle chunkHandle)
 }
 
 template<typename _Chunk>
-void ChunkHandler<_Chunk>::writeChunk(SharedChunkHandle chunkHandle)
+void ChunkHandler<_Chunk>::writeChunk(IORequestType *request)
 {
+    IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
+    SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
+
     if(!chunkHandle->empty)
     {
         std::ostringstream fileNameStream;
@@ -434,6 +498,9 @@ void ChunkHandler<_Chunk>::writeChunk(SharedChunkHandle chunkHandle)
     chunkHandle->cachedOnDisk=true;
     //need to alter this to save in batched and update config then
     addConfig(chunkHandle);
+
+    //drop shared_ptr
+    writeRequest->chunkHandle.reset();
 }
 
 template<typename _Chunk>
@@ -516,11 +583,16 @@ typename ChunkHandler<_Chunk>::SharedChunkHandle ChunkHandler<_Chunk>::getChunk(
 
         if(chunkHandle->status!=ChunkHandleType::Memory)
         {
-            //we dont have it in memory so we need to load it
-            if(!chunkHandle->cachedOnDisk) //shouldn't happen if cache working but in for debug
-                addToGenerateQueue(returnHandle);
+            if(chunkHandle->empty) //empty is already loaded
+                chunkHandle->status=ChunkHandleType::Memory;
             else
-                addReadEvent(returnHandle);
+            {
+                //we dont have it in memory so we need to load it
+                if(!chunkHandle->cachedOnDisk) //shouldn't happen if cache working but in for debug
+                    addToGenerateQueue(returnHandle);
+                else
+                    addReadEvent(returnHandle);
+            }
         }
     }
 
@@ -564,7 +636,7 @@ void ChunkHandler<_Chunk>::addReadEvent(SharedChunkHandle chunkHandle)
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
 
-        SharedIORequest request=std::make_shared<IORequestType>(IORequestType::Read, chunkHandle);
+        std::shared_ptr<IOReadRequestType> request=std::make_shared<IOReadRequestType>(IORequestType::Read, chunkHandle);
         
         m_ioQueue.push(request);
     }
@@ -577,7 +649,7 @@ void ChunkHandler<_Chunk>::addWriteEvent(SharedChunkHandle chunkHandle)
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
 
-        SharedIORequest request=std::make_shared<IORequestType>(IORequestType::Write, chunkHandle);
+        std::shared_ptr<IOWriteRequestType> request=std::make_shared<IOWriteRequestType>(IORequestType::Write, chunkHandle);
 
         m_ioQueue.push(request);
     }

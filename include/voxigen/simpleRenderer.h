@@ -6,6 +6,7 @@
 #include "voxigen/world.h"
 #include "voxigen/SimpleCamera.h"
 #include "voxigen/SimpleChunkRenderer.h"
+#include "voxigen/simpleShapes.h"
 
 #include <string>
 #include <algorithm>
@@ -19,16 +20,14 @@ namespace voxigen
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
-//template<typename _Block, int _ChunkSizeX, int _ChunkSizeY, int _ChunkSizeZ>
 template<typename _World>
 class SimpleRenderer
 {
 public:
     typedef _World WorldType;
-//    typedef typename _World::ChunkType ChunkType;
+    typedef typename WorldType::ChunkType ChunkType;
     typedef typename _World::SharedChunkHandle SharedChunkHandle;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _World::ChunkType> ChunkRenderType;
-//    typedef World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> WorldType;
     typedef std::unordered_map<unsigned int, size_t> ChunkRendererMap;
     
 
@@ -38,6 +37,7 @@ public:
     WorldType *getWorld(){ return m_world; }
 
     void build();
+    void destroy();
     void update();
     void updateProjection(size_t width, size_t height);
     void updateView();
@@ -71,6 +71,7 @@ private:
     size_t m_uniformProjectionViewId;
     opengl_util::Program m_outlineProgram;
     size_t m_uniformOutlintProjectionViewId;
+    size_t m_outlineLightPositionId;
 
     size_t m_lightPositionId;
     size_t m_lighColorId;
@@ -84,9 +85,9 @@ private:
     unsigned int m_instanceVertices;
     unsigned int m_instanceTexCoords;
 
-//simple test
-    unsigned int m_vertexArray;
-    unsigned int m_offsetVBO;
+#ifndef NDEBUG
+    unsigned int m_outlineInstanceVertices;
+#endif //NDEBUG
 };
 
 template<typename _World>
@@ -121,7 +122,7 @@ std::string SimpleRenderer<_World>::fragmentShader=
 "in vec3 position;\n"
 "in vec3 normal;\n"
 "in vec3 texCoords;\n"
-"out vec3 color;\n"
+"out vec4 color;\n"
 "\n"
 "uniform vec3 lightPos;\n"
 "uniform vec3 lightColor;\n"
@@ -138,9 +139,9 @@ std::string SimpleRenderer<_World>::fragmentShader=
 "   vec3 lightDir=normalize(lightPos-position); \n"
 "   float diff=max(dot(normal, lightDir), 0.0); \n"
 "   vec3 diffuse=diff * lightColor; \n"
-"   color=(ambient+diffuse)*vec3(value, value, value);\n"
+"   color=vec4((ambient+diffuse)*vec3(value, value, value), 1.0f);\n"
 "   "
-"//   color=vec3(1.0, 0.0, 0.0);\n"
+"//   color=vec4(1.0, 0.0, 0.0, 1.0);\n"
 "}\n"
 "";
 
@@ -149,13 +150,22 @@ std::string SimpleRenderer<_World>::fragmentShader=
 template<typename _World>
 std::string SimpleRenderer<_World>::vertOutlineShader=
 "#version 330 core\n"
-"layout (location = 0) in vec3 vertex;\n"
+"layout (location = 0) in vec3 inputVertex;\n"
+"layout (location = 1) in vec3 inputNormal;\n"
+"layout (location = 2) in vec2 inputTexCoord;\n"
+"layout (location = 3) in vec4 inputOffset;\n"
+"\n"
+"out vec3 position;\n"
+"out vec3 normal;\n"
+"out vec3 texCoords;\n"
 "\n"
 "uniform mat4 projectionView;\n"
 "\n"
 "void main()\n"
 "{\n"
-"   gl_Position=projectionView*vec4(vertex, 1.0);\n"
+"   position=inputOffset.xyz+inputVertex;\n"
+"   normal=inputNormal;\n"
+"   gl_Position=projectionView*vec4(position, 1.0);\n"
 "}\n"
 "";
 
@@ -163,11 +173,25 @@ template<typename _World>
 std::string SimpleRenderer<_World>::fragmentOutlineShader=
 "#version 330 core\n"
 "\n"
-"out vec3 color;\n"
+"in vec3 position;\n"
+"in vec3 normal;\n"
+"in vec3 texCoords;\n"
+"out vec4 color;\n"
+"\n"
+"uniform vec3 lightPos;\n"
 "\n"
 "void main()\n"
 "{\n"
-"   color=vec3(1.0, 1.0, 0.0);\n"
+"   float value=1.0f;"
+"//   vec3 lightColor=vec3(1.0f, 1.0f, 1.0f);\n"
+"   float ambientStrength=0.5; \n"
+"//   vec3 ambient=ambientStrength * lightColor;\n"
+"   \n"
+"   // diffuse \n"
+"   vec3 lightDir=normalize(lightPos-position); \n"
+"   float diff=max(dot(normal, lightDir), 0.0); \n"
+"//   vec3 diffuse=diff*lightColor; \n"
+"   color=vec4((ambientStrength+diff)*value, 0.0f, 0.0f, 0.1f);\n"
 "}\n"
 "";
 
@@ -200,8 +224,6 @@ SimpleRenderer<_World>::~SimpleRenderer()
 template<typename _World>
 void SimpleRenderer<_World>::build()
 {
-//    initGlew();
-    
     std::string error;
 
     if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
@@ -223,80 +245,31 @@ void SimpleRenderer<_World>::build()
         return;
     }
 
-    m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
-
-
-////////////////////////////////////////////////////////////////
-//Simple test
-    float quadVertices[]=
-    {
-        // positions     // colors
-        -0.05f,  0.05f,  0.0f, 0.0f, 0.0f,
-        0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-        -0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
-
-        -0.05f,  0.05f,  0.0f, 0.0f, 0.0f,
-        0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-        0.05f,  0.05f,  0.0f, 1.0f, 1.0f
-
-//        -1.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-//        1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-//        -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-//
-//        -1.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-//        1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-//        1.0f,  1.0f,  0.0f, 1.0f, 1.0f
-    };
-
-    glm::vec4 translations[100];
-    int index=0;
-    float offset=0.1f;
-    
-    for(int y=-10; y < 10; y+=2)
-    {   
-        for(int x=-10; x < 10; x+=2)   
-        {
-            glm::vec4 &translation=translations[index];
-
-            translation.x=(float)x/10.0f+offset;
-            translation.y=(float)y/10.0f+offset;
-            translation.z=(float)-1.0f;
-            translation.w=(x+10.0f)/2.0f;
-            index++;
-        }
-    }
-
-    glGenVertexArrays(1, &m_vertexArray);
-    glBindVertexArray(m_vertexArray);
-
-    glGenBuffers(1, &m_instanceSquareVertices);
-    glBindBuffer(GL_ARRAY_BUFFER, m_instanceSquareVertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*3));
-
-    glGenBuffers(1, &m_offsetVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*100, &translations[0], GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(float)*4, (void*)0);
-    glVertexAttribDivisor(2, 1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-////////////////////////////////////////////////////////////////
-
-    size_t verticies=SimpleCube::vertCoords.size();
+    const std::vector<float> &vertices=SimpleCube<1, 1, 1>::vertCoords;
 
     glGenBuffers(1, &m_instanceVertices);
     glBindBuffer(GL_ARRAY_BUFFER, m_instanceVertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*SimpleCube::vertCoords.size(), SimpleCube::vertCoords.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-//    setViewRadius(m_viewRadius);
+#ifndef NDEBUG
+    m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
+    m_outlineLightPositionId=m_outlineProgram.getUniformId("lightPos");
+
+    const std::vector<float> &outlineVertices=SimpleCube<ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value>::vertCoords;
+
+    glGenBuffers(1, &m_outlineInstanceVertices);
+    glBindBuffer(GL_ARRAY_BUFFER, m_outlineInstanceVertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*outlineVertices.size(), outlineVertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif //NDEBUG
+}
+
+template<typename _World>
+void SimpleRenderer<_World>::destroy()
+{
+    m_chunkRendererMap.clear();
+    m_chunkRenderers.clear();
 }
 
 template<typename _World>
@@ -321,24 +294,14 @@ void SimpleRenderer<_World>::updateView()
 template<typename _World>
 void SimpleRenderer<_World>::draw()
 {
-//    glEnable(GL_DEPTH_TEST);
-//    glDepthFunc(GL_LESS);
-//
-//    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
     m_program.use();
+    bool cameraDirty=m_camera->isDirty();
 
-//    if(m_projectionViewMatUpdated)
-//        m_program.uniform(m_uniformProjectionViewId)=m_projectionViewMat;
-    if(m_camera->isDirty())
+    if(cameraDirty)
     {
         m_program.uniform(m_uniformProjectionViewId)=m_camera->getProjectionViewMat();
         m_program.uniform(m_lightPositionId)=m_camera->getPosition();
-        m_outlineProgram.uniform(m_uniformOutlintProjectionViewId)=m_camera->getProjectionViewMat();
     }
-//    m_world->getChunkFromWorldPos(m_position);
-//    m_world->getChunks()
     if(m_chunksUpdated.empty())
         m_chunksUpdated=m_world->getUpdatedChunks();
 
@@ -350,8 +313,6 @@ void SimpleRenderer<_World>::draw()
 
         for(size_t i=0; i<maxUpdates; ++i)
         {
-//            if(renderer.getState()==ChunkRenderType::Invalid)
-//                continue;
             unsigned int hash=m_chunksUpdated[i];
 
             auto iter=std::find_if(m_chunkRenderers.begin(), m_chunkRenderers.end(), [&hash](auto &renderer){return (renderer.getHash()==hash); });
@@ -369,37 +330,32 @@ void SimpleRenderer<_World>::draw()
         m_chunkRenderers[i].draw();
     }
 
-    if(m_outlineChunks)
+#ifndef NDEBUG
+    //draw Missing blocks in debug
+//    if(m_outlineChunks)
     {
         m_outlineProgram.use();
+
+        if(cameraDirty)
+        {
+            m_outlineProgram.uniform(m_uniformOutlintProjectionViewId)=m_camera->getProjectionViewMat();
+            m_outlineProgram.uniform(m_outlineLightPositionId)=m_camera->getPosition();
+        }
+        
         for(int i=0; i<m_chunkRenderers.size(); ++i)
         {
             m_chunkRenderers[i].drawOutline();
         }
     }
-
-////////////////////////////////////////////////////////////////
-//Simple test
-//    glBindVertexArray(m_vertexArray);
-//    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
-////////////////////////////////////////////////////////////////
+#endif //NDEBUG
 }
 
 template<typename _World>
 void SimpleRenderer<_World>::setCamera(SimpleFpsCamera *camera)
 {
     m_camera=camera;
-
-//    m_viewMat=glm::lookAt(m_camera.position, m_camera.position+m_camera.direction, m_camera.up);
-//    m_projectionViewMat=m_projectionMat*m_viewMat;
-//    
-//    m_projectionViewMatUpdated=true;
-
     if(glm::distance(m_camera->getPosition(), m_lastUpdatePosition)>8.0f)
-    {
-//        updateChunks();
         m_lastUpdatePosition=m_camera->getPosition();
-    }
 }
 
 template<typename _World>
@@ -438,108 +394,7 @@ void SimpleRenderer<_World>::setViewRadius(float radius)
 
     if(m_chunkIndicies.empty()) //always want at least the current chunk
         m_chunkIndicies.push_back(glm::ivec3(0, 0, 0));
-
-//    updateChunks();
 }
-
-//template<typename _World>
-//void SimpleRenderer<_World>::updateChunks()
-//{
-//    glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera->getPosition());
-//
-//    if(m_chunkRenderers.size()!=m_chunkIndicies.size())
-//    {
-//        //depending on how often this happens (should only be on viewRadius change), 
-//        //might want to move any renderers outside the new size to invalid render locations
-//        //lower in the vector, then resize (otherwise they will get rebuilt)
-//
-//        bool buildRenderers=(m_chunkRenderers.size()<m_chunkIndicies.size());
-//        size_t buildIndex=m_chunkRenderers.size();
-//
-//        m_chunkRenderers.resize(m_chunkIndicies.size());
-//        if(buildRenderers)
-//        {
-//            //need to setup buffers for new chunks
-//            for(size_t i=buildIndex; i<m_chunkRenderers.size(); ++i)
-//            {
-//                m_chunkRenderers[i].setParent(this);
-//                m_chunkRenderers[i].build(m_instanceVertices);
-//            }
-//        }
-//    }
-//
-//    int size=m_chunkRenderers.size();
-//
-//    std::vector<bool> invalidatedRenderers(size);
-//    std::vector<unsigned int> chunks(size);
-//    std::vector<bool> inUse(size);
-//    
-//    for(size_t i=0; i<size; ++i)
-//    {
-//        chunks[i]=m_world->chunkHash(chunkIndex+m_chunkIndicies[i]);
-//        invalidatedRenderers[i]=true;
-//        inUse[i]=false;
-//    }
-//
-//    for(size_t i=0; i<size; ++i)
-//    {
-//        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
-//
-//        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
-//            continue;
-//
-//        unsigned int chunkHash=chunkRenderer.getHash();
-//
-//        for(size_t j=0; j<size; ++j)
-//        {
-//            if(chunks[j]==chunkHash)
-//            {
-//                invalidatedRenderers[i]=false;
-//                inUse[j]=true;
-//                break;
-//            }
-//        }
-//    }
-//    
-//    for(size_t i=0; i<size; ++i)
-//    {
-//        ChunkRenderType &chunkRenderer=m_chunkRenderers[i];
-//
-//        if(chunkRenderer.getState()==ChunkRenderType::Invalid)
-//        {
-//            invalidatedRenderers[i]=true;
-//            continue;
-//        }
-//        
-//        if(invalidatedRenderers[i])
-//            chunkRenderer.invalidate();
-//    }
-//
-//    size_t invalidatedIndex=0;
-//
-//    for(size_t i=0; i<size; ++i)
-//    {
-//        if(inUse[i])
-//            continue;
-//
-//        //find invalid renderer and update chuck
-//        for(size_t j=invalidatedIndex; j<size; ++j)
-//        {
-//            if(!invalidatedRenderers[j])
-//                continue;
-//
-//            ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
-//
-//            SharedChunkHandle chunkHandle=m_world->getChunk(chunks[i]);
-//
-//            chunkRenderer.setChunk(chunkHandle);
-//            chunkRenderer.update();
-//
-//            invalidatedIndex=j+1;
-//            break;
-//        }
-//    }
-//}
 
 template<typename _World>
 void SimpleRenderer<_World>::updateChunks()
@@ -563,15 +418,15 @@ void SimpleRenderer<_World>::updateChunks()
             {
                 m_chunkRenderers[i].setParent(this);
                 m_chunkRenderers[i].build(m_instanceVertices);
+#ifndef NDEBUG
+                m_chunkRenderers[i].buildOutline(m_outlineInstanceVertices);
+#endif //NDEBUG
             }
         }
     }
 
     int size=m_chunkRenderers.size();
     size_t mapSize=m_chunkRendererMap.size();
-
-//    ChunkRendererMap invalidatedRenderers(m_chunkRendererMap);
-//    int index=0;
 
     std::vector<bool> invalidatedRenderers(size);
     std::vector<unsigned int> chunks(size);

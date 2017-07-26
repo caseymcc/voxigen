@@ -27,6 +27,7 @@ public:
     void move(const glm::vec3 &velocity);
 
     bool isDirty() { return (m_projectionDirty||m_viewDirty); }
+    void clearDirty() { m_projectionDirty=false; m_viewDirty=false; }
     glm::mat4x4 &getProjectionViewMat() { updateMatrix(); return m_projectionViewMatrix; }
 
     glm::vec3 getDirection();

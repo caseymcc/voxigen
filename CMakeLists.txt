@@ -67,6 +67,7 @@ set(voxigen_headers
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
+    include/voxigen/simpleShapes.h
     include/voxigen/world.h
     include/voxigen/worldDescriptors.h
     include/voxigen/worldGenerator.h

@@ -41,8 +41,6 @@ public:
 
     Biome &getBiome(glm::ivec3 block);
     
-//    ChunkType &getChunk(const glm::ivec3 &index);
-//    ChunkType &getChunk(unsigned int chunkHash);
     SharedChunkHandle getChunk(const glm::ivec3 &index);
     SharedChunkHandle getChunk(unsigned int chunkHash);
     std::vector<unsigned int> getUpdatedChunks();
@@ -51,20 +49,15 @@ public:
     unsigned int chunkHash(const glm::ivec3 &chunkIndex) const;
     unsigned int getChunkHash(const glm::vec3 &position);
     
-//    _Block &getBlock(const glm::vec3 &position);
-
     WorldDescriptors &getDescriptors() { return m_descriptors; }
 
     glm::mat4 &getTransform() { return m_transform; }
 
 private:
-//    typename UniqueChunkMap::iterator generateChunk(glm::ivec3 chunkIndex);
-
     std::string m_directory;
     std::string m_name;
 
     WorldDescriptors m_descriptors;
-//    std::unique_ptr<WorldGenerator<ChunkType>> m_generator;
     ChunkHandler<ChunkType> m_chunkHandler;
 
     glm::mat4 m_transform;
@@ -88,6 +81,11 @@ template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkS
 World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::~World()
 {
     m_chunkHandler.terminate();
+
+    //If handles are still in use, then the handler will be destroyed before they are returned
+    // and program will crash. Destroy items that use handles before the world is destroyed,
+    // anything holding onto the handle from getChunk
+    assert(m_chunkHandler.handlesInUse()==0);
 }
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
@@ -97,12 +95,6 @@ void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::create(std::string di
     m_directory=directory;
 
     m_descriptors.create(name, 0, glm::ivec3(1024, 1024, 256), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
-
-//    //generate
-//    m_descriptors.seed=0;
-//    m_descriptors.size=glm::ivec3(1024, 1024, 256);
-//    m_descriptors.chunkSize=glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
-
     m_descriptors.init();
 
     std::string configFile=directory+"/worldConfig.json";
@@ -119,19 +111,11 @@ void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::create(std::string di
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::load(std::string directory)
 {
-    //load if exists, otherwise generate
     m_directory=directory;
 
     std::string configFile=directory+"/worldConfig.json";
     m_descriptors.load(configFile);
-//    //generate
-//    m_descriptors.seed=0;
-//    m_descriptors.size=glm::ivec3(1024, 1024, 256);
-//    m_descriptors.chunkSize=glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
-//
-//    m_descriptors.init();
-    
-//    m_generator=std::make_unique<WorldGenerator<ChunkType>>(this);
+
     std::string chunkDirectory=directory+"/chunks";
 
     m_chunkHandler.load(chunkDirectory);
@@ -148,32 +132,6 @@ void World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::save()
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 Biome &World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getBiome(glm::ivec3 block)
 {}
-
-//template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-//typename World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::ChunkType &World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getChunk(const glm::ivec3 &block)
-//{
-//    glm::ivec3 chunkIndex=block/m_descriptors.m_chunkSize;
-//
-//    unsigned int chunkHash=chunkHash(chunkIndex);
-//
-//    auto chunkIter=m_chunks.find(chunkHash);
-//
-//    if(chunkIter==m_chunks.end())
-//        chunkIter=generateChunk(chunkIndex);
-//
-//    return *(chunkIter->second.get());
-//}
-//
-//template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-//typename World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::ChunkType &World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getChunk(unsigned int chunkHash)
-//{
-//    auto chunkIter=m_chunks.find(chunkHash);
-//
-//    if(chunkIter==m_chunks.end())
-//        chunkIter=generateChunk(m_descriptors.chunkIndex(chunkHash));
-//
-//    return *(chunkIter->second.get());
-//}
 
 template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 typename World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::SharedChunkHandle World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getChunk(const glm::ivec3 &block)
@@ -218,32 +176,6 @@ unsigned int World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getChunkHash(
 
     return chunkHash(chunkIndex);
 }
-
-//template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-//_Block &World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::getBlock(const glm::vec3 &position)
-//{
-//    glm::ivec3 chunkIndex=getChunkIndex(glm::vec3 position);
-//
-//    auto chunkIter=m_chunks.find(hash);
-//
-//    if(chunkIter==m_chunks.end())
-//    {
-//        assert(false);
-//        chunkIter=generateChunk(chunkIndex);
-//    }
-//
-//    Chunk<_Block> *chunk=chunkIter.second.get();
-//
-//    return chunkIter.second;
-//}
-//
-//template<typename _Block, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
-//typename World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::UniqueChunkMap::iterator World<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>::generateChunk(glm::ivec3 chunkIndex)
-//{
-//    UniqueChunk<_Block, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> chunk=m_generator->generateChunk(chunkIndex);
-//
-//    return m_chunks.insert(m_chunks.end(), {chunk->getHash(), std::move(chunk)});
-//}
 
 }//namespace voxigen
 

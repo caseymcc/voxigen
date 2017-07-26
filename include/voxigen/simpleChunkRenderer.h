@@ -14,11 +14,6 @@
 namespace voxigen
 {
 
-struct VOXIGEN_EXPORT SimpleCube
-{
-    static std::vector<float> vertCoords;
-};
-
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleChunkRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -50,11 +45,17 @@ public:
     void setParent(RenderType *parent);
     void setChunk(SharedChunkHandle chunk);
     void build(unsigned int instanceData);
+#ifndef NDEBUG
+    void buildOutline(unsigned int instanceData);
+#endif //NDEBUG
+
     void update();
     void invalidate();
 
     void draw();
+#ifndef NDEBUG
     void drawOutline();
+#endif //NDEBUG
 
     const unsigned int getHash() { return m_chunkHandle->hash; }
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
@@ -70,6 +71,11 @@ private:
     unsigned int m_vertexArray;
     unsigned int m_offsetVBO;
     std::vector<glm::vec4> m_ChunkInfoOffset;
+
+#ifndef NDEBUG
+    unsigned int m_outlineVertexArray;
+    unsigned int m_outlineOffsetVBO;
+#endif //NDEBUG
 };
 
 template<typename _Parent, typename _Chunk>
@@ -116,12 +122,43 @@ void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glVertexAttribDivisor(3, 1);
     
+    glBindVertexArray(0);
+    
     if(m_chunkHandle)
         m_state=Dirty;
     else
         m_state=Invalid;
 
 }
+
+#ifndef NDEBUG
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::buildOutline(unsigned int instanceData)
+{
+    glGenVertexArrays(1, &m_outlineVertexArray);
+    glGenBuffers(1, &m_outlineOffsetVBO);
+
+    glBindVertexArray(m_outlineVertexArray);
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceData);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)0);
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
+
+    glEnableVertexAttribArray(3);
+    glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, nullptr, GL_STATIC_DRAW);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(3, 1);
+
+    glBindVertexArray(0);
+}
+#endif //NDEBUG
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::update()
@@ -130,7 +167,18 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
         return;
 
     if(m_chunkHandle->status!=ChunkHandleType::Memory) //not loaded yet need to wait
+    {
+#ifndef NDEBUG
+        //chunk is not going to be valid till loaded, so going to hack together the offset from
+        //the hash info
+        glm::vec4 position=glm::vec4(m_parent->getWorld()->getDescriptors().chunkOffset(m_chunkHandle->hash), 1.0f);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(position), GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif //NDEBUG
         return;
+    }
 
     if(m_chunkHandle->empty)
     {
@@ -196,60 +244,28 @@ void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::draw()
 {
-    if(m_state!=Built)
-        return;
-
-    glBindVertexArray(m_vertexArray);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, m_validBlocks);
-
+    if(m_state==Built)
+    {
+        glBindVertexArray(m_vertexArray);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 36, m_validBlocks);
+    }
 }
 
+#ifndef NDEBUG
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline()
 {
-//    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
-//    glm::vec3 position=m_chunk->getWorldOffset();
-//
-//    glLineWidth(2.5);
-//
-//    glBegin(GL_LINES);
-//        glVertex3f(position.x, position.y, position.z);
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
-//
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
-//            
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
-//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
-//
-//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
-//        glVertex3f(position.x, position.y, position.z);
-//
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z);
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
-//            
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//            
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//        glVertex3f(position.x+chunkSize.x, position.y, position.z+chunkSize.z);
-//
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z);
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
-//
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//        glVertex3f(position.x+chunkSize.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z);
-//        glVertex3f(position.x, position.y, position.z);
-//  
-//        glVertex3f(position.x, position.y, position.z+chunkSize.z);
-//        glVertex3f(position.x, position.y+chunkSize.y, position.z+chunkSize.z);
-//    glEnd();
+    if(m_state==Invalid)
+        return;
+    if(m_state==Built)
+        return;
+    if(m_state==Empty)
+        return;
+
+    glBindVertexArray(m_outlineVertexArray);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
 }
+#endif //NDEBUG
 
 }//namespace voxigen
 
