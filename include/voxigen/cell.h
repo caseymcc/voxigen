@@ -1,5 +1,5 @@
-#ifndef _voxigen_block_h_
-#define _voxigen_block_h_
+#ifndef _voxigen_cell_h_
+#define _voxigen_cell_h_
 
 #include "voxigen/voxigen_export.h"
 
@@ -11,7 +11,7 @@ struct VOXIGEN_EXPORT BlockDescriptor
 
 };
 
-struct VOXIGEN_EXPORT Block
+struct VOXIGEN_EXPORT Cell
 {
     unsigned int type;
 
@@ -21,4 +21,4 @@ struct VOXIGEN_EXPORT Block
 
 }//namesapce voxigen
 
-#endif //_voxigen_block_h_
+#endif //_voxigen_cell_h_

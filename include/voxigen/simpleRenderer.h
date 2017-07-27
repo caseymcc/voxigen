@@ -3,7 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/initGlew.h"
-#include "voxigen/world.h"
+#include "voxigen/regularGrid.h"
 #include "voxigen/SimpleCamera.h"
 #include "voxigen/SimpleChunkRenderer.h"
 #include "voxigen/simpleShapes.h"
@@ -20,21 +20,21 @@ namespace voxigen
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
-template<typename _World>
+template<typename _Grid>
 class SimpleRenderer
 {
 public:
-    typedef _World WorldType;
-    typedef typename WorldType::ChunkType ChunkType;
-    typedef typename _World::SharedChunkHandle SharedChunkHandle;
-    typedef SimpleChunkRenderer<SimpleRenderer, typename _World::ChunkType> ChunkRenderType;
+    typedef _Grid GridType;
+    typedef typename GridType::ChunkType ChunkType;
+    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+    typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
     typedef std::unordered_map<unsigned int, size_t> ChunkRendererMap;
     
 
-    SimpleRenderer(WorldType *world);
+    SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
     
-    WorldType *getWorld(){ return m_world; }
+    GridType *getGrid(){ return m_grid; }
 
     void build();
     void destroy();
@@ -60,7 +60,7 @@ private:
 
     bool m_outlineChunks;
 
-    WorldType *m_world;
+    GridType *m_grid;
 
     std::vector<glm::ivec3> m_chunkIndicies;
     std::vector<ChunkRenderType> m_chunkRenderers;
@@ -90,8 +90,8 @@ private:
 #endif //NDEBUG
 };
 
-template<typename _World>
-std::string SimpleRenderer<_World>::vertShader=
+template<typename _Grid>
+std::string SimpleRenderer<_Grid>::vertShader=
 "#version 330 core\n"
 "layout (location = 0) in vec3 blockvertex;\n"
 "layout (location = 1) in vec3 blockNormal;\n"
@@ -115,8 +115,8 @@ std::string SimpleRenderer<_World>::vertShader=
 "}\n"
 "";
 
-template<typename _World>
-std::string SimpleRenderer<_World>::fragmentShader=
+template<typename _Grid>
+std::string SimpleRenderer<_Grid>::fragmentShader=
 "#version 330 core\n"
 "\n"
 "in vec3 position;\n"
@@ -147,8 +147,8 @@ std::string SimpleRenderer<_World>::fragmentShader=
 
 
 
-template<typename _World>
-std::string SimpleRenderer<_World>::vertOutlineShader=
+template<typename _Grid>
+std::string SimpleRenderer<_Grid>::vertOutlineShader=
 "#version 330 core\n"
 "layout (location = 0) in vec3 inputVertex;\n"
 "layout (location = 1) in vec3 inputNormal;\n"
@@ -169,8 +169,8 @@ std::string SimpleRenderer<_World>::vertOutlineShader=
 "}\n"
 "";
 
-template<typename _World>
-std::string SimpleRenderer<_World>::fragmentOutlineShader=
+template<typename _Grid>
+std::string SimpleRenderer<_Grid>::fragmentOutlineShader=
 "#version 330 core\n"
 "\n"
 "in vec3 position;\n"
@@ -195,9 +195,9 @@ std::string SimpleRenderer<_World>::fragmentOutlineShader=
 "}\n"
 "";
 
-template<typename _World>
-SimpleRenderer<_World>::SimpleRenderer(_World *world):
-m_world(world),
+template<typename _Grid>
+SimpleRenderer<_Grid>::SimpleRenderer(_Grid *grid):
+m_grid(grid),
 m_viewRadius(60.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
@@ -215,14 +215,14 @@ m_outlineChunks(true)
                         0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-template<typename _World>
-SimpleRenderer<_World>::~SimpleRenderer()
+template<typename _Grid>
+SimpleRenderer<_Grid>::~SimpleRenderer()
 {
 
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::build()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::build()
 {
     std::string error;
 
@@ -265,20 +265,20 @@ void SimpleRenderer<_World>::build()
 #endif //NDEBUG
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::destroy()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::destroy()
 {
     m_chunkRendererMap.clear();
     m_chunkRenderers.clear();
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::update()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::update()
 {
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::updateProjection(size_t width, size_t height)
+template<typename _Grid>
+void SimpleRenderer<_Grid>::updateProjection(size_t width, size_t height)
 {
     m_projectionMat=glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
 
@@ -286,13 +286,13 @@ void SimpleRenderer<_World>::updateProjection(size_t width, size_t height)
     m_projectionViewMatUpdated=true;
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::updateView()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::updateView()
 {
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::draw()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::draw()
 {
     m_program.use();
     bool cameraDirty=m_camera->isDirty();
@@ -303,7 +303,7 @@ void SimpleRenderer<_World>::draw()
         m_program.uniform(m_lightPositionId)=m_camera->getPosition();
     }
     if(m_chunksUpdated.empty())
-        m_chunksUpdated=m_world->getUpdatedChunks();
+        m_chunksUpdated=m_grid->getUpdatedChunks();
 
     //update any chunks that may have changed
     if(!m_chunksUpdated.empty())
@@ -350,20 +350,20 @@ void SimpleRenderer<_World>::draw()
 #endif //NDEBUG
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::setCamera(SimpleFpsCamera *camera)
+template<typename _Grid>
+void SimpleRenderer<_Grid>::setCamera(SimpleFpsCamera *camera)
 {
     m_camera=camera;
     if(glm::distance(m_camera->getPosition(), m_lastUpdatePosition)>8.0f)
         m_lastUpdatePosition=m_camera->getPosition();
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::setViewRadius(float radius)
+template<typename _Grid>
+void SimpleRenderer<_Grid>::setViewRadius(float radius)
 {
     m_viewRadius=radius;
 
-    glm::ivec3 &chunkSize=m_world->getDescriptors().m_chunkSize;
+    glm::ivec3 &chunkSize=m_grid->getDescriptors().m_chunkSize;
     glm::ivec3 chunkRadius=glm::ceil(glm::vec3(m_viewRadius/chunkSize.x, m_viewRadius/chunkSize.y, m_viewRadius/chunkSize.z));
 
     m_chunkIndicies.clear();
@@ -396,10 +396,10 @@ void SimpleRenderer<_World>::setViewRadius(float radius)
         m_chunkIndicies.push_back(glm::ivec3(0, 0, 0));
 }
 
-template<typename _World>
-void SimpleRenderer<_World>::updateChunks()
+template<typename _Grid>
+void SimpleRenderer<_Grid>::updateChunks()
 {
-    glm::ivec3 chunkIndex=m_world->getChunkIndex(m_camera->getPosition());
+    glm::ivec3 chunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
 
     if(m_chunkRenderers.size()!=m_chunkIndicies.size())
     {
@@ -434,7 +434,7 @@ void SimpleRenderer<_World>::updateChunks()
     
     for(size_t i=0; i<size; ++i)
     {
-        chunks[i]=m_world->chunkHash(chunkIndex+m_chunkIndicies[i]);
+        chunks[i]=m_grid->chunkHash(chunkIndex+m_chunkIndicies[i]);
         invalidatedRenderers[i]=true;
         inUse[i]=false;
     }
@@ -489,7 +489,7 @@ void SimpleRenderer<_World>::updateChunks()
             ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
             m_chunkRendererMap.insert(ChunkRendererMap::value_type(chunks[i], j));
 
-            SharedChunkHandle chunkHandle=m_world->getChunk(chunks[i]);
+            SharedChunkHandle chunkHandle=m_grid->getChunk(0, chunks[i]);
 
             chunkRenderer.setChunk(chunkHandle);
             chunkRenderer.update();

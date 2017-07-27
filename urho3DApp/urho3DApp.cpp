@@ -31,6 +31,9 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
+#include <boost/filesystem.hpp>
+
+namespace fs=boost::filesystem;
 
 Urho3DApp::Urho3DApp(Urho3D::Context *context):
 Urho3D::Application(context)
@@ -84,8 +87,28 @@ void Urho3DApp::Start()
     // Subscribe scene update event
     SubscribeToEvent(Urho3D::E_UPDATE, URHO3D_HANDLER(Urho3DApp, onUpdate));
 
-    m_world=new voxigen::World<voxigen::Block, 16, 16, 16>("test");
-    m_world->load();
+    m_world=new voxigen::World<voxigen::Block, 16, 16, 16>();
+    
+    fs::path worldsDirectory("worlds");
+
+    if(!fs::exists(worldsDirectory))
+        fs::create_directory(worldsDirectory);
+
+    std::vector<fs::directory_entry> worldDirectories;
+
+    for(auto &entry:fs::directory_iterator(worldsDirectory))
+        worldDirectories.push_back(entry);
+
+    if(worldDirectories.empty())
+    {
+        std::string worldDirectory=worldsDirectory.string()+"/TestApWorld";
+        fs::path worldPath(worldDirectory);
+
+        fs::create_directory(worldPath);
+        m_world->create(worldDirectory, "TestApWorld");
+    }
+    else
+        m_world->load(worldDirectories[0].path().string());
 
 }
 

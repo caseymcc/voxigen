@@ -5,6 +5,7 @@
 #include <Urho3D/Scene/Scene.h>
 
 #include "voxigen/world.h"
+#include "voxigen/block.h"
 
 class Urho3DApp: public Urho3D::Application
 {

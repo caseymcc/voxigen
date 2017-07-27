@@ -57,7 +57,7 @@ public:
     void drawOutline();
 #endif //NDEBUG
 
-    const unsigned int getHash() { return m_chunkHandle->hash; }
+    const unsigned int getHash() { return m_chunkHandle->chunkHash; }
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
     
 private:
@@ -171,7 +171,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 #ifndef NDEBUG
         //chunk is not going to be valid till loaded, so going to hack together the offset from
         //the hash info
-        glm::vec4 position=glm::vec4(m_parent->getWorld()->getDescriptors().chunkOffset(m_chunkHandle->hash), 1.0f);
+        glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->chunkHash), 1.0f);
 
         glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(position), GL_STATIC_DRAW);
@@ -188,16 +188,16 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 
     ChunkType *chunk=m_chunkHandle->chunk.get();
 
-    auto &blocks=chunk->getBlocks();
+    auto &cells=chunk->getCells();
 //    glm::ivec3 &chunkSize=m_parent->getWorld()->getDescriptors().chunkSize;
 //    std::vector<glm::vec4> translations(chunkSize.x*chunkSize.y*chunkSize.z);
     std::vector<glm::vec4> translations(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value);
 //    glm::ivec3 position=m_chunk->getPosition();
-    glm::vec3 position=chunk->getWorldOffset();
+    glm::vec3 position=chunk->getGridOffset();
     glm::ivec3 pos=position;
 
     int index=0;
-    int validBlocks=0;
+    int validCells=0;
     
     for(int z=0; z<ChunkType::sizeZ::value; ++z)
     {
@@ -207,12 +207,12 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
             pos.x=position.x;
             for(int x=0; x<ChunkType::sizeX::value; ++x)
             {
-                unsigned int type=blocks[index].type;
+                unsigned int type=cells[index].type;
 
                 if(type>0)
                 {
-                    translations[validBlocks]=glm::vec4(pos, type);
-                    validBlocks++;
+                    translations[validCells]=glm::vec4(pos, type);
+                    validCells++;
                 }
                 pos.x+=1.0;
                 index++;
@@ -222,15 +222,15 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
         pos.z+=1.0;
     }
 
-    m_validBlocks=validBlocks;
-    if(validBlocks==0)
+    validCells=validCells;
+    if(validCells==0)
     {
         m_state=Empty;
         return;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*validBlocks, translations.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*validCells, translations.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     m_state=Built;
 }

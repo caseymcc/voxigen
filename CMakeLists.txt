@@ -54,36 +54,40 @@ endif()
 
 set(voxigen_headers
     include/voxigen/biome.h
-    include/voxigen/block.h
     include/voxigen/boundingBox.h
+    include/voxigen/cell.h
     include/voxigen/chunk.h
     include/voxigen/chunkCache.h
     include/voxigen/chunkHandle.h
     include/voxigen/chunkHandler.h
+    include/voxigen/classFactory.h
     include/voxigen/coords.h
     include/voxigen/entity.h
+    include/voxigen/equiRectWorldGenerator.h
+    include/voxigen/generator.h
+    include/voxigen/gridDescriptors.h
     include/voxigen/initGlew.h
     include/voxigen/object.h
+    include/voxigen/regularGrid.h
+    include/voxigen/segment.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
     include/voxigen/simpleShapes.h
-    include/voxigen/world.h
-    include/voxigen/worldDescriptors.h
-    include/voxigen/worldGenerator.h
+    
     include/voxigen/noise/FastNoiseSIMD.h
 )
 
 set(voxigen_sources
+    src/data/cell.cpp
     src/chunker/chunk.cpp
     src/chunker/chunkCache.cpp
     src/chunker/chunkHandler.cpp
     src/data/biome.cpp
-    src/data/block.cpp
     src/data/entity.cpp
+    src/data/gridDescriptors.cpp
     src/data/object.cpp
-    src/data/world.cpp
-    src/data/worldDescriptors.cpp
+    src/data/regularGrid.cpp
     src/FastNoiseSIMD/FastNoiseSIMD.cpp
     src/FastNoiseSIMD/FastNoiseSIMD_avx2.cpp
     src/FastNoiseSIMD/FastNoiseSIMD_avx512.cpp
@@ -91,7 +95,7 @@ set(voxigen_sources
     src/FastNoiseSIMD/FastNoiseSIMD_neon.cpp
     src/FastNoiseSIMD/FastNoiseSIMD_sse2.cpp
     src/FastNoiseSIMD/FastNoiseSIMD_sse41.cpp
-    src/generator/worldGenerator.cpp
+    src/generator/equiRectWorldGenerator.cpp
     src/rendering/initGlew.cpp
     src/rendering/simpleCamera.cpp
     src/rendering/simpleChunkRenderer.cpp

@@ -1,9 +1,9 @@
-#ifndef _voxigen_worldGenerator_h_
-#define _voxigen_worldGenerator_h_
+#ifndef _voxigen_equiRectWorldGenerator_h_
+#define _voxigen_equiRectWorldGenerator_h_
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/chunk.h"
-#include "voxigen/worldDescriptors.h"
+#include "voxigen/gridDescriptors.h"
 #include "voxigen/coords.h"
 
 #include <noise/noise.h>
@@ -12,32 +12,28 @@
 namespace voxigen
 {
 
-template<typename _Block, size_t _ChuckSizeX, size_t _ChuckSizeY, size_t _ChuckSizeZ>
-class World;
-
 template<typename _Chunk>
-class WorldGenerator
+class EquiRectWorldGenerator
 {
 public:
-    typedef World<typename _Chunk::BlockType, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value> WorldType;
     typedef _Chunk ChunkType;
     typedef std::unique_ptr<_Chunk> UniqueChunkType;
 
-    WorldGenerator(WorldDescriptors *descriptors);
-    ~WorldGenerator();
+    EquiRectWorldGenerator();
+    ~EquiRectWorldGenerator();
 
-//    void setWorld(WorldDescriptors descriptors);
-//    void setWorldDiscriptors(WorldDescriptors descriptors);
+    void initialize(GridDescriptors *descriptors);
+//    void setWorld(GridDescriptors descriptors);
+//    void setWorldDiscriptors(GridDescriptors descriptors);
     
     void generateWorldOverview();
 
-    UniqueChunkType generateChunk(unsigned int hash);
-    UniqueChunkType generateChunk(glm::ivec3 chunkIndex);
-    UniqueChunkType generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex);
+    UniqueChunkType generateChunk(unsigned int hash, void *buffer, size_t bufferSize);
+    UniqueChunkType generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize);
+    UniqueChunkType generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize);
 
 private:
-    WorldType *m_world;
-    WorldDescriptors *m_descriptors;
+    GridDescriptors *m_descriptors;
 
     std::unique_ptr<FastNoiseSIMD> m_continentPerlin;
     std::unique_ptr<FastNoiseSIMD> m_layersPerlin;
@@ -50,13 +46,24 @@ private:
 };
 
 template<typename _Chunk>
-WorldGenerator<_Chunk>::WorldGenerator(WorldDescriptors *descriptors):
-m_descriptors(descriptors)
+EquiRectWorldGenerator<_Chunk>::EquiRectWorldGenerator()
 {
+}
+
+template<typename _Chunk>
+EquiRectWorldGenerator<_Chunk>::~EquiRectWorldGenerator()
+{}
+
+template<typename _Chunk>
+void EquiRectWorldGenerator<_Chunk>::initialize(GridDescriptors *descriptors)
+{
+    m_descriptors=descriptors;
+
+    assert(descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     int seed=m_descriptors->m_seed;
 
     m_continentPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed));
-    
+
     m_continentPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
     m_continentPerlin->SetFrequency(m_descriptors->m_contientFrequency);
     m_continentPerlin->SetFractalLacunarity(m_descriptors->m_contientLacunarity);
@@ -71,40 +78,36 @@ m_descriptors(descriptors)
     m_layersPerlin->SetFractalOctaves(m_descriptors->m_contientOctaves);
 }
 
-template<typename _Chunk>
-WorldGenerator<_Chunk>::~WorldGenerator()
-{}
-
 //template<typename _Chunk>
-//void WorldGenerator<_Chunk>::setWorldDiscriptors(WorldDescriptors descriptors)
+//void EquiRectWorldGenerator<_Chunk>::setWorldDiscriptors(GridDescriptors descriptors)
 //{
 //
 //}
 
 template<typename _Chunk>
-void WorldGenerator<_Chunk>::generateWorldOverview()
+void EquiRectWorldGenerator<_Chunk>::generateWorldOverview()
 {
 
 }
 
 template<typename _Chunk>
-typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash)
+typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(unsigned int hash, void *buffer, size_t bufferSize)
 {
     glm::ivec3 chunkIndex=m_descriptors->chunkIndex(hash);
 
-    return generateChunk(hash, chunkIndex);
+    return generateChunk(hash, chunkIndex, buffer, bufferSize);
 }
 
 template<typename _Chunk>
-typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(glm::ivec3 chunkIndex)
+typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize)
 {
     unsigned int hash=m_descriptors->chunkHash(chunkIndex);
 
-    return generateChunk(hash, chunkIndex);
+    return generateChunk(hash, chunkIndex, buffer, bufferSize);
 }
 
 template<typename _Chunk>
-typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generateChunk(unsigned int hash, const glm::ivec3 &chunkIndex)
+typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize)
 {
     glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
     glm::vec3 scaledOffset=offset*m_descriptors->m_noiseScale;
@@ -113,7 +116,12 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
     
    
     UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, offset);
-    ChunkType::Blocks &blocks=chunk->getBlocks();
+//    ChunkType::Cells &cells=chunk->getCells();
+    
+    ChunkType::CellType *cells=(ChunkType::CellType *)buffer;
+
+    //verify buffer is large enough for data
+    assert(bufferSize>=(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value)*sizeof(ChunkType::CellType));
 
     int heightMapSize=FastNoiseSIMD::AlignedSize(_Chunk::sizeX::value*_Chunk::sizeY::value);
     std::vector<float> heightMap(heightMapSize);
@@ -153,7 +161,7 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
 
     int seaLevel=(size.z/2);
     float heightScale=(size.z/2);
-    unsigned int validBlocks=0;
+    unsigned int validCells=0;
 
     index=0;
     size_t heightIndex=0;
@@ -177,13 +185,11 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
                     blockType=0;
                 else
                 {
-                    //                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
-                    //                    blockType=floor((layerMap[index]+1.0f)*5.0f)+1;
                     blockType=(blockHeight-blockZ)/13;
-                    validBlocks++;
+                    validCells++;
                 }
 
-                blocks[index].type=blockType;
+                cells[index].type=blockType;
                 index++;
                 heightIndex++;
                 position.x+=noiseScale;
@@ -193,58 +199,10 @@ typename WorldGenerator<_Chunk>::UniqueChunkType WorldGenerator<_Chunk>::generat
         position.z+=noiseScale;
     }
 
-    chunk->setValidBlockCount(validBlocks);
-
-//    int heightIndex=0;
-//    position.z=0.0f;
-//    for(int y=0; y<_ChuckSizeY; ++y)
-//    {
-//        position.x=scaledOffset.x;
-//        for(int x=0; x<_ChuckSizeX; ++x)
-//        {
-//            double value=(m_continentPerlin.GetValue(position.x, position.y, m_descriptors->noiseScale))+1.0;
-//            double blockHeight=value*(m_descriptors->size.z/2);
-//
-//            heightMap[heightIndex]=blockHeight*m_descriptors->noiseScale;
-//
-////            heightMap[heightIndex]=(m_continentPerlin.GetValue(position.x, position.y, m_descriptors->noiseScale))*(m_descriptors->size.z/2)*m_descriptors->noiseScale;
-//            heightIndex++;
-//            position.x+=m_descriptors->noiseScale;
-//        }
-//        position.y+=m_descriptors->noiseScale;
-//    }
-//
-//    int index=0;
-//    position.z=scaledOffset.z;
-//    for(int z=0; z<_ChuckSizeZ; ++z)
-//    {
-//        heightIndex=0;
-//        position.y=scaledOffset.y;
-//        for(int y=0; y<_ChuckSizeY; ++y)
-//        {
-//            position.x=scaledOffset.x;
-//            for(int x=0; x<_ChuckSizeX; ++x)
-//            {
-//                float blockType;
-//
-//                if(position.z > heightMap[heightIndex]) //larger than height map, air
-//                    blockType=0;
-//                else
-//                    blockType=(floor(m_layersPerlin.GetValue(position.x, position.y, heightMap[heightIndex]-position.z)+1.0f)*5)+1;
-//
-//                blocks[index].type=blockType;
-//                index++;
-//                heightIndex++;
-//                position.x+=m_descriptors->noiseScale;
-//            }
-//            position.y+=m_descriptors->noiseScale;
-//        }
-//        position.z+=m_descriptors->noiseScale;
-//    }
-
+    chunk->setValidCellCount(validCells);
     return chunk;
 }
 
 }//namespace voxigen
 
-#endif //_voxigen_worldGenerator_h_
+#endif //_voxigen_equiRectEquiRectWorldGenerator_h_

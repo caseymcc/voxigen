@@ -23,10 +23,11 @@ struct ChunkHandle
         Memory
     };
 
-    ChunkHandle(unsigned int hash):hash(hash), status(Unknown), cachedOnDisk(false), empty(false){}
+    ChunkHandle(unsigned int segmentHash, unsigned int chunkHash):segmentHash(segmentHash), chunkHash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
 
     Status status;
-    unsigned int hash;
+    unsigned int segmentHash;
+    unsigned int chunkHash;
     UniqueChunk chunk;
 
     bool cachedOnDisk;

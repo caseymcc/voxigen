@@ -2,9 +2,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "voxigen/block.h"
-#include "voxigen/world.h"
+#include "voxigen/cell.h"
+#include "voxigen/regularGrid.h"
 #include "voxigen/simpleRenderer.h"
+#include "voxigen/equiRectWorldGenerator.h"
 
 #include <boost/filesystem.hpp>
 
@@ -22,6 +23,13 @@ bool key_space=false;
 bool key_left_shift=false;
 voxigen::SimpleFpsCamera player;
 unsigned int playerChunk;
+
+namespace voigen
+{
+//force generator instantiation
+typedef voxigen::Chunk<voxigen::Cell, 64, 64, 16> Chunk_64_64_16;
+template voxigen::GeneratorTemplate<voxigen::EquiRectWorldGenerator<Chunk_64_64_16>>;
+}
 
 int main(int argc, char ** argv)
 {
@@ -54,7 +62,7 @@ int main(int argc, char ** argv)
     glewInit();
     glViewport(0, 0, width, height);
 
-    typedef voxigen::World<voxigen::Block, 64, 64, 16> World;
+    typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
     World world;
 
     fs::path worldsDirectory("worlds");
@@ -73,7 +81,7 @@ int main(int argc, char ** argv)
         fs::path worldPath(worldDirectory);
         
         fs::create_directory(worldPath);
-        world.create(worldDirectory, "TestApWorld");
+        world.create(worldDirectory, "TestApWorld", glm::ivec3(2048, 2048, 1024), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());

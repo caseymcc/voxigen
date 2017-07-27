@@ -1,4 +1,4 @@
-#include "voxigen/worldDescriptors.h"
+#include "voxigen/gridDescriptors.h"
 
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/filewritestream.h>
@@ -8,7 +8,7 @@
 namespace voxigen
 {
 
-WorldDescriptors::WorldDescriptors()
+GridDescriptors::GridDescriptors()
 {
     m_seed=0;
     m_size=glm::ivec3(1024, 1024, 256);
@@ -24,17 +24,18 @@ WorldDescriptors::WorldDescriptors()
     m_seaLevel=0.0f;
 }
 
-void WorldDescriptors::create(std::string name, int seed, const glm::ivec3 &size, const glm::ivec3 &chunkSize)
+void GridDescriptors::create(std::string name, int seed, const glm::ivec3 &size, const glm::ivec3 &segmentSize, const glm::ivec3 &chunkSize)
 {
     m_name=name;
     m_seed=seed;
     m_size=size;
+    m_segmentSize=segmentSize;
     m_chunkSize=chunkSize;
 
     init();
 }
 
-void WorldDescriptors::load(std::string fileName)
+void GridDescriptors::load(std::string fileName)
 {
     FILE *filePtr=fopen(fileName.c_str(), "rb");
     char readBuffer[65536];
@@ -56,6 +57,12 @@ void WorldDescriptors::load(std::string fileName)
     m_size.y=sizeArray[1].GetInt();
     m_size.z=sizeArray[2].GetInt();
 
+    const rapidjson::Value &segmentSizeArray=document["segmentSize"];
+
+    m_segmentSize.x=segmentSizeArray[0].GetInt();
+    m_segmentSize.y=segmentSizeArray[1].GetInt();
+    m_segmentSize.z=segmentSizeArray[2].GetInt();
+
     const rapidjson::Value &chunkSizeArray=document["chunkSize"];
 
     m_chunkSize.x=chunkSizeArray[0].GetInt();
@@ -74,7 +81,7 @@ void WorldDescriptors::load(std::string fileName)
     init();
 }
 
-void WorldDescriptors::save(std::string fileName)
+void GridDescriptors::save(std::string fileName)
 {
     FILE *filePtr=fopen(fileName.c_str(), "wb");
     char writeBuffer[65536];
@@ -94,6 +101,13 @@ void WorldDescriptors::save(std::string fileName)
     writer.Int(m_size.x);
     writer.Int(m_size.y);
     writer.Int(m_size.z);
+    writer.EndArray();
+
+    writer.Key("segmentSize");
+    writer.StartArray();
+    writer.Int(m_segmentSize.x);
+    writer.Int(m_segmentSize.y);
+    writer.Int(m_segmentSize.z);
     writer.EndArray();
 
     writer.Key("chunkSize");
@@ -121,19 +135,20 @@ void WorldDescriptors::save(std::string fileName)
     fclose(filePtr);
 }
 
-void WorldDescriptors::init()
+void GridDescriptors::init()
 {
     m_chunkCount=m_size/m_chunkSize;
+    m_segmentCount=m_chunkCount/m_segmentSize;
     m_chunkStride=glm::ivec3(1, m_chunkCount.x, m_chunkCount.x*m_chunkCount.y);
 }
 
-unsigned int WorldDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const
+unsigned int GridDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const
 {
     return (m_chunkStride.z*chunkIndex.z)+(m_chunkStride.y*chunkIndex.y)+chunkIndex.x;
 //    return (chunkStride.x*index.x)+(chunkStride.y*index.y)+index.z;
 }
 
-glm::ivec3 WorldDescriptors::chunkIndex(unsigned int chunkHash) const
+glm::ivec3 GridDescriptors::chunkIndex(unsigned int chunkHash) const
 {
     glm::ivec3 index;
 
@@ -145,7 +160,7 @@ glm::ivec3 WorldDescriptors::chunkIndex(unsigned int chunkHash) const
     return index;
 }
 
-glm::vec3 WorldDescriptors::chunkOffset(unsigned int chunkHash) const
+glm::vec3 GridDescriptors::chunkOffset(unsigned int chunkHash) const
 {
     glm::ivec3 index=chunkIndex(chunkHash);
     glm::vec3 offset=m_chunkSize*index;
