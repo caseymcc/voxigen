@@ -50,6 +50,7 @@ void GridDescriptors::load(std::string fileName)
 
     m_name=document["name"].GetString();
     m_seed=document["seed"].GetUint();
+    m_generator=document["generator"].GetString();
 
     const rapidjson::Value &sizeArray=document["size"];
 
@@ -95,6 +96,8 @@ void GridDescriptors::save(std::string fileName)
     writer.String(m_name.c_str());
     writer.Key("seed");
     writer.Uint(m_seed);
+    writer.Key("generator");
+    writer.String(m_generator.c_str());
 
     writer.Key("size");
     writer.StartArray();
@@ -137,18 +140,92 @@ void GridDescriptors::save(std::string fileName)
 
 void GridDescriptors::init()
 {
-    m_chunkCount=m_size/m_chunkSize;
-    m_segmentCount=m_chunkCount/m_segmentSize;
+    m_segmentCellSize=m_segmentSize*m_chunkSize;
+    m_segmentCount=m_size/(m_segmentCellSize);
+    m_segmentStride=glm::ivec3(1, m_segmentCount.x, m_segmentCount.x*m_segmentCount.y);
+
+    m_chunkCount=m_segmentCellSize/m_chunkSize;
     m_chunkStride=glm::ivec3(1, m_chunkCount.x, m_chunkCount.x*m_chunkCount.y);
 }
 
-unsigned int GridDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const
+SegmentHash GridDescriptors::segmentHash(const glm::ivec3 &index) const
+{
+    return m_segmentStride.x*index.x+m_segmentStride.y*index.y+m_segmentStride.z*index.z;
+}
+
+glm::ivec3 GridDescriptors::segmentIndex(SegmentHash hash) const
+{
+    glm::ivec3 index;
+
+    index.z=hash/m_segmentStride.z;
+    hash=hash-(m_segmentStride.z*index.z);
+    index.y=hash/m_segmentStride.y;
+    index.x=hash-(m_segmentStride.y*index.y);
+
+    return index;
+}
+
+glm::ivec3 GridDescriptors::segmentIndex(const glm::vec3 &pos) const
+{
+    glm::ivec3 position=glm::floor(pos);
+
+    return position/m_segmentCellSize;
+}
+
+glm::vec3 GridDescriptors::segmentOffset(SegmentHash hash) const
+{
+    glm::ivec3 index=segmentIndex(hash);
+    glm::vec3 offset=m_segmentCellSize*index;
+
+    return offset;
+}
+
+glm::vec3 GridDescriptors::adjustSegment(glm::ivec3 &segmentIndex, glm::ivec3 &chunkIndex) const
+{
+    glm::ivec3 offset(0, 0 ,0);
+
+    if(chunkIndex.x<0)
+    {
+        offset.x--;
+        chunkIndex.x=m_chunkSize.x+chunkIndex.x;
+    }
+    else if(chunkIndex.x>m_segmentSize.x)
+    {
+        offset.x++;
+        chunkIndex.x=chunkIndex.x-m_chunkSize.x;
+    }
+    if(chunkIndex.y<0)
+    {
+        offset.y--;
+        chunkIndex.y=m_chunkSize.y+chunkIndex.y;
+    }
+    else if(chunkIndex.y>m_segmentSize.y)
+    {
+        offset.y++;
+        chunkIndex.y=chunkIndex.y-m_chunkSize.y;
+    }
+    if(chunkIndex.z<0)
+    {
+        offset.z--;
+        chunkIndex.z=m_chunkSize.z+chunkIndex.z;
+    }
+    else if(chunkIndex.z>m_segmentSize.z)
+    {
+        offset.z++;
+        chunkIndex.z=chunkIndex.z-m_chunkSize.z;
+    }
+
+    segmentIndex+=offset;
+    return glm::vec3(m_segmentCellSize*offset);
+}
+
+ChunkHash GridDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const
 {
     return (m_chunkStride.z*chunkIndex.z)+(m_chunkStride.y*chunkIndex.y)+chunkIndex.x;
 //    return (chunkStride.x*index.x)+(chunkStride.y*index.y)+index.z;
 }
 
-glm::ivec3 GridDescriptors::chunkIndex(unsigned int chunkHash) const
+glm::ivec3 GridDescriptors::chunkIndex(ChunkHash chunkHash) const
 {
     glm::ivec3 index;
 
@@ -160,7 +237,7 @@ glm::ivec3 GridDescriptors::chunkIndex(unsigned int chunkHash) const
     return index;
 }
 
-glm::vec3 GridDescriptors::chunkOffset(unsigned int chunkHash) const
+glm::vec3 GridDescriptors::chunkOffset(ChunkHash chunkHash) const
 {
     glm::ivec3 index=chunkIndex(chunkHash);
     glm::vec3 offset=m_chunkSize*index;

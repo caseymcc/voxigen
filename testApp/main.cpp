@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "voxigen/defines.h"
 #include "voxigen/cell.h"
 #include "voxigen/regularGrid.h"
 #include "voxigen/simpleRenderer.h"
@@ -22,9 +23,12 @@ bool key_s=false;
 bool key_space=false;
 bool key_left_shift=false;
 voxigen::SimpleFpsCamera player;
+
+unsigned int playerSegment;
+glm::ivec3 playerSegmentIndex;
 unsigned int playerChunk;
 
-namespace voigen
+namespace voxigen
 {
 //force generator instantiation
 typedef voxigen::Chunk<voxigen::Cell, 64, 64, 16> Chunk_64_64_16;
@@ -86,14 +90,23 @@ int main(int argc, char ** argv)
     else
         world.load(worldDirectories[0].path().string());
     
+    glm::ivec3 segmentCellSize=world.segmentCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
     worldMiddle.z+=5.0f;
-    player.setPosition(worldMiddle);
+    
     player.setYaw(0.0f);
     player.setPitch(0.0f);
-    playerChunk=world.getChunkHash(player.getPosition());
     
+    voxigen::SegmentChunkHash hashes=world.getHashes(worldMiddle);
+
+    playerSegment=hashes.segmentHash;
+    playerChunk=hashes.chunkHash;
+    playerSegmentIndex=world.getSegmentIndex(playerSegment);
+    
+    //set player position to local segment
+    player.setPosition(playerSegment, world.gridPosToSegmentPos(playerSegment, worldMiddle));
+
     voxigen::SimpleRenderer<World> renderer(&world);
 
     renderer.setCamera(&player);
@@ -163,43 +176,92 @@ int main(int argc, char ** argv)
 
             bool resetPos=false;
 
-            if(playerPos.x<0.0f)
+//            if(playerPos.x<0.0f)
+//            {
+//                playerPos.x=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.x>worldSize.x)
+//            {
+//                playerPos.x=worldSize.x;
+//                resetPos=true;
+//            }
+//            
+//            if(playerPos.y<0.0f)
+//            {
+//                playerPos.y=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.y>worldSize.y)
+//            {
+//                playerPos.y=worldSize.y;
+//                resetPos=true;
+//            }
+//
+//            if(playerPos.z<0.0f)
+//            {
+//                playerPos.z=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.z>worldSize.z)
+//            {
+//                playerPos.z=worldSize.z;
+//                resetPos=true;
+//            }
+//
+//            if(resetPos)
+//                player.setPosition(playerPos);
+            unsigned int segmentHash=playerSegment;
+            bool updateSegment=false;
+
+            if(playerPos.x<0)
             {
-                playerPos.x=0.0f;
-                resetPos=true;
+                playerSegmentIndex.x--;
+                playerPos.x+=segmentCellSize.x;
+                updateSegment=true;
             }
-            else if(playerPos.x>worldSize.x)
+            else if(playerPos.x>segmentCellSize.x)
             {
-                playerPos.x=worldSize.x;
-                resetPos=true;
-            }
-            
-            if(playerPos.y<0.0f)
-            {
-                playerPos.y=0.0f;
-                resetPos=true;
-            }
-            else if(playerPos.y>worldSize.y)
-            {
-                playerPos.y=worldSize.y;
-                resetPos=true;
+                playerSegmentIndex.x++;
+                playerPos.x-=segmentCellSize.x;
+                updateSegment=true; 
             }
 
-            if(playerPos.z<0.0f)
+            if(playerPos.y<0)
             {
-                playerPos.z=0.0f;
-                resetPos=true;
+                playerSegmentIndex.y--;
+                playerPos.y+=segmentCellSize.y;
+                updateSegment=true;
             }
-            else if(playerPos.z>worldSize.z)
+            else if(playerPos.y>segmentCellSize.y)
             {
-                playerPos.z=worldSize.z;
-                resetPos=true;
+                playerSegmentIndex.y++;
+                playerPos.y-=segmentCellSize.y;
+                updateSegment=true;
             }
 
-            if(resetPos)
-                player.setPosition(playerPos);
+            if(playerPos.z<0)
+            {
+                playerSegmentIndex.z--;
+                playerPos.z+=segmentCellSize.z;
+                updateSegment=true;
+            }
+            else if(playerPos.z>segmentCellSize.z)
+            {
+                playerSegmentIndex.z++;
+                playerPos.z-=segmentCellSize.z;
+                updateSegment=true;
+            }
 
-            chunkHash=world.getChunkHash(player.getPosition());
+            if(updateSegment)
+            {
+                segmentHash=world.getSegmentHash(playerSegmentIndex);
+                player.setPosition(segmentHash, playerPos);
+                playerSegment=segmentHash;
+
+                //segment changed, chunk hash will change too.
+            }
+            chunkHash=world.getChunkHash(segmentHash, playerPos);
 
             if(playerChunk!=chunkHash)
             {

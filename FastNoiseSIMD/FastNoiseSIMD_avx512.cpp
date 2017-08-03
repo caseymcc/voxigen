@@ -1,4 +1,4 @@
-// FastNoiseSIMD_neon.cpp
+// FastNoiseSIMD_avx512.cpp
 //
 // MIT License
 //
@@ -26,13 +26,24 @@
 // off every 'zix'.)
 //
 
-#include "voxigen/noise/FastNoiseSIMD.h"
-#ifdef FN_COMPILE_NEON
+#include "FastNoiseSIMD.h"
 
-#define SIMD_LEVEL_H FN_NEON
+// DISABLE WHOLE PROGRAM OPTIMIZATION for this file when using MSVC
+
+// To compile AVX512 support enable AVX(2) code generation compiler flags for this file
+#ifdef FN_COMPILE_AVX512
+#ifndef __AVX__
+#ifdef __GNUC__
+#error To compile AVX512 add build command "-march=core-avx2" on FastNoiseSIMD_avx512.cpp, or remove "#define FN_COMPILE_AVX512" from FastNoiseSIMD.h
+#else
+#error To compile AVX512 set C++ code generation to use /arch:AVX(2) on FastNoiseSIMD_avx512.cpp, or remove "#define FN_COMPILE_AVX512" from FastNoiseSIMD.h
+#endif
+#endif
+
+#define SIMD_LEVEL_H FN_AVX512
 #include "FastNoiseSIMD_internal.h"
-#include <arm_neon.h>
+#include <intrin.h> //AVX512
 
-#define SIMD_LEVEL FN_NEON
+#define SIMD_LEVEL FN_AVX512
 #include "FastNoiseSIMD_internal.cpp"
 #endif

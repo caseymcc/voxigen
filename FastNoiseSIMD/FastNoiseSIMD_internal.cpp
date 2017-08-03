@@ -26,7 +26,7 @@
 // off every 'zix'.)
 //
 
-#include "voxigen/noise/FastNoiseSIMD.h"
+#include "FastNoiseSIMD.h"
 #include <assert.h> 
 
 #if defined(SIMD_LEVEL) || defined(FN_COMPILE_NO_SIMD_FALLBACK)

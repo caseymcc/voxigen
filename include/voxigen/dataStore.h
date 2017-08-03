@@ -1,8 +1,10 @@
-#ifndef _voxigen_chunkCache_h_
-#define _voxigen_chunkCache_h_
+#ifndef _voxigen_dataStore_h_
+#define _voxigen_dataStore_h_
 
 #include "voxigen/chunkHandle.h"
+#include "voxigen/segmentHandle.h"
 #include "voxigen/gridDescriptors.h"
+#include "voxigen/generator.h"
 
 #include <thread>
 #include <mutex>
@@ -66,57 +68,67 @@ struct IOWriteRequest:public IORequest<_Chunk>
 
 namespace fs=boost::filesystem;
 
-template<typename _Chunk>
-class ChunkCache
+template<typename _Segment, typename _Chunk>
+class DataStore:public DataHandler<SegmentHash, SegmentHandle<_Segment>, _Segment>
 {
 public:
+    typedef _Segment SegmentType;
+    typedef SegmentHandle<_Segment> SegmentHandleType;
+    typedef std::shared_ptr<SegmentHandleType> SharedSegmentHandle;
+//    typedef std::weak_ptr<SegmentHandleType> WeakSegmentHandle;
+//    typedef std::unordered_map<SegmentHash, WeakSegmentHandle> WeakSegmentHandleMap;
+//    typedef std::unordered_map<SegmentHash, SharedSegmentHandle> SegmentHandleMap;
+
     typedef _Chunk ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunk;
 
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
-    typedef std::weak_ptr<ChunkHandleType> WeakChunkHandle;
-    typedef std::unordered_map<unsigned int, WeakChunkHandle> WeakChunkHandleMap;
-    typedef std::unordered_map<unsigned int, SharedChunkHandle> ChunkHandleMap;
 
     typedef IORequest<_Chunk> IORequestType;
     typedef IOReadRequest<_Chunk> IOReadRequestType;
     typedef IOWriteRequest<_Chunk> IOWriteRequestType;
     typedef std::shared_ptr<IORequestType> SharedIORequest;
 
-    ChunkCache(GridDescriptors *descriptors);
+    DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue);
 
     void initialize();
     void terminate();
-    size_t handlesInUse();
+//    size_t handlesInUse();
 
     bool load(const std::string &name);
 
     void ioThread();
     void generatorThread();
 
-    SharedChunkHandle getChunk(unsigned int segmentHash, unsigned int chunkHash);
-    void removeHandle(ChunkHandleType *chunkHandle);
+    SharedSegmentHandle getSegment(SegmentHash segmentHash);
+    SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
+//    void removeHandle(ChunkHandleType *chunkHandle);
 
-    std::vector<unsigned int> getUpdatedChunks();
+    std::vector<SegmentChunkHash> getUpdatedChunks();
 
-    void addReadEvent(SharedChunkHandle chunkHandle);
-    void addWriteEvent(SharedChunkHandle chunkHandle);
+    void read(SharedChunkHandle chunkHandle);
+    void write(SharedChunkHandle chunkHandle);
+
+protected:
+    virtual DataHandle *newHandle(HashType hash);
 
 private:
     void readChunk(IORequestType *request);
     void writeChunk(IORequestType *request);
-    void addConfig(SharedChunkHandle chunkHandle);
+    void addConfig(SharedDataHandle handle);
+    void addConfig(SharedChunkHandle handle);
 
     void loadConfig();
     void saveConfig();
-    void loadChunkCache();
+    void loadDataStore();
     void verifyDirectory();
 
     GridDescriptors *m_descriptors;
+    GeneratorQueue<ChunkType> *m_generatorQueue;
 
 //World files
-    std::string m_worldDirectory;
+    std::string m_directory;
     std::string m_configFile;
     std::string m_cacheDirectory;
     unsigned int m_version;
@@ -130,22 +142,23 @@ private:
     rapidjson::Document m_configDocument;
 };
 
-template<typename _Chunk>
-ChunkCache<_Chunk>::ChunkCache(GridDescriptors *descriptors):
-    m_descriptors(descriptors)
+template<typename _Segment, typename _Chunk>
+DataStore<_Segment, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue):
+m_descriptors(descriptors),
+m_generatorQueue(generatorQueue)
 {
     m_version=0;
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::initialize()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::initialize()
 {
     m_ioThreadRun=true;
-    m_ioThread=std::thread(std::bind(&ChunkCache<_Chunk>::ioThread, this));
+    m_ioThread=std::thread(std::bind(&DataStore<_Segment, _Chunk>::ioThread, this));
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::terminate()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::terminate()
 {
     //thread flags are not atomic so we need the mutexes to coordinate the setting, 
     //otherwise would have to loop re-notifiying thread until it stopped
@@ -158,10 +171,16 @@ void ChunkCache<_Chunk>::terminate()
     m_ioThread.join();
 }
 
-template<typename _Chunk>
-bool ChunkCache<_Chunk>::load(const std::string &directory)
+template<typename _Segment, typename _Chunk>
+typename DataStore<_Segment, _Chunk>::DataHandle *DataStore<_Segment, _Chunk>::newHandle(HashType hash)
 {
-    m_worldDirectory=directory;
+    return new SegmentHandleType(hash, m_descriptors, m_generatorQueue, this);
+}
+
+template<typename _Segment, typename _Chunk>
+bool DataStore<_Segment, _Chunk>::load(const std::string &directory)
+{
+    m_directory=directory;
     fs::path worldPath(directory);
 
     if(!fs::is_directory(worldPath))
@@ -172,7 +191,7 @@ bool ChunkCache<_Chunk>::load(const std::string &directory)
         fs::create_directory(worldPath);
     }
 
-    m_configFile=m_worldDirectory+"/chunkConfig.json";
+    m_configFile=m_directory+"/cacheConfig.json";
     fs::path configPath(m_configFile);
 
     if(!fs::exists(configPath))
@@ -180,15 +199,15 @@ bool ChunkCache<_Chunk>::load(const std::string &directory)
     else
         loadConfig();
 
-    loadChunkCache();
+    loadDataStore();
     verifyDirectory();
     return true;
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::loadConfig()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::loadConfig()
 {
-    //    m_configFile=m_worldDirectory.string()+"/chunkConfig.json";
+    //    m_configFile=m_directory.string()+"/chunkConfig.json";
     FILE *filePtr=fopen(m_configFile.c_str(), "rb");
     char readBuffer[65536];
 
@@ -202,29 +221,29 @@ void ChunkCache<_Chunk>::loadConfig()
 
     m_version=document["version"].GetUint();
 
-    const rapidjson::Value &chunks=document["chunks"];
-    assert(chunks.IsArray());
+    const rapidjson::Value &segments=document["segments"];
+    assert(segments.IsArray());
 
-    for(rapidjson::SizeType i=0; i<chunks.Size(); ++i)
+    for(rapidjson::SizeType i=0; i<segments.Size(); ++i)
     {
-        const rapidjson::Value &chunk=chunks[i];
+        const rapidjson::Value &segmentValue=segments[i];
 
-        unsigned int hash=chunk["id"].GetUint();
-        SharedChunkHandle chunkHandle=std::make_shared<ChunkHandleType>(hash);
+        SegmentHash hash=segmentValue["id"].GetUint();
+        SharedSegmentHandle segmentHandle(newHandle(hash));
 
-        chunkHandle->cachedOnDisk=true;
-        chunkHandle->empty=chunk["empty"].GetBool();
+        segmentHandle->cachedOnDisk=true;
+        segmentHandle->empty=segmentValue["empty"].GetBool();
 
-        m_chunkHandles.insert(ChunkHandleMap::value_type(hash, chunkHandle));
+        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
     }
 
     fclose(filePtr);
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::saveConfig()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::saveConfig()
 {
-    //    m_configFile=m_worldDirectory.string()+"/chunkConfig.json";
+    //    m_configFile=m_directory.string()+"/chunkConfig.json";
     FILE *filePtr=fopen(m_configFile.c_str(), "wb");
     char writeBuffer[65536];
 
@@ -236,17 +255,17 @@ void ChunkCache<_Chunk>::saveConfig()
     writer.Key("version");
     writer.Uint(m_version);
 
-    writer.Key("chunks");
+    writer.Key("segments");
     writer.StartArray();
-    for(auto &chunkHandle:m_chunkHandles)
+    for(auto &handle:m_dataHandles)
     {
-        if(chunkHandle.second->empty)
+        if(handle.second->empty)
         {
             writer.StartObject();
             writer.Key("id");
-            writer.Uint(chunkHandle.second->hash);
+            writer.Uint(handle.second->hash);
             writer.Key("empty");
-            writer.Bool(chunkHandle.second->empty);
+            writer.Bool(handle.second->empty);
             writer.EndObject();
         }
     }
@@ -257,26 +276,26 @@ void ChunkCache<_Chunk>::saveConfig()
     fclose(filePtr);
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::addConfig(SharedChunkHandle chunkHandle)
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
-    if(chunkHandle->empty)
+    if(handle->empty)
     {
         rapidjson::Document::AllocatorType &allocator=m_configDocument.GetAllocator();
-        rapidjson::Value &chunks=m_configDocument["chunks"];
-        assert(chunks.IsArray());
+        rapidjson::Value &segments=m_configDocument["segments"];
+        assert(segments.IsArray());
 
-        rapidjson::Value chunk(rapidjson::kObjectType);
+        rapidjson::Value segment(rapidjson::kObjectType);
 
-        chunk.AddMember("id", chunkHandle->chunkHash, allocator);
-        chunk.AddMember("empty", chunkHandle->empty, allocator);
+        segment.AddMember("id", handle->chunkHash, allocator);
+        segment.AddMember("empty", handle->empty, allocator);
 
-        chunks.PushBack(chunk, allocator);
-        //    m_configFile=m_worldDirectory.string()+"/chunkConfig.json";
+        segments.PushBack(segment, allocator);
+        //    m_configFile=m_directory.string()+"/chunkConfig.json";
 
-        std::string tempConfig=m_configFile+".tmp";
+        std::string tempConfig=m_configFile+ror".tmp";
         FILE *filePtr=fopen(tempConfig.c_str(), "wb");
         char writeBuffer[65536];
 
@@ -292,42 +311,74 @@ void ChunkCache<_Chunk>::addConfig(SharedChunkHandle chunkHandle)
     }
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::loadChunkCache()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::addConfig(SharedChunkHandle handle)
 {
-    fs::path chunkDirectory(m_worldDirectory);
+    //TODO - fix
+    //lazy programming for the moment, see remarks in ioThread below
+    if(handle->empty)
+    {
+        SharedSegmentHandle segmentHandle=getSegment(handle->segmentHash);
+
+        segmentHandle->addConfig(handle);
+    }
+}
+
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::loadDataStore()
+{
+    fs::path chunkDirectory(m_directory);
 
     for(auto &entry:fs::directory_iterator(chunkDirectory))
     {
-        if(fs::is_regular_file(entry.path()))
+        if(fs::is_directory(entry.path()))
         {
-            if(entry.path().extension().string()!=".chk")
-                continue;
-
             std::istringstream fileNameStream(entry.path().stem().string());
-            unsigned int hash;
+            SegmentHash hash;
 
-            fileNameStream.ignore(6);
             fileNameStream>>std::hex>>hash;
 
-            SharedChunkHandle chunkHandle=std::make_shared<ChunkHandleType>(hash);
+            SharedSegmentHandle handle(newHandle(hash));
 
-            chunkHandle->cachedOnDisk=true;
-            chunkHandle->empty=false;
+            handle->cachedOnDisk=true;
+            handle->empty=false;
 
-            m_chunkHandles.insert(ChunkHandleMap::value_type(hash, chunkHandle));
+            m_dataHandles.insert(SharedDataHandleMap::value_type(hash, handle));
         }
     }
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::verifyDirectory()
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::verifyDirectory()
 {
 
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::ioThread()
+template<typename _Segment, typename _Chunk>
+typename DataStore<_Segment, _Chunk>::SharedSegmentHandle DataStore<_Segment, _Chunk>::getSegment(SegmentHash hash)
+{
+    SharedSegmentHandle segmentHandle=getDataHandle(hash);
+
+    if(segmentHandle->getStatus()!=SegmentHandleType::Loaded)
+    {
+        std::ostringstream directoryName;
+
+        directoryName<<std::hex<<hash;
+        std::string directory=m_directory+"/"+directoryName.str();
+
+        segmentHandle->load(directory);
+    }
+    return segmentHandle;
+}
+
+template<typename _Segment, typename _Chunk>
+typename DataStore<_Segment, _Chunk>::SharedChunkHandle DataStore<_Segment, _Chunk>::getChunk(SegmentHash segmentHash, ChunkHash chunkHash)
+{
+    return getSegment(segmentHash)->getChunk(chunkHash);
+}
+
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::ioThread()
 {
     std::unique_lock<std::mutex> lock(m_ioMutex);
 
@@ -335,15 +386,15 @@ void ChunkCache<_Chunk>::ioThread()
     //I am so hacking this up, going to store the config as a json doc for updating
     //need batching system for this, delayed writes (get multiple changes to chunks
     //in one write)
-    {
-        FILE *filePtr=fopen(m_configFile.c_str(), "rb");
-        char readBuffer[65536];
-
-        rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
-
-        m_configDocument.ParseStream(readStream);
-        fclose(filePtr);
-    }
+//    {
+//        FILE *filePtr=fopen(m_configFile.c_str(), "rb");
+//        char readBuffer[65536];
+//
+//        rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
+//
+//        m_configDocument.ParseStream(readStream);
+//        fclose(filePtr);
+//    }
 
     std::vector<SharedIORequest> requests;
 
@@ -390,8 +441,8 @@ void ChunkCache<_Chunk>::ioThread()
     }
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::readChunk(IORequestType *request)
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::readChunk(IORequestType *request)
 {
     IOReadRequestType *readRequest=(IOReadRequestType *)request;
     SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
@@ -403,13 +454,13 @@ void ChunkCache<_Chunk>::readChunk(IORequestType *request)
     {
         std::ostringstream fileNameStream;
 
-        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->chunkHash<<".chk";
-        std::string fileName=m_worldDirectory+fileNameStream.str();
+        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash<<".chk";
+        std::string fileName=m_directory+fileNameStream.str();
 
-        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->chunkHash);
+        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
         glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
 
-        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->chunkHash, 0, chunkIndex, offset);
+        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, offset);
 
         auto &cells=chunkHandle->chunk->getCells();
         std::ifstream file;
@@ -422,11 +473,11 @@ void ChunkCache<_Chunk>::readChunk(IORequestType *request)
     }
 
     chunkHandle->status=ChunkHandleType::Memory;
-//    addToUpdatedQueue(chunkHandle->chunkHash);
+//    addToUpdatedQueue(chunkHandle->hash);
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::writeChunk(IORequestType *request)
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::writeChunk(IORequestType *request)
 {
     IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
     SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
@@ -435,8 +486,8 @@ void ChunkCache<_Chunk>::writeChunk(IORequestType *request)
     {
         std::ostringstream fileNameStream;
 
-        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->chunkHash<<".chk";
-        std::string fileName=m_worldDirectory+fileNameStream.str();
+        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash<<".chk";
+        std::string fileName=m_directory+fileNameStream.str();
 
         auto &cells=chunkHandle->chunk->getCells();
         std::ofstream file;
@@ -449,6 +500,7 @@ void ChunkCache<_Chunk>::writeChunk(IORequestType *request)
     }
 
     chunkHandle->cachedOnDisk=true;
+    
     //need to alter this to save in batched and update config then
     addConfig(chunkHandle);
 
@@ -456,8 +508,8 @@ void ChunkCache<_Chunk>::writeChunk(IORequestType *request)
     writeRequest->chunkHandle.reset();
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::addReadEvent(SharedChunkHandle chunkHandle)
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::read(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
@@ -469,8 +521,8 @@ void ChunkCache<_Chunk>::addReadEvent(SharedChunkHandle chunkHandle)
     m_ioEvent.notify_all();
 }
 
-template<typename _Chunk>
-void ChunkCache<_Chunk>::addWriteEvent(SharedChunkHandle chunkHandle)
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::write(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
@@ -484,4 +536,4 @@ void ChunkCache<_Chunk>::addWriteEvent(SharedChunkHandle chunkHandle)
 
 } //namespace voxigen
 
-#endif //_voxigen_chunkCache_h_
+#endif //_voxigen_dataStore_h_

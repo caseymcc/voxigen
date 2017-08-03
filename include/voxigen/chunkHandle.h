@@ -23,16 +23,17 @@ struct ChunkHandle
         Memory
     };
 
-    ChunkHandle(unsigned int segmentHash, unsigned int chunkHash):segmentHash(segmentHash), chunkHash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
+    ChunkHandle(unsigned int segmentHash, unsigned int chunkHash):segmentHash(segmentHash), hash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
+
+    void release() { chunk.reset(nullptr); status=Unknown; }
 
     Status status;
     unsigned int segmentHash;
-    unsigned int chunkHash;
+    unsigned int hash;
     UniqueChunk chunk;
 
     bool cachedOnDisk;
     bool empty;
-//    std::string cacheFile;
 };
 
 } //namespace voxigen

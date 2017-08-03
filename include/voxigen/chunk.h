@@ -1,6 +1,7 @@
 #ifndef _voxigen_chunk_h_
 #define _voxigen_chunk_h_
 
+#include "voxigen/defines.h"
 #include "voxigen/boundingBox.h"
 #include "voxigen/gridDescriptors.h"
 
@@ -15,7 +16,7 @@ template<typename _Cell, size_t _x, size_t _y, size_t _z>
 class Chunk//:public BoundingBox
 {
 public:
-    Chunk(unsigned int hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset);
+    Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset);
 
     typedef std::vector<_Cell> Cells;
     typedef _Cell CellType;
@@ -23,7 +24,7 @@ public:
     typedef std::integral_constant<size_t, _y> sizeY;
     typedef std::integral_constant<size_t, _z> sizeZ;
     
-    unsigned int getHash() const { return m_hash; }
+    ChunkHash getHash() const { return m_hash; }
     Cells &getCells() { return m_cells; }
     
     unsigned int validCellCount() { return m_validCells; }
@@ -35,7 +36,7 @@ public:
     _Cell &getCell(const glm::vec3 &position);
 
 private:
-    unsigned int m_hash; //unique id used to look up chunk in segment
+    ChunkHash m_hash; //unique id used to look up chunk in segment
     unsigned int m_revision; //incremented as changes are made
 
     Cells m_cells; //block info
@@ -50,7 +51,7 @@ using UniqueChunk=std::unique_ptr<Chunk<_Cell, _x, _y, _z>>;
 
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
-Chunk<_Cell, _x, _y, _z>::Chunk(unsigned int hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset):
+Chunk<_Cell, _x, _y, _z>::Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset):
 //BoundingBox(dimensions, transform),
 m_hash(hash),
 m_revision(revision),

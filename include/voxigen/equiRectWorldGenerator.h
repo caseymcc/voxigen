@@ -6,8 +6,8 @@
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/coords.h"
 
-#include <noise/noise.h>
-#include <voxigen/noise/FastNoiseSIMD.h>
+//#include <noise/noise.h>
+#include <FastNoiseSIMD.h>
 
 namespace voxigen
 {
@@ -28,9 +28,10 @@ public:
     
     void generateWorldOverview();
 
-    UniqueChunkType generateChunk(unsigned int hash, void *buffer, size_t bufferSize);
-    UniqueChunkType generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize);
-    UniqueChunkType generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize);
+//    UniqueChunkType generateChunk(unsigned int hash, void *buffer, size_t bufferSize);
+//    UniqueChunkType generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize);
+//    UniqueChunkType generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize);
+    unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize);
 
 private:
     GridDescriptors *m_descriptors;
@@ -91,35 +92,21 @@ void EquiRectWorldGenerator<_Chunk>::generateWorldOverview()
 }
 
 template<typename _Chunk>
-typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(unsigned int hash, void *buffer, size_t bufferSize)
+unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize)
 {
-    glm::ivec3 chunkIndex=m_descriptors->chunkIndex(hash);
-
-    return generateChunk(hash, chunkIndex, buffer, bufferSize);
-}
-
-template<typename _Chunk>
-typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize)
-{
-    unsigned int hash=m_descriptors->chunkHash(chunkIndex);
-
-    return generateChunk(hash, chunkIndex, buffer, bufferSize);
-}
-
-template<typename _Chunk>
-typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<_Chunk>::generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize)
-{
-    glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
-    glm::vec3 scaledOffset=offset*m_descriptors->m_noiseScale;
+//    glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
+    glm::vec3 scaledOffset=startPos*m_descriptors->m_noiseScale;
     glm::vec3 position=scaledOffset;
     float noiseScale=m_descriptors->m_noiseScale;
     
    
-    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, offset);
+//    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, startPos);
 //    ChunkType::Cells &cells=chunk->getCells();
     
     ChunkType::CellType *cells=(ChunkType::CellType *)buffer;
 
+    //verify chunkSize matches template chunk size
+    assert(chunkSize==glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value));
     //verify buffer is large enough for data
     assert(bufferSize>=(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value)*sizeof(ChunkType::CellType));
 
@@ -134,12 +121,12 @@ typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<
     glm::vec3 size=m_descriptors->m_size;
 
     mapPos.z=size.x/2;
-    for(int y=0; y<_Chunk::sizeY::value; ++y)
+    for(int y=0; y<chunkSize.y; ++y)
     {
-        mapPos.y=offset.y+y;
+        mapPos.y=startPos.y+y;
         for(int x=0; x<_Chunk::sizeX::value; ++x)
         {
-            mapPos.x=offset.x+x;
+            mapPos.x=startPos.x+x;
 
             glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
 
@@ -171,7 +158,7 @@ typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<
         heightIndex=0;
         position.y=scaledOffset.y;
 
-        int blockZ=offset.z+z;
+        int blockZ=startPos.z+z;
         for(int y=0; y<_Chunk::sizeY::value; ++y)
         {
             position.x=scaledOffset.x;
@@ -199,8 +186,9 @@ typename EquiRectWorldGenerator<_Chunk>::UniqueChunkType EquiRectWorldGenerator<
         position.z+=noiseScale;
     }
 
-    chunk->setValidCellCount(validCells);
-    return chunk;
+    return validCells;
+//    chunk->setValidCellCount(validCells);
+//    return chunk;
 }
 
 }//namespace voxigen

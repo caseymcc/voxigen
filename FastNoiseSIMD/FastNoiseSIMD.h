@@ -31,8 +31,6 @@
 #ifndef FASTNOISE_SIMD_H
 #define FASTNOISE_SIMD_H
 
-#include "voxigen/voxigen_export.h"
-
 #if defined(__arm__) || defined(__aarch64__)
 #define FN_ARM
 //#define FN_IOS
@@ -97,7 +95,7 @@ AMD Piledriver - 2012
 
 struct FastNoiseVectorSet;
 
-class VOXIGEN_EXPORT FastNoiseSIMD
+class FastNoiseSIMD
 {
 public:
 

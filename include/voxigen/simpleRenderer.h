@@ -28,9 +28,9 @@ public:
     typedef typename GridType::ChunkType ChunkType;
     typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
-    typedef std::unordered_map<unsigned int, size_t> ChunkRendererMap;
+    typedef std::unordered_map<ChunkHash, size_t> ChunkRendererMap;
+    typedef std::unordered_map<SegmentHash, ChunkRendererMap> SegmentRendererMap;
     
-
     SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
     
@@ -62,10 +62,10 @@ private:
 
     GridType *m_grid;
 
-    std::vector<glm::ivec3> m_chunkIndicies;
+    std::vector<glm::ivec3> m_chunkIndices;
     std::vector<ChunkRenderType> m_chunkRenderers;
-    ChunkRendererMap m_chunkRendererMap;
-    std::vector<unsigned int> m_chunksUpdated;
+    SegmentRendererMap m_rendererMap;
+    std::vector<SegmentChunkHash> m_chunksUpdated;
 
     opengl_util::Program m_program;
     size_t m_uniformProjectionViewId;
@@ -268,7 +268,7 @@ void SimpleRenderer<_Grid>::build()
 template<typename _Grid>
 void SimpleRenderer<_Grid>::destroy()
 {
-    m_chunkRendererMap.clear();
+    m_rendererMap.clear();
     m_chunkRenderers.clear();
 }
 
@@ -313,9 +313,9 @@ void SimpleRenderer<_Grid>::draw()
 
         for(size_t i=0; i<maxUpdates; ++i)
         {
-            unsigned int hash=m_chunksUpdated[i];
+            SegmentChunkHash &hash=m_chunksUpdated[i];
 
-            auto iter=std::find_if(m_chunkRenderers.begin(), m_chunkRenderers.end(), [&hash](auto &renderer){return (renderer.getHash()==hash); });
+            auto iter=std::find_if(m_chunkRenderers.begin(), m_chunkRenderers.end(), [&hash](auto &renderer){return ((renderer.getSegmentHash()==hash.segmentHash)&&(renderer.getChunkHash()==hash.chunkHash)); });
 
             if(iter!=m_chunkRenderers.end())
                 iter->update();
@@ -366,7 +366,7 @@ void SimpleRenderer<_Grid>::setViewRadius(float radius)
     glm::ivec3 &chunkSize=m_grid->getDescriptors().m_chunkSize;
     glm::ivec3 chunkRadius=glm::ceil(glm::vec3(m_viewRadius/chunkSize.x, m_viewRadius/chunkSize.y, m_viewRadius/chunkSize.z));
 
-    m_chunkIndicies.clear();
+    m_chunkIndices.clear();
     glm::vec3 startPos=(chunkRadius*(-chunkSize))+(chunkSize/2);
     glm::vec3 chunkPos;
 
@@ -383,7 +383,7 @@ void SimpleRenderer<_Grid>::setViewRadius(float radius)
 
                 if(chunkDistance<=m_viewRadius)
                 {
-                    m_chunkIndicies.push_back(glm::ivec3(x, y, z));
+                    m_chunkIndices.push_back(glm::ivec3(x, y, z));
                 }
                 chunkPos.x+=chunkSize.x;
             }
@@ -392,25 +392,26 @@ void SimpleRenderer<_Grid>::setViewRadius(float radius)
         chunkPos.z+=chunkSize.z;
     }
 
-    if(m_chunkIndicies.empty()) //always want at least the current chunk
-        m_chunkIndicies.push_back(glm::ivec3(0, 0, 0));
+    if(m_chunkIndices.empty()) //always want at least the current chunk
+        m_chunkIndices.push_back(glm::ivec3(0, 0, 0));
 }
 
 template<typename _Grid>
 void SimpleRenderer<_Grid>::updateChunks()
 {
+    glm::ivec3 segmentIndex=m_grid->getSegmentIndex(m_camera->getSegmentHash());
     glm::ivec3 chunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
 
-    if(m_chunkRenderers.size()!=m_chunkIndicies.size())
+    if(m_chunkRenderers.size()!=m_chunkIndices.size())
     {
         //depending on how often this happens (should only be on viewRadius change), 
         //might want to move any renderers outside the new size to invalid render locations
         //lower in the vector, then resize (otherwise they will get rebuilt)
 
-        bool buildRenderers=(m_chunkRenderers.size()<m_chunkIndicies.size());
+        bool buildRenderers=(m_chunkRenderers.size()<m_chunkIndices.size());
         size_t buildIndex=m_chunkRenderers.size();
 
-        m_chunkRenderers.resize(m_chunkIndicies.size());
+        m_chunkRenderers.resize(m_chunkIndices.size());
         if(buildRenderers)
         {
             //need to setup buffers for new chunks
@@ -426,27 +427,47 @@ void SimpleRenderer<_Grid>::updateChunks()
     }
 
     int size=m_chunkRenderers.size();
-    size_t mapSize=m_chunkRendererMap.size();
+    size_t mapSize=m_rendererMap.size();
 
     std::vector<bool> invalidatedRenderers(size);
-    std::vector<unsigned int> chunks(size);
+//    std::vector<unsigned int> chunks(size);
+    std::vector<SegmentChunkHash> chunks(size);
+    std::vector<glm::vec3> chunkOffset(size);
+
     std::vector<bool> inUse(size);
-    
+    glm::ivec3 index;
+    glm::ivec3 currentSegmentIndex;
+
     for(size_t i=0; i<size; ++i)
     {
-        chunks[i]=m_grid->chunkHash(chunkIndex+m_chunkIndicies[i]);
+//        chunks[i]=m_grid->chunkHash(chunkIndex+m_chunkIndices[i]);
+        index=chunkIndex+m_chunkIndices[i];
+        currentSegmentIndex=segmentIndex;
+
+        chunkOffset[i]=m_grid->getDescriptors().adjustSegment(currentSegmentIndex, index);
+        chunks[i]=m_grid->getHashes(currentSegmentIndex, index);
+
         invalidatedRenderers[i]=true;
         inUse[i]=false;
     }
 
     for(size_t i=0; i<size; ++i)
     {
-        auto &iter=m_chunkRendererMap.find(chunks[i]);
+        auto &iter=m_rendererMap.find(chunks[i].segmentHash);
 
-        if(iter!=m_chunkRendererMap.end())
+        if(iter!=m_rendererMap.end())
         {
-            invalidatedRenderers[iter->second]=false;
-            inUse[i]=true;
+            auto &chunkIter=iter->second.find(chunks[i].chunkHash);
+
+            if(chunkIter!=iter->second.end())
+            {
+                invalidatedRenderers[chunkIter->second]=false;
+                inUse[i]=true;
+
+                //update if offset is different
+                if(m_chunkRenderers[chunkIter->second].getChunkOffset()!=chunkOffset[i])
+                    m_chunkRenderers[chunkIter->second].setChunkOffset(chunkOffset[i]);
+            }
         }
     }
 
@@ -463,10 +484,19 @@ void SimpleRenderer<_Grid>::updateChunks()
 
         if(invalidatedRenderers[i])
         {
-            auto &iter=m_chunkRendererMap.find(chunkRenderer.getHash());
+            auto &iter=m_rendererMap.find(chunkRenderer.getSegmentHash());
 
-            if(iter!=m_chunkRendererMap.end())
-                m_chunkRendererMap.erase(iter);
+            if(iter!=m_rendererMap.end())
+            {
+                auto &chunkIter=iter->second.find(chunkRenderer.getChunkHash());
+
+                if(chunkIter!=iter->second.end())
+                    iter->second.erase(chunkIter);
+
+                if(iter->second.empty())
+                    m_rendererMap.erase(iter);
+
+            }
 
             chunkRenderer.invalidate();
         }
@@ -487,11 +517,26 @@ void SimpleRenderer<_Grid>::updateChunks()
                 continue;
 
             ChunkRenderType &chunkRenderer=m_chunkRenderers[j];
-            m_chunkRendererMap.insert(ChunkRendererMap::value_type(chunks[i], j));
 
-            SharedChunkHandle chunkHandle=m_grid->getChunk(0, chunks[i]);
+            auto &iter=m_rendererMap.find(chunks[i].segmentHash);
 
+            ChunkRendererMap *chunkRenderMap;
+
+            if(iter==m_rendererMap.end())
+            {
+                m_rendererMap.insert(SegmentRendererMap::value_type(chunks[i].segmentHash, ChunkRendererMap()));
+                chunkRenderMap=&m_rendererMap[chunks[i].segmentHash];
+            }
+            else
+                chunkRenderMap=&iter->second;
+
+            chunkRenderMap->insert(ChunkRendererMap::value_type(chunks[i].chunkHash, j));
+
+            SharedChunkHandle chunkHandle=m_grid->getChunk(chunks[i].segmentHash, chunks[i].chunkHash);
+
+            chunkRenderer.setSegmentHash(chunks[i].segmentHash);
             chunkRenderer.setChunk(chunkHandle);
+            chunkRenderer.setChunkOffset(chunkOffset[i]);
             chunkRenderer.update();
 
             invalidatedIndex=j+1;

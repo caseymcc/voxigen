@@ -28,7 +28,7 @@ public:
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 //    typedef std::shared_ptr<ChunkType> SharedChunk;
 
-    SimpleChunkRenderer():m_state(Init){}
+    SimpleChunkRenderer():m_state(Init),m_chunkOffset(0.0f,0.0f,0.0f){}
     ~SimpleChunkRenderer() {}
     
     enum State
@@ -43,7 +43,11 @@ public:
     State getState() { return m_state; }
 
     void setParent(RenderType *parent);
+    void setSegmentHash(SegmentHash hash);
     void setChunk(SharedChunkHandle chunk);
+    void setChunkOffset(glm::vec3 chunkOffset) { m_chunkOffset=chunkOffset; m_state=Dirty; }
+    const glm::vec3 &getChunkOffset() { return m_chunkOffset; }
+
     void build(unsigned int instanceData);
 #ifndef NDEBUG
     void buildOutline(unsigned int instanceData);
@@ -57,16 +61,19 @@ public:
     void drawOutline();
 #endif //NDEBUG
 
-    const unsigned int getHash() { return m_chunkHandle->chunkHash; }
+    const SegmentHash getSegmentHash() { return m_segmentHash; }
+    const ChunkHash getChunkHash() { return m_chunkHandle->hash; }
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
     
 private:
     RenderType *m_parent;
 
     State m_state;
+    SegmentHash m_segmentHash;
     SharedChunkHandle m_chunkHandle;
     bool m_empty;
 
+    glm::vec3 m_chunkOffset;
     unsigned int m_validBlocks;
     unsigned int m_vertexArray;
     unsigned int m_offsetVBO;
@@ -82,6 +89,12 @@ template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::setParent(RenderType *parent)
 {
     m_parent=parent;
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setSegmentHash(SegmentHash hash)
+{
+    m_segmentHash=hash;
 }
 
 template<typename _Parent, typename _Chunk>
@@ -171,7 +184,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 #ifndef NDEBUG
         //chunk is not going to be valid till loaded, so going to hack together the offset from
         //the hash info
-        glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->chunkHash), 1.0f);
+        glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)+m_chunkOffset, 1.0f);
 
         glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(position), GL_STATIC_DRAW);
@@ -193,7 +206,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 //    std::vector<glm::vec4> translations(chunkSize.x*chunkSize.y*chunkSize.z);
     std::vector<glm::vec4> translations(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value);
 //    glm::ivec3 position=m_chunk->getPosition();
-    glm::vec3 position=chunk->getGridOffset();
+    glm::vec3 position=chunk->getGridOffset()+m_chunkOffset;
     glm::ivec3 pos=position;
 
     int index=0;

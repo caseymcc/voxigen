@@ -26,7 +26,7 @@
 // off every 'zix'.)
 //
 
-#include "voxigen/noise/FastNoiseSIMD.h"
+#include "FastNoiseSIMD.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <algorithm>

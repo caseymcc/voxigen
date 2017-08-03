@@ -26,7 +26,7 @@
 // off every 'zix'.)
 //
 
-#include "voxigen/noise/FastNoiseSIMD.h"
+#include "FastNoiseSIMD.h"
 
 // DISABLE WHOLE PROGRAM OPTIMIZATION for this file when using MSVC
 
