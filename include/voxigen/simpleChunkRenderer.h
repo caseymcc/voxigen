@@ -235,7 +235,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
         pos.z+=1.0;
     }
 
-    validCells=validCells;
+    m_validBlocks=validCells;
     if(validCells==0)
     {
         m_state=Empty;

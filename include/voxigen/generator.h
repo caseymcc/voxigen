@@ -29,11 +29,13 @@ public:
 typedef std::shared_ptr<Generator> SharedGenerator;
 
 template<typename _Generator>
-class GeneratorTemplate:RegisterClass<GeneratorTemplate<_Generator>, Generator>
+class GeneratorTemplate:public RegisterClass<GeneratorTemplate<_Generator>, Generator>
 {
 public:
     GeneratorTemplate():m_generator(new _Generator()) {}
     virtual ~GeneratorTemplate() {}
+
+    static char *typeName() { return _Generator::typeName(); }
 
     virtual void initialize(GridDescriptors *descriptors) { m_generator->initialize(descriptors); }
 //    virtual void terminate() { m_generator->terminate(); }
@@ -53,7 +55,7 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    GeneratorQueue():m_generator(nullptr){}
+    GeneratorQueue(GridDescriptors *descriptors):m_descriptors(descriptors), m_generator(nullptr){}
 
     void setGenerator(Generator *generator) { m_generator=generator; }
 

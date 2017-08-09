@@ -129,7 +129,7 @@ std::string SimpleRenderer<_Grid>::fragmentShader=
 "\n"
 "void main()\n"
 "{\n"
-"   float value=texCoords.z/10.0f;"
+"   float value=0.7f;//texCoords.z/10.0f;"
 "//   color=vec3(texCoords.x, 0.0, texCoords.y);"
 "   // ambient\n"
 "   float ambientStrength=0.5;\n"
@@ -466,7 +466,10 @@ void SimpleRenderer<_Grid>::updateChunks()
 
                 //update if offset is different
                 if(m_chunkRenderers[chunkIter->second].getChunkOffset()!=chunkOffset[i])
+                {
                     m_chunkRenderers[chunkIter->second].setChunkOffset(chunkOffset[i]);
+                    m_chunkRenderers[chunkIter->second].update();
+                }
             }
         }
     }

@@ -18,13 +18,13 @@ template <typename _Type> struct TypeName
 };
 
 template<typename _Class, typename _BaseClass>
-class RegisterClass
+class RegisterClass:public _BaseClass
 {
 public:
-    RegisterClass() { &s_typeName; }
+    RegisterClass():_BaseClass(){ &s_typeName; }
 
     static _BaseClass *create() { return dynamic_cast<_BaseClass *>(new _Class()); }
-    virtual std::string typeName() { return s_typeName; }
+//    virtual std::string typeName() { return s_typeName; }
 
 private:
     static std::string s_typeName;
@@ -77,7 +77,11 @@ template<typename _BaseClass>
 ClassFactory<_BaseClass> *ClassFactory<_BaseClass>::s_instance=nullptr;
 
 template<typename _Class, typename _BaseClass> std::string RegisterClass<_Class, _BaseClass>::s_typeName=\
-ClassFactory<_BaseClass>::instance().registerClass(TypeName<_Class>::get(), &RegisterClass<_Class, _BaseClass>::create);
+ClassFactory<_BaseClass>::instance().registerClass(_Class::typeName(), &RegisterClass<_Class, _BaseClass>::create);
+//ClassFactory<_BaseClass>::instance().registerClass(TypeName<_Class>.get(), &RegisterClass<_Class, _BaseClass>::create);
+//typeid can be decorated with alot of extras making the class name rather unreadable, switching to a static type name provided by the class
+//Would be better to check if class has static typeName function (using template meta-programing) and falling back to typeid if it doesn't exist,
+//but just disabling for now
 
 template<typename _BaseClass> std::shared_ptr<_BaseClass> createClass(std::string className)
 {

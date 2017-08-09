@@ -22,6 +22,8 @@ public:
     EquiRectWorldGenerator();
     ~EquiRectWorldGenerator();
 
+    static char *typeName(){return "EquiRectWorldGenerator";}
+
     void initialize(GridDescriptors *descriptors);
 //    void setWorld(GridDescriptors descriptors);
 //    void setWorldDiscriptors(GridDescriptors descriptors);

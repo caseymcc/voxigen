@@ -104,7 +104,8 @@ private:
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::RegularGrid():
-m_dataStore(&m_descriptors, &m_generatorQueue)
+m_dataStore(&m_descriptors, &m_generatorQueue),
+m_generatorQueue(&m_descriptors)
 //m_chunkHandler(&m_descriptors)
 {
 }
@@ -135,6 +136,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _S
     m_generator=createClass<Generator>(generatorName);
     m_generatorQueue.setGenerator(m_generator.get());
 
+    m_generator->initialize(&m_descriptors);
     m_dataStore.initialize();
     m_generatorQueue.initialize();
 
@@ -154,6 +156,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _S
     std::string segmentDirectory=directory+"/segments";
     m_dataStore.load(segmentDirectory);
 
+    m_generator->initialize(&m_descriptors);
     m_dataStore.initialize();
     m_generatorQueue.initialize();
 
@@ -216,6 +219,7 @@ std::vector<SegmentChunkHash> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _Chun
     std::vector<SegmentChunkHash> updatedChunks;
 
 //TODO: fix
+    updatedChunks=m_generatorQueue.getUpdated();
     return updatedChunks;
 }
 
