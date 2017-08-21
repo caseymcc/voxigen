@@ -138,7 +138,7 @@ void GeneratorQueue<_Chunk>::generatorThread()
         glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
 
         startPos+=chunkOffset;
-        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, startPos);
+        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, chunkOffset);
 
         ChunkType::Cells &cells=chunkHandle->chunk->getCells();
 

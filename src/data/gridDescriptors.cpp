@@ -187,36 +187,46 @@ glm::vec3 GridDescriptors::adjustSegment(glm::ivec3 &segmentIndex, glm::ivec3 &c
     if(chunkIndex.x<0)
     {
         offset.x--;
-        chunkIndex.x=m_chunkSize.x+chunkIndex.x;
+        chunkIndex.x=m_segmentSize.x+chunkIndex.x;
     }
-    else if(chunkIndex.x>m_segmentSize.x)
+    else if(chunkIndex.x>=m_segmentSize.x)
     {
         offset.x++;
-        chunkIndex.x=chunkIndex.x-m_chunkSize.x;
+        chunkIndex.x=chunkIndex.x-m_segmentSize.x;
     }
     if(chunkIndex.y<0)
     {
         offset.y--;
-        chunkIndex.y=m_chunkSize.y+chunkIndex.y;
+        chunkIndex.y=m_segmentSize.y+chunkIndex.y;
     }
-    else if(chunkIndex.y>m_segmentSize.y)
+    else if(chunkIndex.y>=m_segmentSize.y)
     {
         offset.y++;
-        chunkIndex.y=chunkIndex.y-m_chunkSize.y;
+        chunkIndex.y=chunkIndex.y-m_segmentSize.y;
     }
     if(chunkIndex.z<0)
     {
         offset.z--;
-        chunkIndex.z=m_chunkSize.z+chunkIndex.z;
+        chunkIndex.z=m_segmentSize.z+chunkIndex.z;
     }
-    else if(chunkIndex.z>m_segmentSize.z)
+    else if(chunkIndex.z>=m_segmentSize.z)
     {
         offset.z++;
-        chunkIndex.z=chunkIndex.z-m_chunkSize.z;
+        chunkIndex.z=chunkIndex.z-m_segmentSize.z;
     }
 
     segmentIndex+=offset;
     return glm::vec3(m_segmentCellSize*offset);
+}
+
+float GridDescriptors::distance(glm::ivec3 &segmentIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &segmentIndex2, glm::ivec3 &chunkIndex2) const
+{
+    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
+
+    if(segmentIndex1!=segmentIndex2)
+        offset=(segmentIndex1-segmentIndex2)*m_segmentSize;
+
+    return glm::length((chunkIndex1-chunkIndex3)+offset);
 }
 
 ChunkHash GridDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const

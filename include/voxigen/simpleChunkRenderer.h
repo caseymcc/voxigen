@@ -252,6 +252,7 @@ template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 {
     m_state=Invalid;
+    m_chunkHandle.reset(nullptr);
 }
 
 template<typename _Parent, typename _Chunk>
