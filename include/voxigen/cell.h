@@ -13,7 +13,9 @@ struct VOXIGEN_EXPORT BlockDescriptor
 
 struct VOXIGEN_EXPORT Cell
 {
-    unsigned int type;
+    typedef unsigned int Type;
+
+    Type type;
 
     unsigned int damage;
     unsigned int age;

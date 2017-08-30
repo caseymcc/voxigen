@@ -9,6 +9,7 @@
 #include "voxigen/dataStore.h"
 #include "voxigen/entity.h"
 #include "voxigen/classFactory.h"
+#include "voxigen/updateQueue.h"
 
 #include <noise/noise.h>
 
@@ -64,7 +65,7 @@ public:
 
     SharedChunkHandle getChunk(const glm::ivec3 &index);
     SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
-    std::vector<SegmentChunkHash> getUpdatedChunks();
+    std::vector<Key> getUpdatedChunks();
 
     SegmentHash getSegmentHash(const glm::ivec3 &index);
     glm::ivec3 getSegmentIndex(const glm::vec3 &position);
@@ -75,8 +76,8 @@ public:
     ChunkHash getChunkHash(SegmentHash segmentHash, const glm::vec3 &gridPosition);
     ChunkHash getChunkHash(const glm::vec3 &gridPosition);
 
-    SegmentChunkHash getHashes(const glm::vec3 &gridPosition);
-    SegmentChunkHash getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex);
+    Key getHashes(const glm::vec3 &gridPosition);
+    Key getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex);
 
     
 
@@ -98,14 +99,15 @@ private:
     GeneratorQueue<ChunkType> m_generatorQueue;
     SharedGenerator m_generator;
     DataStore<SegmentType, ChunkType> m_dataStore;
+    UpdateQueue m_updateQueue;
 
     glm::mat4 m_transform;
 };
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::RegularGrid():
-m_dataStore(&m_descriptors, &m_generatorQueue),
-m_generatorQueue(&m_descriptors)
+m_dataStore(&m_descriptors, &m_generatorQueue, &m_updateQueue),
+m_generatorQueue(&m_descriptors, &m_updateQueue)
 //m_chunkHandler(&m_descriptors)
 {
 }
@@ -113,6 +115,8 @@ m_generatorQueue(&m_descriptors)
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::~RegularGrid()
 {
+    m_dataStore.terminate();
+    m_generatorQueue.terminate();
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
@@ -214,12 +218,11 @@ typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-std::vector<SegmentChunkHash> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getUpdatedChunks()
+std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getUpdatedChunks()
 {
-    std::vector<SegmentChunkHash> updatedChunks;
+    std::vector<Key> updatedChunks;
 
-//TODO: fix
-    updatedChunks=m_generatorQueue.getUpdated();
+    updatedChunks=m_updateQueue.get();
     return updatedChunks;
 }
 
@@ -257,20 +260,20 @@ glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSiz
 
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-SegmentChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::vec3 &gridPosition)
+Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::vec3 &gridPosition)
 {
     glm::ivec3 position=glm::floor(gridPosition);
     glm::ivec3 segmentCellSize(segmentCellSizeX::value, segmentCellSizeY::value, segmentCellSizeZ::value);
     glm::ivec3 segmentIndex=position/segmentCellSize;
     glm::ivec3 chunkIndex=position-(segmentIndex*segmentCellSize);
 
-    return SegmentChunkHash(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
+    return Key(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-SegmentChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex)
+Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex)
 {
-    return SegmentChunkHash(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
+    return Key(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>

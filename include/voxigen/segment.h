@@ -44,7 +44,7 @@ public:
 
 //    SharedChunkHandle getChunk(const glm::ivec3 &index);
 //    SharedChunkHandle getChunk(ChunkHash chunkHash);
-//    std::vector<SegmentChunkHash> getUpdatedChunks();
+//    std::vector<Key> getUpdatedChunks();
 //
 //    glm::ivec3 getChunkIndex(const glm::vec3 &position);
 //    ChunkHash chunkHash(const glm::ivec3 &chunkIndex) const;
@@ -95,7 +95,7 @@ Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Segment()
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//std::vector<SegmentChunkHash> Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getUpdatedChunks()
+//std::vector<Key> Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getUpdatedChunks()
 //{
 //    return m_chunkHandler.getUpdatedChunks();
 //}

@@ -3,7 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/classFactory.h"
-
+#include "voxigen/updateQueue.h"
 #include "voxigen/chunkHandle.h"
 
 #include <memory>
@@ -55,7 +55,7 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    GeneratorQueue(GridDescriptors *descriptors):m_descriptors(descriptors), m_generator(nullptr){}
+    GeneratorQueue(GridDescriptors *descriptors, UpdateQueue *updateQueue):m_descriptors(descriptors), m_generator(nullptr), m_updateQueue(updateQueue){}
 
     void setGenerator(Generator *generator) { m_generator=generator; }
 
@@ -64,8 +64,8 @@ public:
 
     void add(SharedChunkHandle chunkHandle);
 
-    void addUpdated(SegmentChunkHash hash);
-    std::vector<SegmentChunkHash> getUpdated();
+    void addUpdated(Key hash);
+    std::vector<Key> getUpdated();
 
     void generatorThread();
 
@@ -81,8 +81,7 @@ private:
     bool m_generatorThreadRun;
 
     //Status updates
-    std::mutex m_chunkUpdatedMutex;
-    std::vector<SegmentChunkHash> m_chunksUpdated;
+    UpdateQueue *m_updateQueue;
 };
 
 template<typename _Chunk>
@@ -152,7 +151,7 @@ void GeneratorQueue<_Chunk>::generatorThread()
         else
             chunkHandle->empty=false;
 
-        addUpdated(SegmentChunkHash(chunkHandle->segmentHash, chunkHandle->hash));
+        m_updateQueue->add(Key(chunkHandle->segmentHash, chunkHandle->hash));
         chunkHandle.reset();//release pointer while not holding lock as there is a chance this will call removeHandle
                             //which will lock m_chunkMutex and safer to only have one lock at a time
         lock.lock();
@@ -167,26 +166,6 @@ void GeneratorQueue<_Chunk>::add(SharedChunkHandle chunkHandle)
     chunkHandle->status=ChunkHandleType::Generating;
     m_generatorQueue.push(chunkHandle);
     m_generatorEvent.notify_all();
-}
-
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::addUpdated(SegmentChunkHash hash)
-{
-    std::unique_lock<std::mutex> lock(m_chunkUpdatedMutex);
-
-    m_chunksUpdated.push_back(hash);
-}
-
-template<typename _Chunk>
-std::vector<SegmentChunkHash> GeneratorQueue<_Chunk>::getUpdated()
-{
-    std::unique_lock<std::mutex> lock(m_chunkUpdatedMutex);
-
-    std::vector<SegmentChunkHash> updatedChunks(m_chunksUpdated);
-    m_chunksUpdated.clear();
-    lock.unlock();
-
-    return updatedChunks;
 }
 
 }//namespace voxigen

@@ -98,7 +98,7 @@ int main(int argc, char ** argv)
     player.setYaw(0.0f);
     player.setPitch(0.0f);
     
-    voxigen::SegmentChunkHash hashes=world.getHashes(worldMiddle);
+    voxigen::Key hashes=world.getHashes(worldMiddle);
 
     playerSegment=hashes.segmentHash;
     playerChunk=hashes.chunkHash;

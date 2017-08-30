@@ -224,9 +224,11 @@ float GridDescriptors::distance(glm::ivec3 &segmentIndex1, glm::ivec3 &chunkInde
     glm::ivec3 offset(0.0f, 0.0f, 0.0f);
 
     if(segmentIndex1!=segmentIndex2)
-        offset=(segmentIndex1-segmentIndex2)*m_segmentSize;
+        offset=(segmentIndex2-segmentIndex1)*m_segmentSize;
 
-    return glm::length((chunkIndex1-chunkIndex3)+offset);
+    glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
+    glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
+    return glm::length(glm::vec3(chunkPos1-chunkPos2));
 }
 
 ChunkHash GridDescriptors::chunkHash(const glm::ivec3 &chunkIndex) const

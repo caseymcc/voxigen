@@ -43,7 +43,7 @@ public:
         Loaded
     };
 
-    SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore);
+    SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore, UpdateQueue *updateQueue);
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
 
@@ -70,6 +70,7 @@ private:
     GridDescriptors *m_descriptors;
     DataStore<_Segment, typename _Segment::ChunkType> *m_dataStore;
     GeneratorQueue<ChunkType> *m_generatorQueue;
+    UpdateQueue *m_updateQueue;
 
     Status m_status;
     unsigned int m_version;
@@ -80,13 +81,14 @@ private:
 };
 
 template<typename _Segment>
-SegmentHandle<_Segment>::SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore):
+SegmentHandle<_Segment>::SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore, UpdateQueue *updateQueue):
 m_status(Unknown),
 m_version(0),
 hash(segmentHash),
 m_descriptors(descriptors),
 m_generatorQueue(generatorQueue),
 m_dataStore(dataStore),
+m_updateQueue(updateQueue),
 cachedOnDisk(false),
 empty(false)
 {
@@ -265,14 +267,17 @@ void SegmentHandle<_Segment>::verifyDirectory()
 }
 
 template<typename _Segment>
-typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::getChunk(ChunkHash hash)
+typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::getChunk(ChunkHash chunkHash)
 {
-    SharedChunkHandle chunkHandle=getDataHandle(hash);
+    SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
 
     if(chunkHandle->status!=ChunkHandleType::Memory)
     {
         if(chunkHandle->empty) //empty is already loaded
+        {
             chunkHandle->status=ChunkHandleType::Memory;
+            m_updateQueue->add(Key(hash, chunkHash));
+        }
         else
         {
             //we dont have it in memory so we need to load or generate it

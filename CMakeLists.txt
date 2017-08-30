@@ -111,7 +111,7 @@ add_library(voxigen SHARED
 #include_directories(${GLFW_INCLUDES})
 include_directories(${LIBNOISE_INCLUDES})
 #include_directories(${BULLET_INCLUDES})
-include_directories(${POLYVOX_DIR}/include)
+#include_directories(${POLYVOX_DIR}/include)
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 

@@ -27,6 +27,7 @@ struct VOXIGEN_EXPORT GridDescriptors
     glm::vec3 segmentOffset(SegmentHash hash) const;
 
     glm::vec3 adjustSegment(glm::ivec3 &segmentIndex, glm::ivec3 &chunkIndex) const;
+    float distance(glm::ivec3 &segmentIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &segmentIndex2, glm::ivec3 &chunkIndex2) const;
 
     ChunkHash chunkHash(const glm::ivec3 &index) const;
     glm::ivec3 chunkIndex(ChunkHash hash) const;

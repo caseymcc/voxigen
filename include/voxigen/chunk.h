@@ -65,8 +65,8 @@ m_validCells(0)
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
 _Cell &Chunk<_Cell, _x, _y, _z>::getCell(const glm::vec3 &position)
 {
-    glm::ivec3 &cellPos=glm::floor(position);
-    unsigned int index=(_x*_y)*cellPos.y+_x*cellPos.y+cellPos.x;
+    glm::ivec3 cellPos=glm::floor(position);
+    unsigned int index=(_x*_y)*cellPos.z+_x*cellPos.y+cellPos.x;
 
     assert(index>=0);
     assert(index<m_cells.size());

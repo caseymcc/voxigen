@@ -90,7 +90,7 @@ public:
     typedef IOWriteRequest<_Chunk> IOWriteRequestType;
     typedef std::shared_ptr<IORequestType> SharedIORequest;
 
-    DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue);
+    DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue);
 
     void initialize();
     void terminate();
@@ -105,7 +105,8 @@ public:
     SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
 //    void removeHandle(ChunkHandleType *chunkHandle);
 
-    std::vector<SegmentChunkHash> getUpdatedChunks();
+    void addUpdated(Key hash);
+    std::vector<Key> getUpdated();
 
     void read(SharedChunkHandle chunkHandle);
     void write(SharedChunkHandle chunkHandle);
@@ -140,12 +141,16 @@ private:
     std::condition_variable m_ioEvent;
     bool m_ioThreadRun;
     rapidjson::Document m_configDocument;
+
+//Updated chunks
+    UpdateQueue *m_updateQueue;
 };
 
 template<typename _Segment, typename _Chunk>
-DataStore<_Segment, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue):
+DataStore<_Segment, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue):
 m_descriptors(descriptors),
-m_generatorQueue(generatorQueue)
+m_generatorQueue(generatorQueue),
+m_updateQueue(updateQueue)
 {
     m_version=0;
 }
@@ -174,7 +179,7 @@ void DataStore<_Segment, _Chunk>::terminate()
 template<typename _Segment, typename _Chunk>
 typename DataStore<_Segment, _Chunk>::DataHandle *DataStore<_Segment, _Chunk>::newHandle(HashType hash)
 {
-    return new SegmentHandleType(hash, m_descriptors, m_generatorQueue, this);
+    return new SegmentHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
 }
 
 template<typename _Segment, typename _Chunk>
@@ -474,6 +479,7 @@ void DataStore<_Segment, _Chunk>::readChunk(IORequestType *request)
 
     chunkHandle->status=ChunkHandleType::Memory;
 //    addToUpdatedQueue(chunkHandle->hash);
+    m_updateQueue->add(chunkHandle->hash);
 }
 
 template<typename _Segment, typename _Chunk>
@@ -533,6 +539,7 @@ void DataStore<_Segment, _Chunk>::write(SharedChunkHandle chunkHandle)
     }
     m_ioEvent.notify_all();
 }
+
 
 } //namespace voxigen
 
