@@ -23,9 +23,6 @@
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Skybox.h>
 #include <Urho3D/Graphics/Texture2D.h>
-#include <Urho3D/Physics/PhysicsWorld.h>
-#include <Urho3D/Physics/CollisionShape.h>
-#include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -33,12 +30,25 @@
 
 #include <boost/filesystem.hpp>
 
+#include "WorldComponent.h"
+#include "voxigen/equiRectWorldGenerator.h"
+
+
 namespace fs=boost::filesystem;
+
+typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
+
+namespace voxigen
+{
+//force generator instantiation
+typedef voxigen::Chunk<voxigen::Cell, 64, 64, 16> Chunk_64_64_16;
+template voxigen::GeneratorTemplate<voxigen::EquiRectWorldGenerator<Chunk_64_64_16>>;
+}
 
 Urho3DApp::Urho3DApp(Urho3D::Context *context):
 Urho3D::Application(context)
 {
-
+    Urho3D::WorldComponent<World>::RegisterObject(context);
 }
 
 
@@ -75,19 +85,7 @@ void Urho3DApp::Start()
 //    // Set custom window Title & Icon
 //    SetWindowTitleAndIcon();
 
-#ifdef NDEBUG
-    // Create console and debug HUD
-    CreateConsoleAndDebugHud();
-#endif
-
-    createScene();
-
-    // Subscribe key down event
-    SubscribeToEvent(Urho3D::E_KEYDOWN, URHO3D_HANDLER(Urho3DApp, onKeyDown));
-    // Subscribe scene update event
-    SubscribeToEvent(Urho3D::E_UPDATE, URHO3D_HANDLER(Urho3DApp, onUpdate));
-
-    m_world=new voxigen::World<voxigen::Block, 16, 16, 16>();
+    m_world=new World();
     
     fs::path worldsDirectory("worlds");
 
@@ -105,10 +103,22 @@ void Urho3DApp::Start()
         fs::path worldPath(worldDirectory);
 
         fs::create_directory(worldPath);
-        m_world->create(worldDirectory, "TestApWorld");
+        m_world->create(worldDirectory, "TestApWorld", glm::ivec3(2048, 2048, 1024), "EquiRectWorldGenerator");
     }
     else
         m_world->load(worldDirectories[0].path().string());
+
+#ifndef NDEBUG
+    // Create console and debug HUD
+    CreateConsoleAndDebugHud();
+#endif
+
+    createScene();
+
+    // Subscribe key down event
+    SubscribeToEvent(Urho3D::E_KEYDOWN, URHO3D_HANDLER(Urho3DApp, onKeyDown));
+    // Subscribe scene update event
+    SubscribeToEvent(Urho3D::E_UPDATE, URHO3D_HANDLER(Urho3DApp, onUpdate));
 
 }
 
@@ -132,6 +142,8 @@ void Urho3DApp::CreateConsoleAndDebugHud()
 void Urho3DApp::Stop()
 {
     engine_->DumpResources(true);
+
+    delete m_world;
 }
 
 
@@ -193,8 +205,8 @@ void Urho3DApp::createScene()
     Urho3D::Light *sun=sunNode->CreateComponent<Urho3D::Light>();
 
     sun->SetLightType(Urho3D::LIGHT_DIRECTIONAL);
-    sun->SetBrightness(1.6);
-    sun->SetColor(Urho3D::Color(1.0, .6, 0.3, 1));
+    sun->SetBrightness(1.6f);
+    sun->SetColor(Urho3D::Color(1.0f, .6f, 0.3f, 1.0f));
     sun->SetCastShadows(true);
 
     //Create a directional light to the world so that we can see something. The light scene node's orientation controls the
@@ -215,6 +227,20 @@ void Urho3DApp::createScene()
     zone->SetFogStart(400.0f);
     zone->SetFogEnd(900.0f);
 
+
+    m_worldComponent=m_scene->CreateComponent<Urho3D::WorldComponent<World>>();
+
+    glm::ivec3 worldMiddle=m_world->size()/2;
+    voxigen::Key hashes=m_world->getHashes(worldMiddle);
+
+    Urho3D::Vector3 position(0.0f, 0.0f, 0.0f);
+
+    m_cameraNode->SetPosition(position);
+    m_worldComponent->setGrid(m_world);
+    m_worldComponent->setSegment(hashes.segmentHash);
+    m_worldComponent->updatePosition(position);
+
+//    m_worldComponent->updatePosition();
 //    Urho3D::Renderer *renderer=GetSubsystem<Urho3D::Renderer>();
     Urho3D::SharedPtr<Urho3D::Viewport> viewport(new Urho3D::Viewport(context_, m_scene, m_cameraNode->GetComponent<Urho3D::Camera>()));
 
@@ -228,6 +254,21 @@ void Urho3DApp::onBeginFrame(Urho3D::StringHash eventType, Urho3D::VariantMap &e
 
 void Urho3DApp::onKeyDown(Urho3D::StringHash eventType, Urho3D::VariantMap &eventData)
 {
+    Urho3D::Input *input=GetSubsystem<Urho3D::Input>();
+
+    if(input->GetKeyDown('M'))
+    {
+        Urho3D::DebugHud* debugHud=GetSubsystem<Urho3D::DebugHud>();
+
+        if(debugHud!=nullptr)
+        {
+            if(debugHud->GetMode()!=Urho3D::DEBUGHUD_SHOW_ALL)
+                debugHud->SetMode(Urho3D::DEBUGHUD_SHOW_ALL);
+            else
+                debugHud->SetMode(Urho3D::DEBUGHUD_SHOW_NONE);
+        }
+    }
+
 }
 
 void Urho3DApp::onUpdate(Urho3D::StringHash eventType, Urho3D::VariantMap &eventData)
@@ -264,6 +305,12 @@ void Urho3DApp::onUpdate(Urho3D::StringHash eventType, Urho3D::VariantMap &event
     if(input->GetKeyDown(Urho3D::KEY_SHIFT))
         m_cameraNode->Translate(Urho3D::Vector3::DOWN*MOVE_SPEED*timeStep);
 
+    Urho3D::Vector3 position=m_cameraNode->GetPosition();
+    
+    //updating camera, need to adjust for segment
+    if(m_worldComponent->updatePosition(position))
+        m_cameraNode->SetPosition(position);
+
     if(input->GetKeyDown(Urho3D::KEY_ESCAPE))
         engine_->Exit();
 
@@ -287,6 +334,8 @@ void Urho3DApp::onUpdate(Urho3D::StringHash eventType, Urho3D::VariantMap &event
     }
 
 }
+
+
 
 void Urho3DApp::onClosePressed(Urho3D::StringHash eventType, Urho3D::VariantMap &eventData)
 {

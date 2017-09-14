@@ -61,6 +61,7 @@ public:
     SharedSegmentHandle getSegment(SegmentHash hash);
 //    SegmentHash getSegmentHash(const glm::vec3 &gridPosition);
 
+    glm::ivec3 size();
     glm::ivec3 segmentCellSize();
 
     SharedChunkHandle getChunk(const glm::ivec3 &index);
@@ -193,6 +194,12 @@ template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSi
 typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::SharedSegmentHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegment(SegmentHash hash)
 {
     return m_dataStore.getSegment(hash);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::size()
+{
+    return m_descriptors.m_size;
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>

@@ -5,6 +5,7 @@
 #include "voxigen/segmentHandle.h"
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/generator.h"
+#include "voxigen/jsonSerializer.h"
 
 #include <thread>
 #include <mutex>
@@ -14,10 +15,10 @@
 #include <sstream>
 #include <iomanip>
 
-#include <rapidjson/prettywriter.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/filereadstream.h>
-#include <rapidjson/document.h>
+//#include <rapidjson/prettywriter.h>
+//#include <rapidjson/filewritestream.h>
+//#include <rapidjson/filereadstream.h>
+//#include <rapidjson/document.h>
 
 #include <boost/filesystem.hpp>
 namespace fs=boost::filesystem;
@@ -140,7 +141,7 @@ private:
     std::priority_queue<SharedIORequest> m_ioQueue;
     std::condition_variable m_ioEvent;
     bool m_ioThreadRun;
-    rapidjson::Document m_configDocument;
+//    rapidjson::Document m_configDocument;
 
 //Updated chunks
     UpdateQueue *m_updateQueue;
@@ -213,72 +214,137 @@ template<typename _Segment, typename _Chunk>
 void DataStore<_Segment, _Chunk>::loadConfig()
 {
     //    m_configFile=m_directory.string()+"/chunkConfig.json";
-    FILE *filePtr=fopen(m_configFile.c_str(), "rb");
-    char readBuffer[65536];
+//    FILE *filePtr=fopen(m_configFile.c_str(), "rb");
+//    char readBuffer[65536];
+//
+//    rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
+//
+//    rapidjson::Document document;
+//
+//    document.ParseStream(readStream);
+//
+//    assert(document.IsObject());
+//
+//    m_version=document["version"].GetUint();
+//
+//    const rapidjson::Value &segments=document["segments"];
+//    assert(segments.IsArray());
+//
+//    for(rapidjson::SizeType i=0; i<segments.Size(); ++i)
+//    {
+//        const rapidjson::Value &segmentValue=segments[i];
+//
+//        SegmentHash hash=segmentValue["id"].GetUint();
+//        SharedSegmentHandle segmentHandle(newHandle(hash));
+//
+//        segmentHandle->cachedOnDisk=true;
+//        segmentHandle->empty=segmentValue["empty"].GetBool();
+//
+//        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
+//    }
+//    fclose(filePtr);
 
-    rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
+    JsonUnserializer serializer;
 
-    rapidjson::Document document;
+    serializer.open(m_configFile.c_str());
 
-    document.ParseStream(readStream);
+    serializer.openObject();
+    if(serializer.key("version"))
+        m_version=serializer.getUInt();
 
-    assert(document.IsObject());
-
-    m_version=document["version"].GetUint();
-
-    const rapidjson::Value &segments=document["segments"];
-    assert(segments.IsArray());
-
-    for(rapidjson::SizeType i=0; i<segments.Size(); ++i)
+    if(serializer.key("segments"))
     {
-        const rapidjson::Value &segmentValue=segments[i];
+        if(serializer.openArray())
+        {
+            do
+            {
+                if(serializer.openObject())
+                {
+                    if(serializer.key("id"))
+                    {
+                        SegmentHash hash=serializer.getUInt();
+                        SharedSegmentHandle segmentHandle(newHandle(hash));
 
-        SegmentHash hash=segmentValue["id"].GetUint();
-        SharedSegmentHandle segmentHandle(newHandle(hash));
+                        segmentHandle->cachedOnDisk=true;
 
-        segmentHandle->cachedOnDisk=true;
-        segmentHandle->empty=segmentValue["empty"].GetBool();
+                        if(serializer.key("empty"))
+                            segmentHandle->empty=serializer.getBool();
+                        else
+                            segmentHandle->empty=true;
 
-        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
+                        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
+                    }
+
+                    serializer.closeObject();
+                }
+            } while(serializer.advance());
+            serializer.closeArray();
+        }
     }
-
-    fclose(filePtr);
+    serializer.closeObject();
 }
 
 template<typename _Segment, typename _Chunk>
 void DataStore<_Segment, _Chunk>::saveConfig()
 {
     //    m_configFile=m_directory.string()+"/chunkConfig.json";
-    FILE *filePtr=fopen(m_configFile.c_str(), "wb");
-    char writeBuffer[65536];
+//    FILE *filePtr=fopen(m_configFile.c_str(), "wb");
+//    char writeBuffer[65536];
+//
+//    rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
+//    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+//
+//    writer.StartObject();
+//
+//    writer.Key("version");
+//    writer.Uint(m_version);
+//
+//    writer.Key("segments");
+//    writer.StartArray();
+//    for(auto &handle:m_dataHandles)
+//    {
+//        if(handle.second->empty)
+//        {
+//            writer.StartObject();
+//            writer.Key("id");
+//            writer.Uint(handle.second->hash);
+//            writer.Key("empty");
+//            writer.Bool(handle.second->empty);
+//            writer.EndObject();
+//        }
+//    }
+//    writer.EndArray();
+//
+//    writer.EndObject();
+//
+//    fclose(filePtr);
 
-    rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
-    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+    JsonSerializer serializer;
 
-    writer.StartObject();
+    serializer.open(m_configFile.c_str());
 
-    writer.Key("version");
-    writer.Uint(m_version);
+    serializer.startObject();
 
-    writer.Key("segments");
-    writer.StartArray();
+    serializer.addKey("version");
+    serializer.addInt(m_version);
+
+    serializer.addKey("segments");
+    serializer.startArray();
     for(auto &handle:m_dataHandles)
     {
         if(handle.second->empty)
         {
-            writer.StartObject();
-            writer.Key("id");
-            writer.Uint(handle.second->hash);
-            writer.Key("empty");
-            writer.Bool(handle.second->empty);
-            writer.EndObject();
+            serializer.startObject();
+            serializer.addKey("id");
+            serializer.addUInt(handle.second->hash);
+            serializer.addKey("empty");
+            serializer.addBool(handle.second->empty);
+            serializer.endObject();
         }
     }
-    writer.EndArray();
+    serializer.endArray();
 
-    writer.EndObject();
-
-    fclose(filePtr);
+    serializer.endObject();
 }
 
 template<typename _Segment, typename _Chunk>
@@ -288,27 +354,85 @@ void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
     //lazy programming for the moment, see remarks in ioThread below
     if(handle->empty)
     {
-        rapidjson::Document::AllocatorType &allocator=m_configDocument.GetAllocator();
-        rapidjson::Value &segments=m_configDocument["segments"];
-        assert(segments.IsArray());
-
-        rapidjson::Value segment(rapidjson::kObjectType);
-
-        segment.AddMember("id", handle->chunkHash, allocator);
-        segment.AddMember("empty", handle->empty, allocator);
-
-        segments.PushBack(segment, allocator);
-        //    m_configFile=m_directory.string()+"/chunkConfig.json";
+//        rapidjson::Document::AllocatorType &allocator=m_configDocument.GetAllocator();
+//        rapidjson::Value &segments=m_configDocument["segments"];
+//        assert(segments.IsArray());
+//
+//        rapidjson::Value segment(rapidjson::kObjectType);
+//
+//        segment.AddMember("id", handle->chunkHash, allocator);
+//        segment.AddMember("empty", handle->empty, allocator);
+//
+//        segments.PushBack(segment, allocator);
+//        //    m_configFile=m_directory.string()+"/chunkConfig.json";
+//
+//        std::string tempConfig=m_configFile+ror".tmp";
+//        FILE *filePtr=fopen(tempConfig.c_str(), "wb");
+//        char writeBuffer[65536];
+//
+//        rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
+//        rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+//
+//        m_configDocument.Accept(writer);
+//        fclose(filePtr);
 
         std::string tempConfig=m_configFile+ror".tmp";
-        FILE *filePtr=fopen(tempConfig.c_str(), "wb");
-        char writeBuffer[65536];
+        JsonUnserializer unserializer;
+        JsonSerializer serializer;
 
-        rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
-        rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+        unserializer.open(m_configFile.c_str());
+        serializer.open(tempConfig.c_str());
 
-        m_configDocument.Accept(writer);
-        fclose(filePtr);
+        unserializer.openObject();
+        serializer.startObject();
+
+        if(unserializer.key("version"))
+        {
+            unsigned int version=unserializer.getUInt();
+            serializer.addKey("version");
+            serializer.addUInt(version);
+        }
+
+        if(unserializer.key("segments"))
+        {
+            serializer.addKey("segments");
+            if(unserializer.openArray())
+            {
+                serializer.startArray();
+                do
+                {
+                    if(unserializer.openObject())
+                    {
+                        serializer.startObject();
+
+                        if(unserializer.key("id"))
+                        {
+                            SegmentHash hash=unserializer.GetUint();
+
+                            serializer.addKey("id");
+                            serializer.addUInt(hash);
+                            
+                            bool empty=true;
+
+                            if(unserializer.key("empty"))
+                                empty=unserializer.GetBool();
+
+                            serializer.addKey("empty");
+                            serializer.addBool(empty);
+                        }
+
+                        unserializer.closeObject();
+                        serializer.endObject();
+                    }
+                } while(unserializer.advance());
+                
+                unserializer.closeArray();
+                serializer.endArray();
+            }
+        }
+        
+        unserializer.closeObject();
+        serializer.endObject();
 
         fs::path configPath(m_configFile);
         fs::path tempPath(tempConfig);

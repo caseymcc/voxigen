@@ -1,24 +1,28 @@
 #pragma once
 
-#include "../Graphics/Drawable.h"
+#include "Urho3D/Graphics/Drawable.h"
 
 namespace Urho3D
 {
 
 class Geometry;
-class World;
+template<typename _Segment>
+class SegmentComponent;
 class VertexBuffer;
 
 /// Individually rendered part of a heightmap terrain.
-class URHO3D_API Chunk: public Drawable
+template<typename _Segment, typename _Chunk>
+class URHO3D_API ChunkDrawable: public Drawable
 {
-    URHO3D_OBJECT(Chunk, Drawable);
+    URHO3D_OBJECT(ChunkDrawable, Drawable);
 
 public:
+    typedef _Chunk ChunkType;
+
     /// Construct.
-    Chunk(Context* context);
+    ChunkDrawable(Context* context);
     /// Destruct.
-    ~Chunk();
+    ~ChunkDrawable();
     /// Register object factory.
     static void RegisterObject(Context* context);
 
@@ -39,10 +43,13 @@ public:
     /// Visualize the component as debug geometry.
     virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
+    ///
+    void SetChunk(_Chunk *chunk);
+
     /// Set owner terrain.
-    void SetOwner(World* terrain);
-    /// Set neighbor patches.
-    void SetNeighbors(Chunk* north, Chunk* south, Chunk* west, Chunk* east, Chunk* up, Chunk* down);
+    void SetOwner(SegmentComponent<_Segment> *terrain);
+//    /// Set neighbor patches.
+//    void SetNeighbors(ChunkDrawable* north, ChunkDrawable* south, ChunkDrawable* west, ChunkDrawable* east, ChunkDrawable* up, ChunkDrawable* down);
     /// Set material.
     void SetMaterial(Material* material);
     /// Set local-space bounding box.
@@ -61,19 +68,19 @@ public:
     /// Return vertex buffer.
     VertexBuffer* GetVertexBuffer() const;
     /// Return owner terrain.
-    World* GetOwner() const;
+    SegmentComponent<_Segment>* GetOwner() const;
 
-    /// Return north neighbor patch.
-    Chunk* GetNorthPatch() const { return north_; }
-
-    /// Return south neighbor patch.
-    Chunk* GetSouthPatch() const { return south_; }
-
-    /// Return west neighbor patch.
-    Chunk* GetWestPatch() const { return west_; }
-
-    /// Return east neighbor patch.
-    Chunk* GetEastPatch() const { return east_; }
+//    /// Return north neighbor patch.
+//    ChunkDrawable* GetNorthPatch() const { return north_; }
+//
+//    /// Return south neighbor patch.
+//    ChunkDrawable* GetSouthPatch() const { return south_; }
+//
+//    /// Return west neighbor patch.
+//    ChunkDrawable* GetWestPatch() const { return west_; }
+//
+//    /// Return east neighbor patch.
+//    ChunkDrawable* GetEastPatch() const { return east_; }
 
     /// Return geometrical error array.
     PODVector<float>& GetLodErrors() { return lodErrors_; }
@@ -89,9 +96,14 @@ protected:
     virtual void OnWorldBoundingBoxUpdate();
 
 private:
+    ///
+    void CreateGeometry();
+
     /// Return a corrected LOD level to ensure stitching can work correctly.
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
+    //voxel chunk
+    _Chunk *m_chunk;
     /// Geometry.
     SharedPtr<Geometry> geometry_;
     /// Geometry that is locked to the max LOD level. Used for decals.
@@ -101,19 +113,19 @@ private:
     /// Vertex buffer.
     SharedPtr<VertexBuffer> vertexBuffer_;
     /// Parent terrain.
-    WeakPtr<World> owner_;
-    /// North neighbor chunk.
-    WeakPtr<Chunk> north_;
-    /// South neighbor chunk.
-    WeakPtr<Chunk> south_;
-    /// West neighbor chunk.
-    WeakPtr<Chunk> west_;
-    /// East neighbor chunk.
-    WeakPtr<Chunk> east_;
-    /// Up neighbor chunk.
-    WeakPtr<Chunk> up_;
-    /// Down neighbor chunk.
-    WeakPtr<Chunk> down_;
+    SegmentComponent<_Segment> *owner_;
+//    /// North neighbor chunk.
+//    WeakPtr<ChunkDrawable> north_;
+//    /// South neighbor chunk.
+//    WeakPtr<ChunkDrawable> south_;
+//    /// West neighbor chunk.
+//    WeakPtr<ChunkDrawable> west_;
+//    /// East neighbor chunk.
+//    WeakPtr<ChunkDrawable> east_;
+//    /// Up neighbor chunk.
+//    WeakPtr<ChunkDrawable> up_;
+//    /// Down neighbor chunk.
+//    WeakPtr<ChunkDrawable> down_;
     /// Geometrical error per LOD level.
     PODVector<float> lodErrors_;
     /// Patch coordinates in the terrain. (0,0) is the northwest corner.
@@ -122,4 +134,6 @@ private:
     unsigned lodLevel_;
 };
 
-}
+}//namespace Urho3D
+
+#include "ChunkDrawable.inl"

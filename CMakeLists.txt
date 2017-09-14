@@ -69,6 +69,7 @@ set(voxigen_headers
     include/voxigen/generator.h
     include/voxigen/gridDescriptors.h
     include/voxigen/initGlew.h
+    include/voxigen/jsonSerializer.h
     include/voxigen/object.h
     include/voxigen/regularGrid.h
     include/voxigen/segment.h
@@ -87,6 +88,7 @@ set(voxigen_sources
     src/rendering/initGlew.cpp
     src/rendering/simpleCamera.cpp
     src/utils/coords.cpp
+    src/utils/jsonSerializer.cpp
 )
 
 set(voxigen_libraries
@@ -132,10 +134,15 @@ include_directories(${URHO3D_3RDPARTY_INCLUDE})
 add_definitions(-DURHO3D_WIN32_CONSOLE)
 
 set(Urho3DApp_headers
+    urho3DApp/ChunkDrawable.h
+    urho3DApp/SegmentComponent.h
+    urho3DApp/WorldComponent.h
     urho3DApp/urho3DApp.h
 )
 
 set(Urho3DApp_sources
+#    urho3DApp/ChunkDrawable.cpp
+#    urho3DApp/SegmentComponent.cpp
     urho3DApp/urho3DApp.cpp
 )
 

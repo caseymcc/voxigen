@@ -1,11 +1,21 @@
 #ifndef _voxigen_urho3DApp_h_ 
 #define _voxigen_urho3DApp_h_
 
+///////////////////////////////////////////////
+//force Bullet to be included before DebugNew.h
+#include <Urho3D/Physics/PhysicsWorld.h>
+#include <Urho3D/Physics/CollisionShape.h>
+#include <Urho3D/Physics/RigidBody.h>
+///////////////////////////////////////////////
+#include "voxigen/regularGrid.h"
+#include "voxigen/cell.h"
+
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Scene/Scene.h>
 
-#include "voxigen/world.h"
-#include "voxigen/block.h"
+#include "WorldComponent.h"
+
+typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
 
 class Urho3DApp: public Urho3D::Application
 {
@@ -32,7 +42,8 @@ private:
     Urho3D::SharedPtr<Urho3D::Scene> m_scene;
     Urho3D::SharedPtr<Urho3D::Node> m_cameraNode;
 
-    voxigen::World<voxigen::Block, 16, 16, 16> *m_world;
+    Urho3D::SharedPtr<Urho3D::WorldComponent<World>> m_worldComponent;
+    World *m_world;
 
     unsigned int m_frameCount;
     float m_time;

@@ -47,12 +47,12 @@ struct VOXIGEN_EXPORT GridDescriptors
     glm::ivec3 m_chunkStride; //calculated
 
     float m_noiseScale;
-    double m_contientFrequency;
+    float m_contientFrequency;
     int m_contientOctaves;
-    double m_contientLacunarity;
+    float m_contientLacunarity;
 
-    double m_seaLevel;
-    double m_continentaShelf;
+    float m_seaLevel;
+    float m_continentaShelf;
 };
 
 }//namespace voxigen
