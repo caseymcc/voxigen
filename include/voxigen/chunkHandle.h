@@ -31,6 +31,8 @@ struct ChunkHandle
     unsigned int segmentHash;
     unsigned int hash;
     UniqueChunk chunk;
+    
+    glm::ivec3 segmentOffset;
 
     bool cachedOnDisk;
     bool empty;

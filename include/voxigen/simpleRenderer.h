@@ -80,7 +80,7 @@ public:
     void prepThread();
 
 private:
-    void spiralCube(std::vector<glm::ivec3> &positions, float radius);
+    void updateOcclusionQueries();
 
     ChunkRenderType *getFreeRenderer();
 
@@ -92,6 +92,10 @@ private:
 
     float m_viewRadius;
     float m_viewRadiusMax; //keep renderer till it is outside of this range
+    int m_maxChunkRing;
+    int m_currentQueryRing;
+    bool m_queryComplete;
+
     SimpleFpsCamera *m_camera;
     glm::vec3 m_lastUpdatePosition;
 
@@ -99,7 +103,10 @@ private:
 
     GridType *m_grid;
 
-    std::vector<glm::ivec3> m_chunkIndices;
+    std::vector<std::vector<glm::ivec3>> m_chunkIndices;
+    std::vector<std::vector<ChunkRenderType *>> m_chunkQueryOrder;
+    int m_outstandingChunkLoads;
+    int m_outstandingChunkPreps;
     //    std::vector<ChunkRenderType> m_chunkRenderers;
     std::vector<UniqueChunkRenderer> m_chunkRenderers; //all allocated renderers
 
@@ -146,9 +153,7 @@ private:
 //    std::vector<Key> m_chunksUpdated;
     std::vector<ChunkRenderType *> m_chunksUpdated;
 
-#ifndef NDEBUG
     unsigned int m_outlineInstanceVertices;
-#endif //NDEBUG
 };
 
 }//namespace voxigen

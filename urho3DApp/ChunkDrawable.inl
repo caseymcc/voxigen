@@ -54,7 +54,8 @@ maxLodGeometry_(new Geometry(context)),
 occlusionGeometry_(new Geometry(context)),
 vertexBuffer_(new VertexBuffer(context)),
 coordinates_(IntVector2::ZERO),
-lodLevel_(0)
+lodLevel_(0),
+updateGeometry_(false)
 {
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     maxLodGeometry_->SetVertexBuffer(0, vertexBuffer_);
@@ -76,9 +77,22 @@ void ChunkDrawable<_Segment, _Chunk>::RegisterObject(Context* context)
 }
 
 template<typename _Segment, typename _Chunk>
-void ChunkDrawable<_Segment, _Chunk>::SetChunk(_Chunk *chunk)
+voxigen::ChunkHash ChunkDrawable<_Segment, _Chunk>::GetChunkHash()
 {
-    m_chunk=chunk;
+    return chunk_->getHash();
+}
+
+template<typename _Segment, typename _Chunk>
+void ChunkDrawable<_Segment, _Chunk>::SetChunk(std::shared_ptr<_Chunk> chunk)
+{
+    chunk_=chunk;
+    updateGeometry_=true;
+}
+
+void ChunkDrawable<_Segment, _Chunk>::OnUpdate()
+{
+    if(updateGeometry_)
+        UpdateGeometry();
 }
 
 template<typename _Segment, typename _Chunk>
@@ -154,23 +168,18 @@ void ChunkDrawable<_Segment, _Chunk>::UpdateBatches(const FrameInfo& frame)
 template<typename _Segment, typename _Chunk>
 void ChunkDrawable<_Segment, _Chunk>::UpdateGeometry(const FrameInfo& frame)
 {
+    updateGeometry_=false;
+
     if(vertexBuffer_->IsDataLost())
     {
-//        if(owner_)
-//            owner_->CreatePatchGeometry(this);
-//        else
-//            vertexBuffer_->ClearDataLost();
     }
-
-//    if(owner_)
-//        owner_->UpdatePatchLod(this);
 }
 
 template<typename _Segment, typename _Chunk>
 UpdateGeometryType ChunkDrawable<_Segment, _Chunk>::GetUpdateGeometryType()
 {
-    // Because there is a latency in starting worker thread updates, and the update of terrain patch LOD should not take
-    // much time, always update in the main thread
+    //GPU updates are handled in a seperate thread so all updates are just swaping of state
+    //and existing GPU items so always update in the main thread
     return UPDATE_MAIN_THREAD;
 }
 
@@ -236,14 +245,6 @@ void ChunkDrawable<_Segment, _Chunk>::SetOwner(SegmentComponent<_Segment>* terra
     owner_=terrain;
 }
 
-//void ChunkDrawable<_Segment, _Chunk>::SetNeighbors(ChunkDrawable* north, ChunkDrawable* south, ChunkDrawable* west, ChunkDrawable* east)
-//{
-//    north_=north;
-//    south_=south;
-//    west_=west;
-//    east_=east;
-//}
-
 template<typename _Segment, typename _Chunk>
 void ChunkDrawable<_Segment, _Chunk>::SetMaterial(Material* material)
 {
@@ -308,15 +309,6 @@ void ChunkDrawable<_Segment, _Chunk>::OnWorldBoundingBoxUpdate()
 template<typename _Segment, typename _Chunk>
 unsigned ChunkDrawable<_Segment, _Chunk>::GetCorrectedLodLevel(unsigned lodLevel)
 {
-//    if(north_)
-//        lodLevel=Min(lodLevel, north_->GetLodLevel()+1);
-//    if(south_)
-//        lodLevel=Min(lodLevel, south_->GetLodLevel()+1);
-//    if(west_)
-//        lodLevel=Min(lodLevel, west_->GetLodLevel()+1);
-//    if(east_)
-//        lodLevel=Min(lodLevel, east_->GetLodLevel()+1);
-
     return lodLevel;
 }
 

@@ -45,15 +45,19 @@ public:
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled();
     ///
-    void setGrid(GridType *grid);
+    void SetGrid(GridType *grid);
     ///
-    voxigen::SegmentHash getSegment();
+    voxigen::SegmentHash GetSegment();
     ///
-    void setSegment(voxigen::SegmentHash segment);
+    void SetSegment(voxigen::SegmentHash segment);
     ///
-    bool updatePosition(Vector3 &position);
+    float GetDrawDistance();
     ///
-    bool updateGeometry();
+    void SetDrawDistance(float distance);
+    ///
+    bool UpdatePosition(Vector3 &position);
+    ///
+    bool UpdateGeometry();
 
 private:
     GridType *grid_;
@@ -61,6 +65,13 @@ private:
     SharedSegmentComponents segments_;
 
     voxigen::SegmentHash segment_;
+
+    float viewRadius_;
+    float viewRadiusMax_;
+    std::vector<std::vector<glm::ivec3>> chunkIndices_;
+
+    int chunkRadiusMax_;
+    int chunkRadius_;
 };
 
 }//Urho3D

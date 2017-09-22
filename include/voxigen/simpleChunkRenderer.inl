@@ -8,9 +8,9 @@ SimpleChunkRenderer<_Parent, _Chunk>::SimpleChunkRenderer():
 m_state(Init), 
 m_chunkOffset(0.0f, 0.0f, 0.0f), 
 refCount(0)
-#ifndef NDEBUG
+//#ifndef NDEBUG
 ,m_outlineBuilt(false)
-#endif //NDEBUG
+//#endif //NDEBUG
 {}
 
 template<typename _Parent, typename _Chunk>
@@ -23,11 +23,11 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setParent(RenderType *parent)
     m_parent=parent;
 }
 
-template<typename _Parent, typename _Chunk>
-void SimpleChunkRenderer<_Parent, _Chunk>::setSegmentHash(SegmentHash hash)
-{
-    m_segmentHash=hash;
-}
+//template<typename _Parent, typename _Chunk>
+//void SimpleChunkRenderer<_Parent, _Chunk>::setSegmentHash(SegmentHash hash)
+//{
+//    m_segmentHash=hash;
+//}
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(SharedChunkHandle chunk)
@@ -35,9 +35,24 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(SharedChunkHandle chunk)
     m_chunkHandle=chunk;
 
     if(m_state!=Init)
-        m_state=Dirty;
+        m_state=Occluded;
     m_delayedFrames=0;
 }
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setEmpty()
+{
+    m_state=Empty;
+}
+
+//template<typename _Parent, typename _Chunk>
+//void SimpleChunkRenderer<_Parent, _Chunk>::setChunkOffset(glm::vec3 chunkOffset)
+//{
+//    m_chunkOffset=chunkOffset;
+//    
+////    if(m_state!=Init)
+////        m_state=Dirty;
+//}
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
@@ -91,14 +106,15 @@ void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
 
     m_indexType=sizeof(typename MeshType::IndexType)==2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
 
+    glGenQueries(1, &m_queryId);
+
     if(m_chunkHandle)
-        m_state=Dirty;
+        m_state=Occluded; //assumed, as it will force a check
     else
         m_state=Invalid;
 
 }
 
-#ifndef NDEBUG
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::buildOutline(unsigned int instanceData)
 {
@@ -125,7 +141,6 @@ void SimpleChunkRenderer<_Parent, _Chunk>::buildOutline(unsigned int instanceDat
 
     glBindVertexArray(0);
 }
-#endif //NDEBUG
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::update()
@@ -217,13 +232,20 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
     m_validBlocks=m_mesh.getNoOfIndices();
 
     //m_state=Built;
+//    m_state=Copy;
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::updated()
+{
+    refCount=0;
     m_state=Copy;
 }
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::updateOutline()
 {
-#ifndef NDEBUG
+//#ifndef NDEBUG
     //chunk is not going to be valid till loaded, so going to hack together the offset from
     //the hash info
     glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)/*+m_chunkOffset*/, 1.0f);
@@ -233,7 +255,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::updateOutline()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     m_outlineBuilt=true;
-#endif //NDEBUG
+//#endif //NDEBUG
     return;
 }
 
@@ -241,36 +263,45 @@ template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 {
     m_state=Invalid;
-#ifndef NDEBUG
+//#ifndef NDEBUG
     m_outlineBuilt=false;
-#endif //NDEBUG
+//#endif //NDEBUG
     m_chunkHandle.reset();
+}
+
+template<typename _Parent, typename _Chunk>
+bool SimpleChunkRenderer<_Parent, _Chunk>::incrementCopy()
+{
+    if(m_delayedFrames==0)
+    {
+        //wait for sync notification
+        GLenum result=glClientWaitSync(m_vertexBufferSync, 0, 0);
+
+        if((result==GL_ALREADY_SIGNALED)||(result==GL_CONDITION_SATISFIED))
+        {
+            m_delayedFrames=1;
+            glDeleteSync(m_vertexBufferSync);
+        }
+        else if(result==GL_WAIT_FAILED)
+            assert(false);
+    }
+    else
+    {
+        //now delay a few frames, sync on says copy was started
+        m_delayedFrames++;
+        if(m_delayedFrames>3)
+        {
+            m_state=Built;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::draw()
 {
-    if(m_state==Copy)
-    {
-        if(m_delayedFrames==0)
-        {
-            //wait for sync notification
-            GLenum result=glClientWaitSync(m_vertexBufferSync, 0, 0);
-
-            if((result==GL_ALREADY_SIGNALED)||(result==GL_CONDITION_SATISFIED))
-                m_delayedFrames=1;
-            else if(result==GL_WAIT_FAILED)
-                assert(false);
-        }
-        else
-        {
-            //now delay a few frames, sync on says copy was started
-            m_delayedFrames++;
-            if(m_delayedFrames>3)
-                m_state=Built;
-        }
-    }
-    
     if(m_state==Built)
     {
         glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
@@ -284,7 +315,51 @@ void SimpleChunkRenderer<_Parent, _Chunk>::draw()
     }
 }
 
-#ifndef NDEBUG
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::startOcculsionQuery()
+{
+//    if(m_state != Occluded) //we sill have a query id if we are occluded
+//        glGenQueries(1, &m_queryId);
+    m_state=Query;
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::drawOcculsionQuery()
+{
+    glBeginQuery(GL_SAMPLES_PASSED, m_queryId);
+
+    glBindVertexArray(m_outlineVertexArray);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
+
+    glEndQuery(GL_SAMPLES_PASSED);
+
+    m_state=QueryWait;
+}
+
+template<typename _Parent, typename _Chunk>
+bool SimpleChunkRenderer<_Parent, _Chunk>::checkOcculsionQuery(unsigned int &samples)
+{
+    unsigned int hasResult;
+
+    glGetQueryObjectuiv(m_queryId, GL_QUERY_RESULT_AVAILABLE, &hasResult);
+
+    if(hasResult>0)
+    {
+        glGetQueryObjectuiv(m_queryId, GL_QUERY_RESULT, &samples);
+
+        if(samples>0)
+        {
+//            glDeleteQueries(1, &m_queryId);
+            m_state=Dirty;
+        }
+        else
+            m_state=Occluded;
+        return true;
+    }
+    return false;
+}
+
+//#ifndef NDEBUG
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline()
 {
@@ -297,11 +372,11 @@ void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline()
     if(m_state==Empty)
         return;
 
-    glm::vec3 position=m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)+m_chunkOffset;
+ //   glm::vec3 position=m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)+m_chunkOffset;
 
     glBindVertexArray(m_outlineVertexArray);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
 }
-#endif //NDEBUG
+//#endif //NDEBUG
 
 }//namespace voxigen

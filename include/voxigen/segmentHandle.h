@@ -46,6 +46,7 @@ public:
     SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore, UpdateQueue *updateQueue);
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
+    void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
 
     Status getStatus() { return m_status; }
 
@@ -271,12 +272,39 @@ typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::get
 {
     SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
 
+    glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHash);
+    chunkHandle->segmentOffset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+
+
+//    if(chunkHandle->status!=ChunkHandleType::Memory)
+//    {
+//        if(chunkHandle->empty) //empty is already loaded
+//        {
+//            chunkHandle->status=ChunkHandleType::Memory;
+//            m_updateQueue->add(Key(hash, chunkHash));
+//        }
+//        else
+//        {
+//            //we dont have it in memory so we need to load or generate it
+//            if(!chunkHandle->cachedOnDisk) 
+//                m_generatorQueue->add(chunkHandle);
+//            else
+//                m_dataStore->read(chunkHandle);
+//        }
+//    }
+
+    return chunkHandle;
+}
+
+template<typename _Segment>
+void SegmentHandle<_Segment>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+{
     if(chunkHandle->status!=ChunkHandleType::Memory)
     {
         if(chunkHandle->empty) //empty is already loaded
         {
             chunkHandle->status=ChunkHandleType::Memory;
-            m_updateQueue->add(Key(hash, chunkHash));
+            m_updateQueue->add(Key(chunkHandle->segmentHash, chunkHandle->hash));
         }
         else
         {
@@ -287,8 +315,6 @@ typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::get
                 m_dataStore->read(chunkHandle);
         }
     }
-
-    return chunkHandle;
 }
 
 } //namespace voxigen

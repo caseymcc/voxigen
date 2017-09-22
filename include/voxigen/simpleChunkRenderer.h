@@ -42,6 +42,9 @@ public:
     {
         Init,
         Invalid,
+        Occluded,
+        Query, 
+        QueryWait,
         Dirty,
         Copy,
         Built,
@@ -51,42 +54,52 @@ public:
     State getState() { return m_state; }
 
     void setParent(RenderType *parent);
-    void setSegmentHash(SegmentHash hash);
+//    void setSegmentHash(SegmentHash hash);
     void setChunk(SharedChunkHandle chunk);
-    void setChunkOffset(glm::vec3 chunkOffset) { m_chunkOffset=chunkOffset; m_state=Dirty; }
+    void setEmpty();
+//    void setChunkOffset(glm::vec3 chunkOffset);
     const glm::vec3 &getChunkOffset() { return m_chunkOffset; }
 
     void build(unsigned int instanceData);
-#ifndef NDEBUG
     void buildOutline(unsigned int instanceData);
-#endif //NDEBUG
 
     void update();
+    void updated();
+
     void updateOutline();
     void invalidate();
 
+    bool incrementCopy();
     void draw();
-#ifndef NDEBUG
-    void drawOutline();
-#endif //NDEBUG
 
-    const SegmentHash getSegmentHash() { return m_segmentHash; }
+    void startOcculsionQuery();
+    void drawOcculsionQuery();
+    bool checkOcculsionQuery(unsigned int &samples);
+
+//#ifndef NDEBUG
+        void drawOutline();
+//#endif //NDEBUG
+
+    const SegmentHash getSegmentHash() { return m_chunkHandle->segmentHash; }
     const ChunkHash getChunkHash() { return m_chunkHandle->hash; }
+    SharedChunkHandle getChunkHandle() { return m_chunkHandle; }
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
-    glm::vec3 getGridOffset() const{ return m_chunkHandle->chunk->getGridOffset(); }
+    glm::vec3 getGridOffset() const { return m_chunkHandle->segmentOffset;/* m_chunkHandle->chunk->getGridOffset();*/ }
     
     unsigned int refCount;
 private:
     RenderType *m_parent;
 
     State m_state;
-    SegmentHash m_segmentHash;
+//    SegmentHash m_segmentHash;
     SharedChunkHandle m_chunkHandle;
-    bool m_empty;
 
-#ifndef NDEBUG
+ //   bool m_empty;
+
+//#ifndef NDEBUG
     bool m_outlineBuilt;
-#endif
+//#endif
+    unsigned int m_queryId;
 
     unsigned int m_vertexBuffer;
     unsigned int m_indexBuffer;
@@ -103,10 +116,8 @@ private:
     GLsync m_vertexBufferSync;
     int m_delayedFrames;
 
-#ifndef NDEBUG
     unsigned int m_outlineVertexArray;
     unsigned int m_outlineOffsetVBO;
-#endif //NDEBUG
 };
 
 }//namespace voxigen

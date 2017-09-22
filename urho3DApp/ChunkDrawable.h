@@ -10,6 +10,7 @@ template<typename _Segment>
 class SegmentComponent;
 class VertexBuffer;
 
+struct    
 /// Individually rendered part of a heightmap terrain.
 template<typename _Segment, typename _Chunk>
 class URHO3D_API ChunkDrawable: public Drawable
@@ -44,8 +45,12 @@ public:
     virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
     ///
-    void SetChunk(_Chunk *chunk);
+    voxigen::ChunkHash GetChunkHash();
+    ///
+    void SetChunk(std::shared_ptr<_Chunk> chunk);
 
+    ///Check to see if we need to update anything
+    void OnUpdate();
     /// Set owner terrain.
     void SetOwner(SegmentComponent<_Segment> *terrain);
 //    /// Set neighbor patches.
@@ -103,7 +108,9 @@ private:
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
     //voxel chunk
-    _Chunk *m_chunk;
+    std::shared_ptr<_Chunk> m_chunk;
+    ///
+    bool updateGeometry_;
     /// Geometry.
     SharedPtr<Geometry> geometry_;
     /// Geometry that is locked to the max LOD level. Used for decals.

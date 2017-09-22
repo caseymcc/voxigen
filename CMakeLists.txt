@@ -59,6 +59,7 @@ set(voxigen_headers
     include/voxigen/cell.h
     include/voxigen/chunk.h
     include/voxigen/chunkHandle.h
+    include/voxigen/chunkFunctions.h
     include/voxigen/classFactory.h
     include/voxigen/coords.h
     include/voxigen/dataHandler.h

@@ -66,6 +66,7 @@ public:
 
     SharedChunkHandle getChunk(const glm::ivec3 &index);
     SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
+    void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
     std::vector<Key> getUpdatedChunks();
 
     SegmentHash getSegmentHash(const glm::ivec3 &index);
@@ -81,6 +82,9 @@ public:
     Key getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex);
 
     
+
+//Sizes
+    glm::ivec3 getChunkSize();
 
     glm::vec3 gridPosToSegmentPos(SegmentHash segmentHash, const glm::vec3 &gridPosition);
 
@@ -225,6 +229,12 @@ typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+{
+    m_dataStore.loadChunk(chunkHandle, lod);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
 std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getUpdatedChunks()
 {
     std::vector<Key> updatedChunks;
@@ -300,6 +310,12 @@ ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSize
     glm::ivec3 chunkIndex=position-(segmentIndex*segmentCellSize);
 
     return m_descriptors.chunkHash(chunkIndex);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunkSize()
+{
+    return glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>

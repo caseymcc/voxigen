@@ -31,8 +31,8 @@ unsigned int playerChunk;
 namespace voxigen
 {
 //force generator instantiation
-typedef voxigen::Chunk<voxigen::Cell, 64, 64, 16> Chunk_64_64_16;
-template voxigen::GeneratorTemplate<voxigen::EquiRectWorldGenerator<Chunk_64_64_16>>;
+typedef Chunk<Cell, 64, 64, 16> Chunk_64_64_16;
+template GeneratorTemplate<EquiRectWorldGenerator<Chunk_64_64_16>>;
 }
 
 int main(int argc, char ** argv)
@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&player);
     renderer.build();
-    renderer.setViewRadius(128.0f);
+    renderer.setViewRadius(512.0f);
     renderer.updateChunks();
 
     float movementSpeed=100;

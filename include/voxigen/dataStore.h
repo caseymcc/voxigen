@@ -104,6 +104,8 @@ public:
 
     SharedSegmentHandle getSegment(SegmentHash segmentHash);
     SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
+
+    void loadChunk(SharedChunkHandle handle, size_t lod);
 //    void removeHandle(ChunkHandleType *chunkHandle);
 
     void addUpdated(Key hash);
@@ -504,6 +506,12 @@ template<typename _Segment, typename _Chunk>
 typename DataStore<_Segment, _Chunk>::SharedChunkHandle DataStore<_Segment, _Chunk>::getChunk(SegmentHash segmentHash, ChunkHash chunkHash)
 {
     return getSegment(segmentHash)->getChunk(chunkHash);
+}
+
+template<typename _Segment, typename _Chunk>
+void DataStore<_Segment, _Chunk>::loadChunk(SharedChunkHandle handle, size_t lod)
+{
+    return getSegment(handle->segmentHash)->loadChunk(handle, lod);
 }
 
 template<typename _Segment, typename _Chunk>

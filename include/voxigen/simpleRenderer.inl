@@ -1,3 +1,5 @@
+#include "voxigen/chunkFunctions.h"
+
 namespace voxigen
 {
 
@@ -132,7 +134,8 @@ m_viewRadius(60.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
 m_camera(nullptr),
-m_outlineChunks(true)
+m_outlineChunks(true),
+m_queryComplete(true)
 {
     m_projectionMat=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
                               0.0f, 1.0f, 0.0f, 0.0f,
@@ -183,7 +186,6 @@ void SimpleRenderer<_Grid>::build()
     glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-#ifndef NDEBUG
     m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
     m_outlineLightPositionId=m_outlineProgram.getUniformId("lightPos");
     m_outlineOffsetId=m_outlineProgram.getUniformId("segmentOffset");
@@ -194,7 +196,6 @@ void SimpleRenderer<_Grid>::build()
     glBindBuffer(GL_ARRAY_BUFFER, m_outlineInstanceVertices);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float)*outlineVertices.size(), outlineVertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-#endif //NDEBUG
 
 #ifdef _WINDOWS
     m_prepDC=wglGetCurrentDC();
@@ -271,10 +272,20 @@ void SimpleRenderer<_Grid>::draw()
                 {
                     chunkIter->second->refCount=1; //make sure we hold onto it while it is in the prepThread
                     chunkIter->second->updateOutline();
-                    //give to prep thread to get it ready
-                    addPrepQueue(chunkIter->second);
+
+                    if(chunkIter->second->getChunkHandle()->empty)
+                        chunkIter->second->setEmpty();
+                    else
+                    {
+                        m_outstandingChunkPreps++;
+                        //give to prep thread to get it ready
+                        addPrepQueue(chunkIter->second);
+                    }
                 }
             }
+
+            m_outstandingChunkLoads--;
+//            assert(m_outstandingChunkLoads>=0);
         }
     }
     
@@ -283,7 +294,10 @@ void SimpleRenderer<_Grid>::draw()
         std::unique_lock<std::mutex> lock(m_prepMutex);
 
         for(size_t i=0; i<m_chunksUpdated.size(); ++i)
-            m_chunksUpdated[i]->refCount=0; //done in the prepThread
+        {
+//            m_chunksUpdated[i]->refCount=0; //done in the prepThread
+            m_chunksUpdated[i]->updated();
+        }
 
         m_chunksUpdated.clear();
     }
@@ -320,8 +334,9 @@ void SimpleRenderer<_Grid>::draw()
 //
 //        m_chunksUpdated.erase(m_chunksUpdated.begin(), m_chunksUpdated.begin()+maxUpdates);
 //    }
+    updateOcclusionQueries();
 
-    //draw all chunks, using segments
+    //draw all chunks that are built, using segments
     for(auto &iter:m_segmentRenderers)
     {
         SegmentRenderer<ChunkRenderType> &renderer=iter.second;
@@ -332,14 +347,70 @@ void SimpleRenderer<_Grid>::draw()
         {
             ChunkRenderType *chunkRenderer=chunkIter.second;
             
-            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw
+            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw, could be copying
                 m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
 
+            if(chunkRenderer->getState()==ChunkRenderType::Copy)
+            {
+                if(chunkRenderer->incrementCopy())
+                    m_outstandingChunkPreps--;
+            }
             chunkRenderer->draw();
         }
     }
 
-#ifndef NDEBUG
+    //turn off writing color buffer and depth buffer, just checking if it would render
+    glColorMask(false, false, false, false);
+    glDepthMask(GL_FALSE);
+    //draw all occulution queries, using segments
+    for(auto &iter:m_segmentRenderers)
+    {
+        SegmentRenderer<ChunkRenderType> &renderer=iter.second;
+
+        //        m_program.uniform(m_offsetId)=renderer.offset;
+        size_t ongoingQueries=0;
+
+        for(auto &chunkIter:renderer.chunkRenderers)
+        {
+            ChunkRenderType *chunkRenderer=chunkIter.second;
+
+            if(chunkRenderer->getState()==ChunkRenderType::Query)
+            {
+                m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
+
+                chunkRenderer->drawOcculsionQuery();
+                ongoingQueries++;
+            }
+            else if(chunkRenderer->getState()==ChunkRenderType::QueryWait)
+            {
+                unsigned int samples;
+
+                if(chunkRenderer->checkOcculsionQuery(samples))
+                {
+                    if(samples>0)
+                    {
+                        m_outstandingChunkLoads++;
+                        m_grid->loadChunk(chunkRenderer->getChunkHandle(), 0);
+                    }
+                }
+                else
+                    ongoingQueries++;
+                    
+            }
+        }
+
+        if(!m_queryComplete&&(ongoingQueries<=0))
+        {
+            if((m_outstandingChunkLoads<=0) && (m_outstandingChunkPreps<=0)) //all loads/preps from previous query complete, can start next ring
+                m_queryComplete=true;
+        }
+    }
+    //done querying, turn color and depth buffer back on
+    glColorMask(true, true, true, true);
+    glDepthMask(GL_TRUE);
+
+
+//#ifndef NDEBUG
     //draw Missing blocks in debug
 //    if(m_outlineChunks)
     {
@@ -365,7 +436,7 @@ void SimpleRenderer<_Grid>::draw()
             }
         }
     }
-#endif //NDEBUG
+//#endif //NDEBUG
 }
 
 template<typename _Grid>
@@ -377,138 +448,26 @@ void SimpleRenderer<_Grid>::setCamera(SimpleFpsCamera *camera)
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::spiralCube(std::vector<glm::ivec3> &positions, float radius)
-{
-    glm::ivec3 &chunkSize=m_grid->getDescriptors().m_chunkSize;
-    glm::ivec3 chunkRadius=glm::ceil(glm::vec3(radius/chunkSize.x, radius/chunkSize.y, radius/chunkSize.z));
-
-    int maxSteps=std::max(std::max(chunkRadius.x, chunkRadius.y), chunkRadius.z);
-    int index;
-    glm::ivec3 position(0, 0, 0);
-    int z=0;
-
-    for(int j=0; j<maxSteps; j++)
-    {
-        z=0;
-        while(z>=-j && z<=j)
-        {
-            position.z=z;
-
-            if((z==j)||(z==-j))
-            {
-                position.x=0;
-                position.y=0;
-                float chunkDistance=glm::length(glm::vec3(position*chunkSize));
-
-                if(chunkDistance<=m_viewRadius)
-                    positions.push_back(position);
-
-                index=1;
-            }
-            else
-                index=j;
-
-            while(index<=j)
-            {
-                //right side
-                position.x=index;
-                for(int i=-index; i<index; ++i)
-                {
-                    position.y=i;
-                    float chunkDistance=glm::length(glm::vec3(position*chunkSize));
-
-                    if(chunkDistance<=m_viewRadius)
-                        positions.push_back(position);
-                }
-
-                //bottom side
-                position.y=index;
-                for(int i=index; i>-index; --i)
-                {
-                    position.x=i;
-                    float chunkDistance=glm::length(glm::vec3(position*chunkSize));
-
-                    if(chunkDistance<=m_viewRadius)
-                        positions.push_back(position);
-                }
-
-                //left side
-                position.x=-index;
-                for(int i=index; i>-index; --i)
-                {
-                    position.y=i;
-                    float chunkDistance=glm::length(glm::vec3(position*chunkSize));
-
-                    if(chunkDistance<=m_viewRadius)
-                        positions.push_back(position);
-                }
-
-                //top side
-                position.y=-index;
-                for(int i=-index; i<=index; ++i)
-                {
-                    position.x=i;
-                    float chunkDistance=glm::length(glm::vec3(position*chunkSize));
-
-                    if(chunkDistance<=m_viewRadius)
-                        positions.push_back(position);
-                }
-                index++;
-            }
-
-            if(z>0)
-                z=-z;
-            else
-                z=-z+1;
-        }
-    }
-}
-
-template<typename _Grid>
 void SimpleRenderer<_Grid>::setViewRadius(float radius)
 {
     m_viewRadius=radius;
     m_viewRadiusMax=radius*1.5f;
+    m_maxChunkRing=std::ceil(radius/std::max(std::max(ChunkType::sizeX::value, ChunkType::sizeY::value), ChunkType::sizeZ::value));
 
-    m_chunkIndices.clear();
-    spiralCube(m_chunkIndices, m_viewRadius);
- //   glm::ivec3 &chunkSize=m_grid->getDescriptors().m_chunkSize;
- //   glm::ivec3 chunkRadius=glm::ceil(glm::vec3(m_viewRadius/chunkSize.x, m_viewRadius/chunkSize.y, m_viewRadius/chunkSize.z));
- //
- //   m_chunkIndices.clear();
- //   glm::vec3 startPos=(chunkRadius*(-chunkSize))+(chunkSize/2);
- //   glm::vec3 chunkPos;
- //
- //   chunkPos.z=startPos.z;
- //   for(int z=-chunkRadius.z; z<chunkRadius.z; ++z)
- //   {
- //       chunkPos.y=startPos.y;
- //       for(int y=-chunkRadius.y; y<chunkRadius.y; ++y)
- //       {
- //           chunkPos.x=startPos.x;
- //           for(int x=-chunkRadius.x; x<chunkRadius.x; ++x)
- //           {
- //               float chunkDistance=glm::length(chunkPos);
- //
- //               if(chunkDistance<=m_viewRadius)
- //               {
- //                   m_chunkIndices.push_back(glm::ivec3(x, y, z));
- //               }
- //               chunkPos.x+=chunkSize.x;
- //           }
- //           chunkPos.y+=chunkSize.y;
- //       }
- //       chunkPos.z+=chunkSize.z;
- //   }
+    m_chunkIndices.resize(m_maxChunkRing);
 
-    if(m_chunkIndices.empty()) //always want at least the current chunk
-        m_chunkIndices.push_back(glm::ivec3(0, 0, 0));
+    for(size_t i=0; i<m_maxChunkRing; ++i)
+        ringCube<ChunkType>(m_chunkIndices[i], i);
+
+//    if(m_chunkIndices.empty()) //always want at least the current chunk
+//        m_chunkIndices.push_back(glm::ivec3(0, 0, 0));
 }
 
-struct SegmentInfo
+struct ChunkQueryOffset
 {
-    SegmentInfo(glm::vec3 &offset):offset(offset){}
+    ChunkQueryOffset(size_t queryRing, glm::vec3 &offset):queryRing(queryRing), offset(offset){}
 
+    size_t queryRing;
     glm::vec3 offset;
 };
 
@@ -521,22 +480,27 @@ void SimpleRenderer<_Grid>::updateChunks()
     int chunkIndicesSize=m_chunkIndices.size();
 
 //    std::unordered_map<SegmentHash, glm::vec3> segments;
-    std::unordered_map<Key::Type, glm::vec3> chunks;
+    std::unordered_map<Key::Type, ChunkQueryOffset> chunks;
     glm::ivec3 index;
     glm::ivec3 currentSegmentIndex;
 
-    for(size_t i=0; i<chunkIndicesSize; ++i)
+    for(size_t i=0; i<m_maxChunkRing; ++i)
     {
-//        chunks[i]=m_grid->chunkHash(chunkIndex+m_chunkIndices[i]);
-        index=playerChunkIndex+m_chunkIndices[i];
-        currentSegmentIndex=playerSegmentIndex;
+        std::vector<glm::ivec3> &chunkIndices=m_chunkIndices[i];
 
-        glm::vec3 segmentOffset=m_grid->getDescriptors().adjustSegment(currentSegmentIndex, index);
-        Key key=m_grid->getHashes(currentSegmentIndex, index);
+        for(size_t j=0; j<chunkIndices.size(); ++j)
+        {
+            index=playerChunkIndex+chunkIndices[j];
+            currentSegmentIndex=playerSegmentIndex;
 
-//        segments.insert(std::pair<SegmentHash, glm::vec3>(key.segmentHash, segmentOffset));
-        chunks.insert(std::pair<Key::Type, glm::vec3>(key.hash, segmentOffset));
+            glm::vec3 segmentOffset=m_grid->getDescriptors().adjustSegment(currentSegmentIndex, index);
+            Key key=m_grid->getHashes(currentSegmentIndex, index);
+
+            chunks.insert(std::pair<Key::Type, ChunkQueryOffset>(key.hash, ChunkQueryOffset(i, segmentOffset)));
+        }
     }
+
+    m_chunkQueryOrder.resize(m_maxChunkRing);
 
     //invalidate renderers that pass outside max range
     for(auto segmentIter=m_segmentRenderers.begin(); segmentIter!=m_segmentRenderers.end(); )
@@ -557,7 +521,7 @@ void SimpleRenderer<_Grid>::updateChunks()
             glm::ivec3 chunkIndex=m_grid->getDescriptors().chunkIndex(key.chunkHash);
             float chunkDistance=m_grid->getDescriptors().distance(playerSegmentIndex, playerChunkIndex, segmentIndex, chunkIndex);
 
-            //chunk outside of range and invalidate
+            //chunk outside of range so invalidate
             if(chunkDistance > m_viewRadiusMax)
             {
                 if(chunkRenderer->refCount == 0) //need to keep if in prepThread
@@ -572,8 +536,11 @@ void SimpleRenderer<_Grid>::updateChunks()
             {
                 auto iter=chunks.find(key.hash);
 
-                if(iter != chunks.end())
+                if(iter!=chunks.end())
+                {
+                    m_chunkQueryOrder[iter->second.queryRing].push_back(chunkRenderer);
                     chunks.erase(iter);
+                }
             }
             ++chunkIter;
         }
@@ -595,10 +562,14 @@ void SimpleRenderer<_Grid>::updateChunks()
         Key key(iter->first);
         SharedChunkHandle chunkHandle=m_grid->getChunk(key.segmentHash, key.chunkHash);
 
-        chunkRenderer->setSegmentHash(key.segmentHash);
+//        m_grid->loadChunk(chunkHandle, 0);
+
+//        chunkRenderer->setSegmentHash(key.segmentHash);
         chunkRenderer->setChunk(chunkHandle);
-        chunkRenderer->setChunkOffset(iter->second);
+//        chunkRenderer->setChunkOffset(iter->second.offset);
 //        chunkRenderer->update();
+
+        m_chunkQueryOrder[iter->second.queryRing].push_back(chunkRenderer);
 
         auto segmentIter=m_segmentRenderers.find(key.segmentHash);
 
@@ -606,13 +577,50 @@ void SimpleRenderer<_Grid>::updateChunks()
         {
             glm::ivec3 index=m_grid->getSegmentIndex(key.segmentHash);
 
-            auto interResult=m_segmentRenderers.insert(SegmentRendererMap::value_type(key.segmentHash, SegmentRendererType(key.segmentHash, index, iter->second)));
+            auto interResult=m_segmentRenderers.insert(SegmentRendererMap::value_type(key.segmentHash, SegmentRendererType(key.segmentHash, index, iter->second.offset)));
 
             assert(interResult.second);
             segmentIter=interResult.first;
         }
         segmentIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
     }
+
+    //we likely altered the chunks, start the occlussion query over
+    m_currentQueryRing=0;
+}
+
+template<typename _Grid>
+void SimpleRenderer<_Grid>::updateOcclusionQueries()
+{
+    if(!m_queryComplete)
+        return;
+
+    m_outstandingChunkLoads=0;
+    m_outstandingChunkPreps=0;
+
+    if(m_currentQueryRing>=m_maxChunkRing) //we have completed all query rings, start over
+        m_currentQueryRing=0;
+    
+    size_t queriesStarted=0;
+
+    std::vector<ChunkRenderType *> &chunkRenderers=m_chunkQueryOrder[m_currentQueryRing];
+
+    for(size_t i=0; i<chunkRenderers.size(); ++i)
+    {
+        ChunkRenderType *chunkRenderer=chunkRenderers[i];
+
+        if(chunkRenderer->getState()==ChunkRenderType::Occluded)
+        {
+            chunkRenderer->startOcculsionQuery();
+            queriesStarted++;
+        }
+    }
+
+    m_currentQueryRing++;
+
+    if(queriesStarted>0)
+        m_queryComplete=false;
+     
 }
 
 template<typename _Grid>
@@ -620,7 +628,12 @@ typename SimpleRenderer<_Grid>::ChunkRenderType *SimpleRenderer<_Grid>::getFreeR
 {
     if(m_freeChunkRenderers.empty())
     {
-        size_t minRendererCount=(m_chunkIndices.size()*3)/2;
+//        size_t minRendererCount=(m_chunkIndices.size()*3)/2;
+        size_t minRendererCount=0;
+        
+        for(size_t i=0; i<m_chunkIndices.size(); ++i)
+            minRendererCount+=m_chunkIndices[i].size();
+        minRendererCount=(minRendererCount*3)/2;
 
         if(minRendererCount<m_chunkRenderers.size())
             minRendererCount+m_chunkRenderers.size()+1;
@@ -639,9 +652,7 @@ typename SimpleRenderer<_Grid>::ChunkRenderType *SimpleRenderer<_Grid>::getFreeR
 
                 chunkRenderer->setParent(this);
                 chunkRenderer->build(m_instanceVertices);
-#ifndef NDEBUG
                 chunkRenderer->buildOutline(m_outlineInstanceVertices);
-#endif //NDEBUG
 
                 m_freeChunkRenderers.push_back(chunkRenderer);
             }
