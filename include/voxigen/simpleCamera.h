@@ -2,6 +2,7 @@
 #define _voxigen_simpleFpsCamera_h_
 
 #include "voxigen/voxigen_export.h"
+#include "voxigen/defines.h"
 #include <memory>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -22,11 +23,15 @@ public:
     void setYaw(float angle);
     void setPitch(float angle);
 
+    const RegionHash getRegionHash() { return m_regionHash; }
     const glm::vec3 &getPosition() { return m_position; }
+    
     void setPosition(const glm::vec3 &position) { m_position=position; }
+    void setPosition(RegionHash regionHash, const glm::vec3 &position) { m_regionHash=regionHash;  m_position=position; }
     void move(const glm::vec3 &velocity);
 
     bool isDirty() { return (m_projectionDirty||m_viewDirty); }
+    void clearDirty() { m_projectionDirty=false; m_viewDirty=false; }
     glm::mat4x4 &getProjectionViewMat() { updateMatrix(); return m_projectionViewMatrix; }
 
     glm::vec3 getDirection();
@@ -39,6 +44,7 @@ private:
     float m_near;
     float m_far;
 
+    RegionHash m_regionHash;
     glm::vec3 m_position;
     float m_yaw;
     float m_pitch;

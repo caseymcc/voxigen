@@ -2,9 +2,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "voxigen/block.h"
-#include "voxigen/world.h"
+#include "voxigen/defines.h"
+#include "voxigen/cell.h"
+#include "voxigen/regularGrid.h"
 #include "voxigen/simpleRenderer.h"
+#include "voxigen/equiRectWorldGenerator.h"
 
 #include <boost/filesystem.hpp>
 
@@ -21,7 +23,17 @@ bool key_s=false;
 bool key_space=false;
 bool key_left_shift=false;
 voxigen::SimpleFpsCamera player;
+
+unsigned int playerRegion;
+glm::ivec3 playerRegionIndex;
 unsigned int playerChunk;
+
+namespace voxigen
+{
+//force generator instantiation
+typedef Chunk<Cell, 64, 64, 16> Chunk_64_64_16;
+template GeneratorTemplate<EquiRectWorldGenerator<Chunk_64_64_16>>;
+}
 
 int main(int argc, char ** argv)
 {
@@ -54,7 +66,7 @@ int main(int argc, char ** argv)
     glewInit();
     glViewport(0, 0, width, height);
 
-    typedef voxigen::World<voxigen::Block, 16, 16, 16> World;
+    typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
     World world;
 
     fs::path worldsDirectory("worlds");
@@ -73,26 +85,33 @@ int main(int argc, char ** argv)
         fs::path worldPath(worldDirectory);
         
         fs::create_directory(worldPath);
-        world.create(worldDirectory, "TestApWorld");
+        world.create(worldDirectory, "TestApWorld", glm::ivec3(2048, 2048, 1024), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());
     
+    glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
     worldMiddle.z+=5.0f;
-    player.setPosition(worldMiddle);
-//    player.setPosition(glm::vec3(-3.0f, 0.0f, 0.3f));
+    
     player.setYaw(0.0f);
     player.setPitch(0.0f);
-    playerChunk=world.getChunkHash(player.getPosition());
     
+    voxigen::Key hashes=world.getHashes(worldMiddle);
+
+    playerRegion=hashes.regionHash;
+    playerChunk=hashes.chunkHash;
+    playerRegionIndex=world.getRegionIndex(playerRegion);
+    
+    //set player position to local region
+    player.setPosition(playerRegion, world.gridPosToRegionPos(playerRegion, worldMiddle));
+
     voxigen::SimpleRenderer<World> renderer(&world);
 
     renderer.setCamera(&player);
     renderer.build();
-//    renderer.updateProjection(width, height);
-    renderer.setViewRadius(128.0f);
+    renderer.setViewRadius(512.0f);
     renderer.updateChunks();
 
     float movementSpeed=100;
@@ -100,6 +119,11 @@ int main(int argc, char ** argv)
     float lastFrame=glfwGetTime();
     float currentFrame;
     float deltaTime;
+
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -152,43 +176,92 @@ int main(int argc, char ** argv)
 
             bool resetPos=false;
 
-            if(playerPos.x<0.0f)
+//            if(playerPos.x<0.0f)
+//            {
+//                playerPos.x=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.x>worldSize.x)
+//            {
+//                playerPos.x=worldSize.x;
+//                resetPos=true;
+//            }
+//            
+//            if(playerPos.y<0.0f)
+//            {
+//                playerPos.y=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.y>worldSize.y)
+//            {
+//                playerPos.y=worldSize.y;
+//                resetPos=true;
+//            }
+//
+//            if(playerPos.z<0.0f)
+//            {
+//                playerPos.z=0.0f;
+//                resetPos=true;
+//            }
+//            else if(playerPos.z>worldSize.z)
+//            {
+//                playerPos.z=worldSize.z;
+//                resetPos=true;
+//            }
+//
+//            if(resetPos)
+//                player.setPosition(playerPos);
+            unsigned int regionHash=playerRegion;
+            bool updateRegion=false;
+
+            if(playerPos.x<0)
             {
-                playerPos.x=0.0f;
-                resetPos=true;
+                playerRegionIndex.x--;
+                playerPos.x+=regionCellSize.x;
+                updateRegion=true;
             }
-            else if(playerPos.x>worldSize.x)
+            else if(playerPos.x>regionCellSize.x)
             {
-                playerPos.x=worldSize.x;
-                resetPos=true;
-            }
-            
-            if(playerPos.y<0.0f)
-            {
-                playerPos.y=0.0f;
-                resetPos=true;
-            }
-            else if(playerPos.y>worldSize.y)
-            {
-                playerPos.y=worldSize.y;
-                resetPos=true;
+                playerRegionIndex.x++;
+                playerPos.x-=regionCellSize.x;
+                updateRegion=true; 
             }
 
-            if(playerPos.z<0.0f)
+            if(playerPos.y<0)
             {
-                playerPos.z=0.0f;
-                resetPos=true;
+                playerRegionIndex.y--;
+                playerPos.y+=regionCellSize.y;
+                updateRegion=true;
             }
-            else if(playerPos.z>worldSize.z)
+            else if(playerPos.y>regionCellSize.y)
             {
-                playerPos.z=worldSize.z;
-                resetPos=true;
+                playerRegionIndex.y++;
+                playerPos.y-=regionCellSize.y;
+                updateRegion=true;
             }
 
-            if(resetPos)
-                player.setPosition(playerPos);
+            if(playerPos.z<0)
+            {
+                playerRegionIndex.z--;
+                playerPos.z+=regionCellSize.z;
+                updateRegion=true;
+            }
+            else if(playerPos.z>regionCellSize.z)
+            {
+                playerRegionIndex.z++;
+                playerPos.z-=regionCellSize.z;
+                updateRegion=true;
+            }
 
-            chunkHash=world.getChunkHash(player.getPosition());
+            if(updateRegion)
+            {
+                regionHash=world.getRegionHash(playerRegionIndex);
+                player.setPosition(regionHash, playerPos);
+                playerRegion=regionHash;
+
+                //region changed, chunk hash will change too.
+            }
+            chunkHash=world.getChunkHash(regionHash, playerPos);
 
             if(playerChunk!=chunkHash)
             {
@@ -199,12 +272,12 @@ int main(int argc, char ** argv)
 
 
         /* Render here */
-//        glClear(GL_COLOR_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
 //        glDepthFunc(GL_LESS);
 
-        glClearColor(0.1f, 0.5f, 1.0f, 1.0f);
+        
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+        
 
 //        renderer.setCamera(player);
         renderer.draw();
@@ -216,6 +289,9 @@ int main(int argc, char ** argv)
         glfwPollEvents();
 
     }
+
+    //bring renderers down before world is terminated;
+    renderer.destroy();
 
     glfwTerminate();
     return 0;

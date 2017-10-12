@@ -23,15 +23,19 @@ struct ChunkHandle
         Memory
     };
 
-    ChunkHandle(unsigned int hash):hash(hash), status(Unknown), cachedOnDisk(false), empty(false){}
+    ChunkHandle(unsigned int regionHash, unsigned int chunkHash):regionHash(regionHash), hash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
+
+    void release() { chunk.reset(nullptr); status=Unknown; }
 
     Status status;
+    unsigned int regionHash;
     unsigned int hash;
     UniqueChunk chunk;
+    
+    glm::ivec3 regionOffset;
 
     bool cachedOnDisk;
     bool empty;
-//    std::string cacheFile;
 };
 
 } //namespace voxigen

@@ -28,25 +28,8 @@ find_package(RapidJSON CONFIG REQUIRED)
 hunter_add_package(Boost COMPONENTS filesystem system)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 
+add_subdirectory(FastNoiseSIMD)
 add_subdirectory(opengl_util)
-
-#hack for Urho3D
-set(URHO3D_INCLUDES ${URHO3D_DIR}/buildx64/include)
-set(URHO3D_LIBS 
-    optimized ${URHO3D_DIR}/buildx64/lib/Urho3D.lib 
-    debug ${URHO3D_DIR}/buildx64/lib/Urho3D_d.lib
-    optimized ${URHO3D_DIR}/buildx64/Source/ThirdParty/SDL/Release/SDL.lib
-    debug ${URHO3D_DIR}/buildx64/Source/ThirdParty/SDL/Debug/SDL.lib
-)
-set(URHO3D_3RDPARTY_INCLUDE ${URHO3D_INCLUDES}/Urho3D/ThirdParty)
-
-#hack for bullet
-set(BULLET_INCLUDES ${URHO3D_DIR}/Source/ThirdParty/Bullet)
-set(BULLET_LIBS optimized ${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Release/Bullet.lib debug ${URHO3D_DIR}/buildx64/Source/ThirdParty/Bullet/Debug/Bullet.lib)
-
-#hack for libnoise, need to add to hunter
-set(LIBNOISE_INCLUDES ${LIBNOISE_ROOT_DIR}/src)
-set(LIBNOISE_LIBS optimized ${LIBNOISE_ROOT_DIR}/_buildx64/src/Release/noise.lib debug ${LIBNOISE_ROOT_DIR}/_buildx64/src/Debug/noise.lib)
 
 if(MSVC)
     add_definitions(-DNOMINMAX)
@@ -54,55 +37,50 @@ endif()
 
 set(voxigen_headers
     include/voxigen/biome.h
-    include/voxigen/block.h
     include/voxigen/boundingBox.h
+    include/voxigen/cell.h
     include/voxigen/chunk.h
-    include/voxigen/chunkCache.h
     include/voxigen/chunkHandle.h
-    include/voxigen/chunkHandler.h
+    include/voxigen/chunkFunctions.h
+    include/voxigen/chunkMesh.h
+    include/voxigen/classFactory.h
     include/voxigen/coords.h
+    include/voxigen/cubicMeshBuilder.h
+    include/voxigen/dataHandler.h
+    include/voxigen/dataStore.h
+    include/voxigen/defines.h
     include/voxigen/entity.h
+    include/voxigen/equiRectWorldGenerator.h
+    include/voxigen/generator.h
+    include/voxigen/gridDescriptors.h
     include/voxigen/initGlew.h
+    include/voxigen/jsonSerializer.h
     include/voxigen/object.h
+    include/voxigen/regularGrid.h
+    include/voxigen/region.h
+    include/voxigen/regionHandle.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
-    include/voxigen/world.h
-    include/voxigen/worldDescriptors.h
-    include/voxigen/worldGenerator.h
-    include/voxigen/noise/FastNoiseSIMD.h
+    include/voxigen/simpleShapes.h
 )
 
 set(voxigen_sources
-    src/chunker/chunk.cpp
-    src/chunker/chunkCache.cpp
-    src/chunker/chunkHandler.cpp
     src/data/biome.cpp
-    src/data/block.cpp
     src/data/entity.cpp
+    src/data/gridDescriptors.cpp
     src/data/object.cpp
-    src/data/world.cpp
-    src/data/worldDescriptors.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_avx2.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_avx512.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_internal.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_neon.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_sse2.cpp
-    src/FastNoiseSIMD/FastNoiseSIMD_sse41.cpp
-    src/generator/worldGenerator.cpp
     src/rendering/initGlew.cpp
+    src/rendering/chunkMesh.cpp
     src/rendering/simpleCamera.cpp
-    src/rendering/simpleChunkRenderer.cpp
-    src/rendering/simpleRenderer.cpp
     src/utils/coords.cpp
+    src/utils/jsonSerializer.cpp
 )
 
 set(voxigen_libraries
     glm
-    ${BULLET_LIBS}
-    ${LIBNOISE_LIBS}
     opengl_util
+    fastNoise
     glew::glew
     RapidJSON::rapidjson
     Boost::filesystem
@@ -115,12 +93,6 @@ add_library(voxigen SHARED
 )
 
 
-#include_directories(${GLM_INCLUDES})
-#include_directories(${GLFW_INCLUDES})
-include_directories(${LIBNOISE_INCLUDES})
-#include_directories(${BULLET_INCLUDES})
-include_directories(${POLYVOX_DIR}/include)
-
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 target_link_libraries(voxigen ${voxigen_libraries})
@@ -132,20 +104,3 @@ set(testApp_sources
 
 add_executable(testApp ${testApp_sources})
 target_link_libraries(testApp voxigen glfw)
-
-#urho3D test app
-include_directories(${URHO3D_INCLUDES})
-include_directories(${URHO3D_3RDPARTY_INCLUDE}) 
-
-add_definitions(-DURHO3D_WIN32_CONSOLE)
-
-set(Urho3DApp_headers
-    urho3DApp/urho3DApp.h
-)
-
-set(Urho3DApp_sources
-    urho3DApp/urho3DApp.cpp
-)
-
-add_executable(Urho3DApp ${Urho3DApp_headers} ${Urho3DApp_sources})
-target_link_libraries(Urho3DApp ${URHO3D_LIBS} voxigen Winmm.lib version.lib Imm32.lib)
