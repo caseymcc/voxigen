@@ -249,6 +249,10 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
     //m_validBlocks=m_mesh.getNoOfIndices();
     m_validBlocks=indices.size();
 
+
+    //we have mesh lets drop the data
+    m_chunkHandle->release();
+
     //m_state=Built;
 //    m_state=Copy;
 }

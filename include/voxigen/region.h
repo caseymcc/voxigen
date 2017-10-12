@@ -13,8 +13,6 @@
 #include "voxigen/dataStore.h"
 #include "voxigen/entity.h"
 
-#include <noise/noise.h>
-
 #include <unordered_map>
 #include <memory>
 #include <limits>

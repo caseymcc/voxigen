@@ -11,8 +11,6 @@
 #include "voxigen/classFactory.h"
 #include "voxigen/updateQueue.h"
 
-#include <noise/noise.h>
-
 #include <unordered_map>
 #include <memory>
 #include <limits>
