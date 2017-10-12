@@ -1,5 +1,5 @@
-#ifndef _voxigen_segmentHandle_h_
-#define _voxigen_segmentHandle_h_
+#ifndef _voxigen_regionHandle_h_
+#define _voxigen_regionHandle_h_
 
 #include "voxigen/chunkHandle.h"
 #include "voxigen/dataHandler.h"
@@ -24,15 +24,15 @@
 namespace voxigen
 {
 
-template<typename _Segment, typename _Chunk>
+template<typename _Region, typename _Chunk>
 class DataStore;
 
-template<typename _Segment>
-class SegmentHandle:public DataHandler<ChunkHash, ChunkHandle<typename _Segment::ChunkType>, typename _Segment::ChunkType>
+template<typename _Region>
+class RegionHandle:public DataHandler<ChunkHash, ChunkHandle<typename _Region::ChunkType>, typename _Region::ChunkType>
 {
 public:
-    typedef _Segment SegmentType;
-    typedef typename SegmentType::ChunkType ChunkType;
+    typedef _Region RegionType;
+    typedef typename RegionType::ChunkType ChunkType;
 
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
@@ -43,7 +43,7 @@ public:
         Loaded
     };
 
-    SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore, UpdateQueue *updateQueue);
+    RegionHandle(RegionHash regionHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<RegionType, ChunkType> *dataStore, UpdateQueue *updateQueue);
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
@@ -55,7 +55,7 @@ public:
 
     void addConfig(SharedChunkHandle handle);
 
-    SegmentHash hash;
+    RegionHash hash;
     bool cachedOnDisk;
     bool empty;
 
@@ -69,7 +69,7 @@ private:
     void verifyDirectory();
 
     GridDescriptors *m_descriptors;
-    DataStore<_Segment, typename _Segment::ChunkType> *m_dataStore;
+    DataStore<_Region, typename _Region::ChunkType> *m_dataStore;
     GeneratorQueue<ChunkType> *m_generatorQueue;
     UpdateQueue *m_updateQueue;
 
@@ -81,11 +81,11 @@ private:
     rapidjson::Document m_configDocument;
 };
 
-template<typename _Segment>
-SegmentHandle<_Segment>::SegmentHandle(SegmentHash segmentHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<SegmentType, ChunkType> *dataStore, UpdateQueue *updateQueue):
+template<typename _Region>
+RegionHandle<_Region>::RegionHandle(RegionHash regionHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<RegionType, ChunkType> *dataStore, UpdateQueue *updateQueue):
 m_status(Unknown),
 m_version(0),
-hash(segmentHash),
+hash(regionHash),
 m_descriptors(descriptors),
 m_generatorQueue(generatorQueue),
 m_dataStore(dataStore),
@@ -95,8 +95,8 @@ empty(false)
 {
 }
 
-template<typename _Segment>
-bool SegmentHandle<_Segment>::load(const std::string &directory)
+template<typename _Region>
+bool RegionHandle<_Region>::load(const std::string &directory)
 {
     m_directory=directory;
     fs::path path(directory);
@@ -109,7 +109,7 @@ bool SegmentHandle<_Segment>::load(const std::string &directory)
         fs::create_directory(path);
     }
 
-    m_configFile=m_directory+"/segmentConfig.json";
+    m_configFile=m_directory+"/regionConfig.json";
     fs::path configPath(m_configFile);
 
     if(!fs::exists(configPath))
@@ -125,14 +125,14 @@ bool SegmentHandle<_Segment>::load(const std::string &directory)
     return true;
 }
 
-template<typename _Segment>
-typename SegmentHandle<_Segment>::DataHandle *SegmentHandle<_Segment>::newHandle(HashType chunkHash)
+template<typename _Region>
+typename RegionHandle<_Region>::DataHandle *RegionHandle<_Region>::newHandle(HashType chunkHash)
 {
     return new ChunkHandleType(hash, chunkHash);
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::loadConfig()
+template<typename _Region>
+void RegionHandle<_Region>::loadConfig()
 {
     FILE *filePtr=fopen(m_configFile.c_str(), "rb");
     char readBuffer[65536];
@@ -165,8 +165,8 @@ void SegmentHandle<_Segment>::loadConfig()
     fclose(filePtr);
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::saveConfig()
+template<typename _Region>
+void RegionHandle<_Region>::saveConfig()
 {
     FILE *filePtr=fopen(m_configFile.c_str(), "wb");
     char writeBuffer[65536];
@@ -199,8 +199,8 @@ void SegmentHandle<_Segment>::saveConfig()
     fclose(filePtr);
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::addConfig(SharedChunkHandle handle)
+template<typename _Region>
+void RegionHandle<_Region>::addConfig(SharedChunkHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
@@ -233,8 +233,8 @@ void SegmentHandle<_Segment>::addConfig(SharedChunkHandle handle)
     }
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::loadDataStore()
+template<typename _Region>
+void RegionHandle<_Region>::loadDataStore()
 {
     fs::path path(m_directory);
 
@@ -261,19 +261,19 @@ void SegmentHandle<_Segment>::loadDataStore()
     }
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::verifyDirectory()
+template<typename _Region>
+void RegionHandle<_Region>::verifyDirectory()
 {
 
 }
 
-template<typename _Segment>
-typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::getChunk(ChunkHash chunkHash)
+template<typename _Region>
+typename RegionHandle<_Region>::SharedChunkHandle RegionHandle<_Region>::getChunk(ChunkHash chunkHash)
 {
     SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
 
     glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHash);
-    chunkHandle->segmentOffset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+    chunkHandle->regionOffset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
 
 
 //    if(chunkHandle->status!=ChunkHandleType::Memory)
@@ -296,15 +296,15 @@ typename SegmentHandle<_Segment>::SharedChunkHandle SegmentHandle<_Segment>::get
     return chunkHandle;
 }
 
-template<typename _Segment>
-void SegmentHandle<_Segment>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+template<typename _Region>
+void RegionHandle<_Region>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
 {
     if(chunkHandle->status!=ChunkHandleType::Memory)
     {
         if(chunkHandle->empty) //empty is already loaded
         {
             chunkHandle->status=ChunkHandleType::Memory;
-            m_updateQueue->add(Key(chunkHandle->segmentHash, chunkHandle->hash));
+            m_updateQueue->add(Key(chunkHandle->regionHash, chunkHandle->hash));
         }
         else
         {
@@ -319,4 +319,4 @@ void SegmentHandle<_Segment>::loadChunk(SharedChunkHandle chunkHandle, size_t lo
 
 } //namespace voxigen
 
-#endif //_voxigen_segmentHandle_h_
+#endif //_voxigen_regionHandle_h_

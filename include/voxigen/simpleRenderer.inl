@@ -24,15 +24,15 @@ std::string SimpleRenderer<_Grid>::vertShader=
 "//   vec4 lightColor;\n"
 "//}\n"
 "uniform mat4 projectionView;\n"
-"uniform vec3 segmentOffset;\n"
+"uniform vec3 regionOffset;\n"
 "\n"
 "void main()\n"
 "{\n"
 "//   gl_Position=vec4(blockOffset.xyz+blockvertex, 1.0);\n"
-"//   position=segmentOffset+blockOffset.xyz+blockvertex;\n"
+"//   position=regionOffset+blockOffset.xyz+blockvertex;\n"
 "   vec3 decodedPosition=packedPosition;\n"
 "   decodedPosition=decodedPosition;\n"
-"   position=segmentOffset+decodedPosition;\n"
+"   position=regionOffset+decodedPosition;\n"
 "//   normal=blockNormal;\n"
 "//   texCoords=vec3(blockTexCoord, blockOffset.w);\n"
 "   texCoords=vec3(0.0, 0.0, data);\n"
@@ -90,12 +90,12 @@ std::string SimpleRenderer<_Grid>::vertOutlineShader=
 "out vec3 texCoords;\n"
 "\n"
 "uniform mat4 projectionView;\n"
-"uniform vec3 segmentOffset;\n"
+"uniform vec3 regionOffset;\n"
 "\n"
 "void main()\n"
 "{\n"
 "//   position=inputOffset.xyz+inputVertex;\n"
-"   position=segmentOffset+inputOffset.xyz+inputVertex;\n"
+"   position=regionOffset+inputOffset.xyz+inputVertex;\n"
 "   normal=inputNormal;\n"
 "   gl_Position=projectionView*vec4(position, 1.0);\n"
 "}\n"
@@ -168,7 +168,7 @@ void SimpleRenderer<_Grid>::build()
     m_uniformProjectionViewId=m_program.getUniformId("projectionView");
 //    m_lightPositionId=m_program.getUniformId("lightPos");
 //    m_lighColorId=m_program.getUniformId("lightColor");
-    m_offsetId=m_program.getUniformId("segmentOffset");
+    m_offsetId=m_program.getUniformId("regionOffset");
 
     m_program.use();
 //    m_program.uniform(m_lighColorId)=glm::vec3(1.0f, 1.0f, 1.0f);
@@ -188,7 +188,7 @@ void SimpleRenderer<_Grid>::build()
 
     m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
     m_outlineLightPositionId=m_outlineProgram.getUniformId("lightPos");
-    m_outlineOffsetId=m_outlineProgram.getUniformId("segmentOffset");
+    m_outlineOffsetId=m_outlineProgram.getUniformId("regionOffset");
 
     const std::vector<float> &outlineVertices=SimpleCube<ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value>::vertCoords;
 
@@ -217,7 +217,7 @@ void SimpleRenderer<_Grid>::destroy()
 {
     stopPrepThread();
 //    m_rendererMap.clear();
-    m_segmentRenderers.clear();
+    m_regionRenderers.clear();
     m_chunkRenderers.clear();
 }
 
@@ -260,11 +260,11 @@ void SimpleRenderer<_Grid>::draw()
         {
             Key &hash=updatedChunks[i];
 
-            auto segmentIter=m_segmentRenderers.find(hash.segmentHash);
+            auto regionIter=m_regionRenderers.find(hash.regionHash);
 
-            if(segmentIter != m_segmentRenderers.end())
+            if(regionIter != m_regionRenderers.end())
             {
-                ChunkRendererMap &chunkMap=segmentIter->second.chunkRenderers;
+                ChunkRendererMap &chunkMap=regionIter->second.chunkRenderers;
 
                 auto chunkIter=chunkMap.find(hash.chunkHash);
 
@@ -297,6 +297,7 @@ void SimpleRenderer<_Grid>::draw()
         {
 //            m_chunksUpdated[i]->refCount=0; //done in the prepThread
             m_chunksUpdated[i]->updated();
+            m_chunksUpdated[i]->getChunkHandle();//drop chunk as we have a mesh for it
         }
 
         m_chunksUpdated.clear();
@@ -315,11 +316,11 @@ void SimpleRenderer<_Grid>::draw()
 //        {
 //            Key &hash=m_chunksUpdated[i];
 //
-//            auto segmentIter=m_segmentRenderers.find(hash.segmentHash);
+//            auto regionIter=m_regionRenderers.find(hash.regionHash);
 //
-//            if(segmentIter != m_segmentRenderers.end())
+//            if(regionIter != m_regionRenderers.end())
 //            {
-//                ChunkRendererMap &chunkMap=segmentIter->second.chunkRenderers;
+//                ChunkRendererMap &chunkMap=regionIter->second.chunkRenderers;
 //
 //                auto chunkIter=chunkMap.find(hash.chunkHash);
 //
@@ -336,10 +337,10 @@ void SimpleRenderer<_Grid>::draw()
 //    }
     updateOcclusionQueries();
 
-    //draw all chunks that are built, using segments
-    for(auto &iter:m_segmentRenderers)
+    //draw all chunks that are built, using regions
+    for(auto &iter:m_regionRenderers)
     {
-        SegmentRenderer<ChunkRenderType> &renderer=iter.second;
+        RegionRenderer<ChunkRenderType> &renderer=iter.second;
 
 //        m_program.uniform(m_offsetId)=renderer.offset;
 
@@ -362,10 +363,10 @@ void SimpleRenderer<_Grid>::draw()
     //turn off writing color buffer and depth buffer, just checking if it would render
     glColorMask(false, false, false, false);
     glDepthMask(GL_FALSE);
-    //draw all occulution queries, using segments
-    for(auto &iter:m_segmentRenderers)
+    //draw all occulution queries, using regions
+    for(auto &iter:m_regionRenderers)
     {
-        SegmentRenderer<ChunkRenderType> &renderer=iter.second;
+        RegionRenderer<ChunkRenderType> &renderer=iter.second;
 
         //        m_program.uniform(m_offsetId)=renderer.offset;
         size_t ongoingQueries=0;
@@ -422,9 +423,9 @@ void SimpleRenderer<_Grid>::draw()
             m_outlineProgram.uniform(m_outlineLightPositionId)=m_camera->getPosition();
         }
         
-        for(auto &iter:m_segmentRenderers)
+        for(auto &iter:m_regionRenderers)
         {
-            SegmentRenderer<ChunkRenderType> &renderer=iter.second;
+            RegionRenderer<ChunkRenderType> &renderer=iter.second;
 
             m_outlineProgram.uniform(m_outlineOffsetId)=renderer.offset;
 
@@ -474,15 +475,15 @@ struct ChunkQueryOffset
 template<typename _Grid>
 void SimpleRenderer<_Grid>::updateChunks()
 {
-    glm::ivec3 playerSegmentIndex=m_grid->getSegmentIndex(m_camera->getSegmentHash());
+    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
     glm::ivec3 playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
 
     int chunkIndicesSize=m_chunkIndices.size();
 
-//    std::unordered_map<SegmentHash, glm::vec3> segments;
+//    std::unordered_map<RegionHash, glm::vec3> regions;
     std::unordered_map<Key::Type, ChunkQueryOffset> chunks;
     glm::ivec3 index;
-    glm::ivec3 currentSegmentIndex;
+    glm::ivec3 currentRegionIndex;
 
     for(size_t i=0; i<m_maxChunkRing; ++i)
     {
@@ -491,35 +492,35 @@ void SimpleRenderer<_Grid>::updateChunks()
         for(size_t j=0; j<chunkIndices.size(); ++j)
         {
             index=playerChunkIndex+chunkIndices[j];
-            currentSegmentIndex=playerSegmentIndex;
+            currentRegionIndex=playerRegionIndex;
 
-            glm::vec3 segmentOffset=m_grid->getDescriptors().adjustSegment(currentSegmentIndex, index);
-            Key key=m_grid->getHashes(currentSegmentIndex, index);
+            glm::vec3 regionOffset=m_grid->getDescriptors().adjustRegion(currentRegionIndex, index);
+            Key key=m_grid->getHashes(currentRegionIndex, index);
 
-            chunks.insert(std::pair<Key::Type, ChunkQueryOffset>(key.hash, ChunkQueryOffset(i, segmentOffset)));
+            chunks.insert(std::pair<Key::Type, ChunkQueryOffset>(key.hash, ChunkQueryOffset(i, regionOffset)));
         }
     }
 
     m_chunkQueryOrder.resize(m_maxChunkRing);
 
     //invalidate renderers that pass outside max range
-    for(auto segmentIter=m_segmentRenderers.begin(); segmentIter!=m_segmentRenderers.end(); )
+    for(auto regionIter=m_regionRenderers.begin(); regionIter!=m_regionRenderers.end(); )
     {
-        SegmentRendererType &segmentRenderer=segmentIter->second;
-        glm::ivec3 segmentOffset=segmentRenderer.index-playerSegmentIndex;
+        RegionRendererType &regionRenderer=regionIter->second;
+        glm::ivec3 regionOffset=regionRenderer.index-playerRegionIndex;
 
-        segmentRenderer.offset=segmentOffset*m_grid->getDescriptors().m_segmentCellSize;
+        regionRenderer.offset=regionOffset*m_grid->getDescriptors().m_regionCellSize;
 
-        auto &chunkRendererMap=segmentRenderer.chunkRenderers;
+        auto &chunkRendererMap=regionRenderer.chunkRenderers;
 
         for(auto chunkIter=chunkRendererMap.begin(); chunkIter!=chunkRendererMap.end(); )
         {
             auto *chunkRenderer=chunkIter->second;
-            Key key(chunkRenderer->getSegmentHash(), chunkRenderer->getChunkHash());
+            Key key(chunkRenderer->getRegionHash(), chunkRenderer->getChunkHash());
 
-            glm::ivec3 segmentIndex=m_grid->getDescriptors().segmentIndex(key.segmentHash);
+            glm::ivec3 regionIndex=m_grid->getDescriptors().regionIndex(key.regionHash);
             glm::ivec3 chunkIndex=m_grid->getDescriptors().chunkIndex(key.chunkHash);
-            float chunkDistance=m_grid->getDescriptors().distance(playerSegmentIndex, playerChunkIndex, segmentIndex, chunkIndex);
+            float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, regionIndex, chunkIndex);
 
             //chunk outside of range so invalidate
             if(chunkDistance > m_viewRadiusMax)
@@ -546,9 +547,9 @@ void SimpleRenderer<_Grid>::updateChunks()
         }
 
         if(chunkRendererMap.empty())
-            segmentIter=m_segmentRenderers.erase(segmentIter);
+            regionIter=m_regionRenderers.erase(regionIter);
         else
-            ++segmentIter;
+            ++regionIter;
     }
 
     //add missing chunks
@@ -560,29 +561,29 @@ void SimpleRenderer<_Grid>::updateChunks()
             continue;
 
         Key key(iter->first);
-        SharedChunkHandle chunkHandle=m_grid->getChunk(key.segmentHash, key.chunkHash);
+        SharedChunkHandle chunkHandle=m_grid->getChunk(key.regionHash, key.chunkHash);
 
 //        m_grid->loadChunk(chunkHandle, 0);
 
-//        chunkRenderer->setSegmentHash(key.segmentHash);
+//        chunkRenderer->setRegionHash(key.regionHash);
         chunkRenderer->setChunk(chunkHandle);
 //        chunkRenderer->setChunkOffset(iter->second.offset);
 //        chunkRenderer->update();
 
         m_chunkQueryOrder[iter->second.queryRing].push_back(chunkRenderer);
 
-        auto segmentIter=m_segmentRenderers.find(key.segmentHash);
+        auto regionIter=m_regionRenderers.find(key.regionHash);
 
-        if(segmentIter == m_segmentRenderers.end())
+        if(regionIter == m_regionRenderers.end())
         {
-            glm::ivec3 index=m_grid->getSegmentIndex(key.segmentHash);
+            glm::ivec3 index=m_grid->getRegionIndex(key.regionHash);
 
-            auto interResult=m_segmentRenderers.insert(SegmentRendererMap::value_type(key.segmentHash, SegmentRendererType(key.segmentHash, index, iter->second.offset)));
+            auto interResult=m_regionRenderers.insert(RegionRendererMap::value_type(key.regionHash, RegionRendererType(key.regionHash, index, iter->second.offset)));
 
             assert(interResult.second);
-            segmentIter=interResult.first;
+            regionIter=interResult.first;
         }
-        segmentIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
+        regionIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
     }
 
     //we likely altered the chunks, start the occlussion query over

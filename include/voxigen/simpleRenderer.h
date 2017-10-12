@@ -22,15 +22,15 @@ namespace voxigen
 {
 
 template<typename _ChunkRenderer>
-struct SegmentRenderer
+struct RegionRenderer
 {
     typedef std::unordered_map<ChunkHash, _ChunkRenderer *> ChunkRendererMap;
 
-    SegmentRenderer() {}
-    SegmentRenderer(SegmentHash hash, glm::ivec3 &index, glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
-//    SegmentRenderer(SegmentRenderer<_ChunkRenderer> &renderer):hash(renderer.hash), offset(renderer.offset) {}
+    RegionRenderer() {}
+    RegionRenderer(RegionHash hash, glm::ivec3 &index, glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
+//    RegionRenderer(RegionRenderer<_ChunkRenderer> &renderer):hash(renderer.hash), offset(renderer.offset) {}
 
-    SegmentHash hash;
+    RegionHash hash;
     glm::ivec3 index;
     glm::vec3 offset;
     ChunkRendererMap chunkRenderers;
@@ -50,13 +50,13 @@ public:
     typedef std::unique_ptr<ChunkRenderType> UniqueChunkRenderer;
 
     //    typedef std::unordered_map<ChunkHash, size_t> ChunkRendererMap;
-    //    typedef std::unordered_map<SegmentHash, ChunkRendererMap> SegmentRendererMap;
+    //    typedef std::unordered_map<RegionHash, ChunkRendererMap> RegionRendererMap;
 //    typedef std::unordered_map<unsigned __int64, size_t> RendererMap;
     
     
-    typedef SegmentRenderer<ChunkRenderType> SegmentRendererType;
-    typedef typename SegmentRendererType::ChunkRendererMap ChunkRendererMap;
-    typedef std::unordered_map<SegmentHash, SegmentRendererType> SegmentRendererMap;
+    typedef RegionRenderer<ChunkRenderType> RegionRendererType;
+    typedef typename RegionRendererType::ChunkRendererMap ChunkRendererMap;
+    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
 
     SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
@@ -110,10 +110,10 @@ private:
     //    std::vector<ChunkRenderType> m_chunkRenderers;
     std::vector<UniqueChunkRenderer> m_chunkRenderers; //all allocated renderers
 
-    SegmentRendererMap m_segmentRenderers;
+    RegionRendererMap m_regionRenderers;
     std::vector<ChunkRenderType *> m_freeChunkRenderers; //renderers available for re-use
 
-    //    SegmentRendererMap m_rendererMap;
+    //    RegionRendererMap m_rendererMap;
 //    RendererMap m_rendererMap;
 
     opengl_util::Program m_program;

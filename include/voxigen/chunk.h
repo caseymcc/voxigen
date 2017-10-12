@@ -36,7 +36,7 @@ public:
     _Cell &getCell(const glm::vec3 &position);
 
 private:
-    ChunkHash m_hash; //unique id used to look up chunk in segment
+    ChunkHash m_hash; //unique id used to look up chunk in region
     unsigned int m_revision; //incremented as changes are made
 
     Cells m_cells; //block info

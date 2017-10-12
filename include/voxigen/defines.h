@@ -7,23 +7,23 @@ namespace voxigen
 {
 
 typedef unsigned __int32 ChunkHash;
-typedef unsigned __int32 SegmentHash;
+typedef unsigned __int32 RegionHash;
 
 struct Key
 {
     typedef __int64 Type;
     typedef ChunkHash ChunkHashType;
-    typedef SegmentHash SegmentHashType;
+    typedef RegionHash RegionHashType;
 
     Key() {}
     Key(__int64 hash):hash(hash){}
-    Key(SegmentHash segmentHash, ChunkHash chunkHash):segmentHash(segmentHash), chunkHash(chunkHash){}
+    Key(RegionHash regionHash, ChunkHash chunkHash):regionHash(regionHash), chunkHash(chunkHash){}
 
     union
     {
         struct
         {
-            SegmentHash segmentHash;
+            RegionHash regionHash;
             ChunkHash chunkHash;
         };
         unsigned __int64 hash;
@@ -34,4 +34,4 @@ typedef std::set<Key::ChunkHashType> ChunkHashSet;
 
 }//namespace voxigen
 
-#endif //_voxigen_worldSegment_h_
+#endif //_voxigen_worldRegion_h_

@@ -23,11 +23,11 @@ public:
     void setYaw(float angle);
     void setPitch(float angle);
 
-    const SegmentHash getSegmentHash() { return m_segmentHash; }
+    const RegionHash getRegionHash() { return m_regionHash; }
     const glm::vec3 &getPosition() { return m_position; }
     
     void setPosition(const glm::vec3 &position) { m_position=position; }
-    void setPosition(SegmentHash segmentHash, const glm::vec3 &position) { m_segmentHash=segmentHash;  m_position=position; }
+    void setPosition(RegionHash regionHash, const glm::vec3 &position) { m_regionHash=regionHash;  m_position=position; }
     void move(const glm::vec3 &velocity);
 
     bool isDirty() { return (m_projectionDirty||m_viewDirty); }
@@ -44,7 +44,7 @@ private:
     float m_near;
     float m_far;
 
-    SegmentHash m_segmentHash;
+    RegionHash m_regionHash;
     glm::vec3 m_position;
     float m_yaw;
     float m_pitch;

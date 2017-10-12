@@ -1,10 +1,10 @@
-//Segments are the basis for the physics of the game engine
-//All physics events act per segment, and are centered on the segment
-//There is an overlap region where the segments will pass information 
+//Regions are the basis for the physics of the game engine
+//All physics events act per region, and are centered on the region
+//There is an overlap region where the regions will pass information 
 //to maintain a full simulation across the entire world
 
-#ifndef _voxigen_segment_h_
-#define _voxigen_segment_h_
+#ifndef _voxigen_region_h_
+#define _voxigen_region_h_
 
 #include "voxigen/defines.h"
 #include "voxigen/chunk.h"
@@ -23,7 +23,7 @@ namespace voxigen
 {
 
 template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-class Segment
+class Region
 {
 public:
 //defines
@@ -39,8 +39,8 @@ public:
     typedef std::unordered_map<ChunkHash, SharedChunk> SharedChunkMap;
 
 //Class
-    Segment(SegmentHash hash, GridDescriptors *descriptors);
-    ~Segment();
+    Region(RegionHash hash, GridDescriptors *descriptors);
+    ~Region();
 
 //    SharedChunkHandle getChunk(const glm::ivec3 &index);
 //    SharedChunkHandle getChunk(ChunkHash chunkHash);
@@ -54,32 +54,32 @@ private:
     std::string m_directory;
     std::string m_name;
 
-    SegmentHash m_hash;
+    RegionHash m_hash;
 };
 
 template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::Segment(SegmentHash hash, GridDescriptors *descriptors):
+Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::Region(RegionHash hash, GridDescriptors *descriptors):
 m_hash(hash),
 m_descriptors(descriptors)
 {
 }
 
 template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Segment()
+Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Region()
 {
 }
 
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//void Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::load(std::string directory)
+//void Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::load(std::string directory)
 //{
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//void Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::save()
+//void Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::save()
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//typename Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::SharedChunkHandle Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunk(const glm::ivec3 &cell)
+//typename Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::SharedChunkHandle Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunk(const glm::ivec3 &cell)
 //{
 //    glm::ivec3 chunkIndex=cell/m_descriptors.m_chunkSize;
 //
@@ -89,25 +89,25 @@ Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Segment()
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//typename Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::SharedChunkHandle Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunk(ChunkHash chunkHash)
+//typename Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::SharedChunkHandle Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunk(ChunkHash chunkHash)
 //{
 //    return m_chunkHandler.getChunk(chunkHash);
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//std::vector<Key> Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getUpdatedChunks()
+//std::vector<Key> Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getUpdatedChunks()
 //{
 //    return m_chunkHandler.getUpdatedChunks();
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//ChunkHash Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::chunkHash(const glm::ivec3 &index) const
+//ChunkHash Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::chunkHash(const glm::ivec3 &index) const
 //{
 //    return m_descriptors.chunkHash(index);
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//glm::ivec3 Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunkIndex(const glm::vec3 &position)
+//glm::ivec3 Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunkIndex(const glm::vec3 &position)
 //{
 //    glm::vec3 chunkSize(m_descriptors.m_chunkSize);
 //
@@ -115,7 +115,7 @@ Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Segment()
 //}
 //
 //template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-//ChunkHash Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunkHash(const glm::vec3 &position)
+//ChunkHash Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::getChunkHash(const glm::vec3 &position)
 //{
 //    glm::vec3 chunkIndex=getChunkIndex(position);
 //
@@ -124,4 +124,4 @@ Segment<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::~Segment()
 
 }//namespace voxigen
 
-#endif //_voxigen_worldSegment_h_
+#endif //_voxigen_worldRegion_h_

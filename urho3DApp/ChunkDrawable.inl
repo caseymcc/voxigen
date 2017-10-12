@@ -39,6 +39,11 @@
 
 #include "Urho3D/DebugNew.h"
 
+#include "voxigen/cubicMeshBuilder.h"
+//#include "voxigen/chunkVolume.h"
+//#include "PolyVox/CubicSurfaceExtractor.h"
+//#include "PolyVox/Mesh.h"
+
 namespace Urho3D
 {
 
@@ -48,15 +53,18 @@ extern const char* GEOMETRY_CATEGORY;
 
 template<typename _Segment, typename _Chunk>
 ChunkDrawable<_Segment, _Chunk>::ChunkDrawable(Context* context):
-Drawable(context, DRAWABLE_GEOMETRY),
-geometry_(new Geometry(context)),
-maxLodGeometry_(new Geometry(context)),
-occlusionGeometry_(new Geometry(context)),
-vertexBuffer_(new VertexBuffer(context)),
-coordinates_(IntVector2::ZERO),
-lodLevel_(0),
-updateGeometry_(false)
+    Drawable(context, DRAWABLE_GEOMETRY),
+    status_(Init),
+    geometry_(new Geometry(context)),
+    maxLodGeometry_(new Geometry(context)),
+    occlusionGeometry_(new Geometry(context)),
+    indexBuffer_(new IndexBuffer(context)),
+    vertexBuffer_(new VertexBuffer(context)),
+    coordinates_(IntVector2::ZERO),
+    lodLevel_(0),
+    updateGeometry_(false)
 {
+    geometry_->SetIndexBuffer(indexBuffer_);
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     maxLodGeometry_->SetVertexBuffer(0, vertexBuffer_);
     occlusionGeometry_->SetVertexBuffer(0, vertexBuffer_);
@@ -79,16 +87,17 @@ void ChunkDrawable<_Segment, _Chunk>::RegisterObject(Context* context)
 template<typename _Segment, typename _Chunk>
 voxigen::ChunkHash ChunkDrawable<_Segment, _Chunk>::GetChunkHash()
 {
-    return chunk_->getHash();
+    return chunkHandle_->hash;
 }
 
 template<typename _Segment, typename _Chunk>
-void ChunkDrawable<_Segment, _Chunk>::SetChunk(std::shared_ptr<_Chunk> chunk)
+void ChunkDrawable<_Segment, _Chunk>::SetChunk(SharedChunkHandle chunkHandle)
 {
-    chunk_=chunk;
+    chunkHandle_=chunkHandle;
     updateGeometry_=true;
 }
 
+template<typename _Segment, typename _Chunk>
 void ChunkDrawable<_Segment, _Chunk>::OnUpdate()
 {
     if(updateGeometry_)
@@ -114,14 +123,14 @@ void ChunkDrawable<_Segment, _Chunk>::ProcessRayQuery(const RayOctreeQuery& quer
         float distance=localRay.HitDistance(boundingBox_);
         Vector3 normal=-query.ray_.direction_;
 
-        if(level==RAY_TRIANGLE && distance < query.maxDistance_)
+        if(level==RAY_TRIANGLE && distance<query.maxDistance_)
         {
             Vector3 geometryNormal;
             distance=geometry_->GetHitDistance(localRay, &geometryNormal);
             normal=(node_->GetWorldTransform() * Vector4(geometryNormal, 0.0f)).Normalized();
         }
 
-        if(distance < query.maxDistance_)
+        if(distance<query.maxDistance_)
         {
             RayQueryResult result;
             result.position_=query.ray_.origin_+distance * query.ray_.direction_;
@@ -154,9 +163,9 @@ void ChunkDrawable<_Segment, _Chunk>::UpdateBatches(const FrameInfo& frame)
     batches_[0].worldTransform_=&worldTransform;
 
     unsigned newLodLevel=0;
-    for(unsigned i=0; i < lodErrors_.Size(); ++i)
+    for(unsigned i=0; i<lodErrors_.Size(); ++i)
     {
-        if(lodErrors_[i]/lodDistance_ > LOD_CONSTANT)
+        if(lodErrors_[i]/lodDistance_>LOD_CONSTANT)
             break;
         else
             newLodLevel=i;
@@ -172,6 +181,12 @@ void ChunkDrawable<_Segment, _Chunk>::UpdateGeometry(const FrameInfo& frame)
 
     if(vertexBuffer_->IsDataLost())
     {
+
+    }
+
+    if(status_==Ready)
+    {
+
     }
 }
 
@@ -318,10 +333,10 @@ void ChunkDrawable<_Segment, _Chunk>::CreateGeometry()
     URHO3D_PROFILE(CreateGeometry);
 
     unsigned row=(unsigned)(patchSize_+1);
-//    VertexBuffer* vertexBuffer=patch->GetVertexBuffer();
-//    Geometry* geometry=patch->GetGeometry();
-//    Geometry* maxLodGeometry=patch->GetMaxLodGeometry();
-//    Geometry* occlusionGeometry=patch->GetOcclusionGeometry();
+    //    VertexBuffer* vertexBuffer=patch->GetVertexBuffer();
+    //    Geometry* geometry=patch->GetGeometry();
+    //    Geometry* maxLodGeometry=patch->GetMaxLodGeometry();
+    //    Geometry* occlusionGeometry=patch->GetOcclusionGeometry();
 
     if(vertexBuffer_->GetVertexCount()!=row * row)
         vertexBuffer_->SetSize(row * row, MASK_POSITION|MASK_NORMAL|MASK_TEXCOORD1|MASK_TANGENT);
@@ -335,7 +350,7 @@ void ChunkDrawable<_Segment, _Chunk>::CreateGeometry()
     BoundingBox box;
 
     unsigned occlusionLevel=occlusionLodLevel_;
-    if(occlusionLevel > numLodLevels_-1)
+    if(occlusionLevel>numLodLevels_-1)
         occlusionLevel=numLodLevels_-1;
 
     if(vertexData)
@@ -365,7 +380,7 @@ void ChunkDrawable<_Segment, _Chunk>::CreateGeometry()
                 // For vertices that are part of the occlusion LOD, calculate the minimum height in the neighborhood
                 // to prevent false positive occlusion due to inaccuracy between occlusion LOD & visible LOD
                 float minHeight=position.y_;
-                if(halfLodExpand > 0&&(x & lodExpand)==0&&(z & lodExpand)==0)
+                if(halfLodExpand>0&&(x & lodExpand)==0&&(z & lodExpand)==0)
                 {
                     int minX=Max(xPos-halfLodExpand, 0);
                     int maxX=Min(xPos+halfLodExpand, numVertices_.x_-1);
@@ -424,5 +439,71 @@ void ChunkDrawable<_Segment, _Chunk>::CreateGeometry()
 
     patch->ResetLod();
 }
+
+template<typename _Segment, typename _Chunk>
+template<typename _Grid>
+void ChunkDrawable<_Segment, _Chunk>::Update(_Grid *grid)
+{
+    switch(status_)
+    {
+    case Init:
+        {
+            status_=LoadingChunk;
+            grid->loadChunk(chunkHandle_, 0);
+
+        }
+        break;
+    case LoadingChunk:
+        {
+            if(chunkHandle_->status==ChunkHandle::Memory)
+            {
+                status_=BuildingMesh;
+
+                if(!chunkHandle_->empty)
+                {
+                    //build mesh
+//                    voxigen::ChunkVolume<_Chunk> chunkVolume(chunkHandle_->chunk.get());
+//
+//                    PolyVox::Region region(PolyVox::Vector3DInt32(0, 0, 0), PolyVox::Vector3DInt32(_Chunk::sizeX::value-1, _Chunk::sizeY::value-1, _Chunk::sizeZ::value-1));
+//                    typedef PolyVox::CubicVertex<typename voxigen::ChunkVolume<_Chunk>::VoxelType> CubicVertex;
+//                    typedef PolyVox::Mesh<CubicVertex> MeshType;
+//
+//#ifdef NDEBUG
+//                    MeshType mesh=PolyVox::extractCubicMesh(&chunkVolume, region);
+//#else //NDEBUG
+//                    MeshType mesh=PolyVox::extractCubicMesh(&chunkVolume, region, PolyVox::DefaultIsQuadNeeded<voxigen::ChunkVolume<_Chunk>::VoxelType>(), false);
+//#endif //NDEBUG
+//
+//                    size_t vertexBufferSize=sizeof(typename MeshType::VertexType);
+//                    size_t vertexBufferSize2=sizeof(CubicVertex);
+//                    size_t indexBufferSize=sizeof(typename MeshType::IndexType);
+//
+//                    indexBuffer_->SetSize(mesh.getNoOfIndices(), false);
+//                    vertexBuffer_->SetSize(mesh.getNoOfVertices(), MASK_POSITION);// |MASK_NORMAL|MASK_TEXCOORD1|MASK_TANGENT);
+//
+//                    indexBuffer_->SetData(mesh.getRawIndexData());
+//                    vertexBuffer_->SetData(mesh.getRawVertexData());
+                    voxigen::ChunkMesh mesh;
+
+                    voxigen::buildCubicMesh(mesh, chunkHandle_->chunk.get());
+
+                    std::vector<float> &verticies=mesh.getVerticies();
+                    std::vector<int> &indices=mesh.getIndices();
+
+                    indexBuffer_->SetSize(indices.size(), false);
+                    vertexBuffer_->SetSize(verticies.size()/3, MASK_POSITION);
+
+                    indexBuffer_->SetData(indices.data());
+                    vertexBuffer_->SetData(verticies.data());
+
+                    status_=Ready;
+                }
+            }
+
+        }
+        break;
+    }
+}
+
 
 }//namespace Urho3D

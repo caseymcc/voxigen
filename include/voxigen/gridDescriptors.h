@@ -15,19 +15,19 @@ struct VOXIGEN_EXPORT GridDescriptors
 {
     GridDescriptors();
     
-    void create(std::string name, int seed, const glm::ivec3 &size, const glm::ivec3 &segmentSize, const glm::ivec3 &chunkSize);
+    void create(std::string name, int seed, const glm::ivec3 &size, const glm::ivec3 &regionSize, const glm::ivec3 &chunkSize);
     void load(std::string fileName);
     void save(std::string fileName);
 
     void init();
 
-    SegmentHash segmentHash(const glm::ivec3 &index) const;
-    glm::ivec3 segmentIndex(SegmentHash hash) const;
-    glm::ivec3 segmentIndex(const glm::vec3 &pos) const;
-    glm::vec3 segmentOffset(SegmentHash hash) const;
+    RegionHash regionHash(const glm::ivec3 &index) const;
+    glm::ivec3 regionIndex(RegionHash hash) const;
+    glm::ivec3 regionIndex(const glm::vec3 &pos) const;
+    glm::vec3 regionOffset(RegionHash hash) const;
 
-    glm::vec3 adjustSegment(glm::ivec3 &segmentIndex, glm::ivec3 &chunkIndex) const;
-    float distance(glm::ivec3 &segmentIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &segmentIndex2, glm::ivec3 &chunkIndex2) const;
+    glm::vec3 adjustRegion(glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
+    float distance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const;
 
     ChunkHash chunkHash(const glm::ivec3 &index) const;
     glm::ivec3 chunkIndex(ChunkHash hash) const;
@@ -38,10 +38,10 @@ struct VOXIGEN_EXPORT GridDescriptors
     std::string m_generator;
 
     glm::ivec3 m_size;
-    glm::ivec3 m_segmentSize; //from compile time value
-    glm::ivec3 m_segmentCellSize; //calculated
-    glm::ivec3 m_segmentCount; //calculated
-    glm::ivec3 m_segmentStride; //calculated
+    glm::ivec3 m_regionSize; //from compile time value
+    glm::ivec3 m_regionCellSize; //calculated
+    glm::ivec3 m_regionCount; //calculated
+    glm::ivec3 m_regionStride; //calculated
     glm::ivec3 m_chunkSize; //from compile time value
     glm::ivec3 m_chunkCount; //calculated
     glm::ivec3 m_chunkStride; //calculated

@@ -59,38 +59,38 @@ inline void GrowUpdateRegion(IntRect& updateRegion, int x, int y)
 template<typename _Segment>
 SegmentComponent<_Segment>::SegmentComponent(Context* context):
     Component(context),
-    indexBuffer_(new IndexBuffer(context)),
-    spacing_(DEFAULT_SPACING),
-    lastSpacing_(Vector3::ZERO),
-    //patchWorldOrigin_(Vector2::ZERO),
-    //patchWorldSize_(Vector2::ZERO),
-    numVertices_(IntVector2::ZERO),
-    lastNumVertices_(IntVector2::ZERO),
-    //numPatches_(IntVector2::ZERO),
-    //patchSize_(DEFAULT_PATCH_SIZE),
-    //lastPatchSize_(0),
-    numLodLevels_(1),
-    maxLodLevels_(MAX_LOD_LEVELS),
-    occlusionLodLevel_(M_MAX_UNSIGNED),
-    smoothing_(false),
-    visible_(true),
-    castShadows_(false),
-    occluder_(false),
-    occludee_(true),
-    viewMask_(DEFAULT_VIEWMASK),
-    lightMask_(DEFAULT_LIGHTMASK),
-    shadowMask_(DEFAULT_SHADOWMASK),
-    zoneMask_(DEFAULT_ZONEMASK),
-    drawDistance_(0.0f),
-    shadowDistance_(0.0f),
-    lodBias_(1.0f),
-    maxLights_(0),
-    northID_(0),
-    southID_(0),
-    westID_(0),
-    eastID_(0),
-    recreateTerrain_(false),
-    neighborsDirty_(false)
+    indexBuffer_(new IndexBuffer(context))//,
+//    spacing_(DEFAULT_SPACING),
+//    lastSpacing_(Vector3::ZERO),
+//    //patchWorldOrigin_(Vector2::ZERO),
+//    //patchWorldSize_(Vector2::ZERO),
+//    numVertices_(IntVector2::ZERO),
+//    lastNumVertices_(IntVector2::ZERO),
+//    //numPatches_(IntVector2::ZERO),
+//    //patchSize_(DEFAULT_PATCH_SIZE),
+//    //lastPatchSize_(0),
+//    numLodLevels_(1),
+//    maxLodLevels_(MAX_LOD_LEVELS),
+//    occlusionLodLevel_(M_MAX_UNSIGNED),
+//    smoothing_(false),
+//    visible_(true),
+//    castShadows_(false),
+//    occluder_(false),
+//    occludee_(true),
+//    viewMask_(DEFAULT_VIEWMASK),
+//    lightMask_(DEFAULT_LIGHTMASK),
+//    shadowMask_(DEFAULT_SHADOWMASK),
+//    zoneMask_(DEFAULT_ZONEMASK),
+//    drawDistance_(0.0f),
+//    shadowDistance_(0.0f),
+//    lodBias_(1.0f),
+//    maxLights_(0),
+//    northID_(0),
+//    southID_(0),
+//    westID_(0),
+//    eastID_(0),
+//    recreateTerrain_(false),
+//    neighborsDirty_(false)
 {
     indexBuffer_->SetShadowed(true);
 }
@@ -131,10 +131,10 @@ void SegmentComponent<_Segment>::OnSetEnabled()
 {
     bool enabled=IsEnabledEffective();
 
-    for(unsigned i=0; i<chunks_.Size(); ++i)
+    for(unsigned i=0; i<chunkDrawables_.size(); ++i)
     {
-        if(chunks_[i])
-            chunks_[i]->SetEnabled(enabled);
+        if(chunkDrawables_[i])
+            chunkDrawables_[i]->SetEnabled(enabled);
     }
 }
 
@@ -145,13 +145,13 @@ void SegmentComponent<_Segment>::DrawDebugGeometry(DebugRenderer* debug, bool de
 template<typename _Segment>
 voxigen::SegmentHash SegmentComponent<_Segment>::GetSegment()
 {
-    return segment_;
+    return segmentHash_;
 }
 
 template<typename _Segment>
 void SegmentComponent<_Segment>::SetSegment(voxigen::SegmentHash hash)
 {
-    segment_=hash;
+    segmentHash_=hash;
 }
 
 template<typename _Segment>
@@ -170,106 +170,53 @@ void SegmentComponent<_Segment>::CreateGeometry()
 
 }
 
-template<typename _Grid>
 template<typename _Segment>
-void SegmentComponent<_Segment>::UpdateChunks(_Grid *grid, voxigen::ChunkHashSet &chunkSet)
+template<typename _Grid>
+void SegmentComponent<_Segment>::UpdatedChunks(_Grid *grid, voxigen::ChunkHashSet &chunkHashSet)
 {
-    //find missing chunks
-    for(size_t i=0; i<chunks_.size(); ++i)
+    for(auto drawableIter=chunkDrawables_.begin(); drawableIter!=chunkDrawables_.end(); ++drawableIter)
     {
-        ChunkDrawable &chunk=*(chunks[i]);
+        ChunkDrawable &chunkDrawable=*(*drawableIter);
 
-        auto iter=chunkSet.find(chunk.GetChunkHash());
+        auto iter=chunkHashSet.find(chunkDrawable.GetChunkHash());
+
+        if(iter!=chunkHashSet.end())
+            chunkDrawable.Update(grid);
+    }
+}
+
+template<typename _Segment>
+template<typename _Grid>
+void SegmentComponent<_Segment>::UpdateChunks(_Grid *grid, voxigen::ChunkHashSet &chunkHashSet)
+{
+    //find missing chunks, remove not used
+    for(auto drawableIter=chunkDrawables_.begin(); drawableIter!=chunkDrawables_.end();)
+    {
+        ChunkDrawable &chunkDrawable=*(*drawableIter);
+
+        auto iter=chunkHashSet.find(chunkDrawable.GetChunkHash());
         
-        if(iter!=chunkSet.end())
-            chunkSet.erase(iter);
+        if(iter!=chunkHashSet.end())
+        {
+            chunkHashSet.erase(iter);
+            ++drawableIter;
+        }
+        else
+            drawableIter=chunkDrawables_.erase(drawableIter);
+
     }
     
     //add missing chunks
-    for(auto iter:chunkSet)
+    for(auto chunkHash:chunkHashSet)
     {
-        voxigen::SharedChunkHandle chunkHandle=grid->getChunk(segmentHash_, key.chunkHash);
+        SharedChunkHandle chunkHandle=grid->getChunk(segmentHash_, chunkHash);
 
-        ChunkDrawable chunk=new ChunkDrawable(GetContext());
+        ChunkDrawable *chunkDrawable=new ChunkDrawable(GetContext());
 
-        chunk->SetChunk(chunkHandle);
-    }
+        chunkDrawable->SetChunk(chunkHandle);
+        chunkDrawables_.push_back(chunkDrawable);
 
-
-    //invalidate renderers that pass outside max range
-    for(auto segmentIter=m_segmentRenderers.begin(); segmentIter!=m_segmentRenderers.end(); )
-    {
-        SegmentRendererType &segmentRenderer=segmentIter->second;
-        glm::ivec3 segmentOffset=segmentRenderer.index-playerSegmentIndex;
-
-        segmentRenderer.offset=segmentOffset*grid_->getDescriptors().m_segmentCellSize;
-
-        auto &chunkRendererMap=segmentRenderer.chunkRenderers;
-
-        for(auto chunkIter=chunkRendererMap.begin(); chunkIter!=chunkRendererMap.end(); )
-        {
-            auto *chunkRenderer=chunkIter->second;
-            Key key(chunkRenderer->getSegmentHash(), chunkRenderer->getChunkHash());
-
-            glm::ivec3 segmentIndex=grid_->getDescriptors().segmentIndex(key.segmentHash);
-            glm::ivec3 chunkIndex=grid_->getDescriptors().chunkIndex(key.chunkHash);
-            float chunkDistance=grid_->getDescriptors().distance(playerSegmentIndex, playerChunkIndex, segmentIndex, chunkIndex);
-
-            //chunk outside of range, invalidate
-            if(chunkDistance > m_viewRadiusMax)
-            {
-                if(chunkRenderer->refCount==0) //need to keep if in prepThread
-                {
-                    chunkRenderer->invalidate();
-                    chunkIter=chunkRendererMap.erase(chunkIter);
-                    m_freeChunkRenderers.push_back(chunkRenderer);
-                    continue;
-                }
-            }
-            else
-            {
-                auto iter=chunks.find(key.hash);
-
-                if(iter!=chunks.end())
-                    chunks.erase(iter);
-            }
-            ++chunkIter;
-        }
-
-        if(chunkRendererMap.empty())
-            segmentIter=m_segmentRenderers.erase(segmentIter);
-        else
-            ++segmentIter;
-    }
-
-    //add missing chunks
-    for(auto iter=chunks.begin(); iter!=chunks.end(); ++iter)
-    {
-        ChunkRenderType *chunkRenderer=getFreeRenderer();
-
-        if(chunkRenderer==nullptr)
-            continue;
-
-        Key key(iter->first);
-        SharedChunkHandle chunkHandle=grid_->getChunk(key.segmentHash, key.chunkHash);
-
-        chunkRenderer->setSegmentHash(key.segmentHash);
-        chunkRenderer->setChunk(chunkHandle);
-        chunkRenderer->setChunkOffset(iter->second);
-        //        chunkRenderer->update();
-
-        auto segmentIter=m_segmentRenderers.find(key.segmentHash);
-
-        if(segmentIter==m_segmentRenderers.end())
-        {
-            glm::ivec3 index=grid_->getSegmentIndex(key.segmentHash);
-
-            auto interResult=m_segmentRenderers.insert(SegmentRendererMap::value_type(key.segmentHash, SegmentRendererType(key.segmentHash, index, iter->second)));
-
-            assert(interResult.second);
-            segmentIter=interResult.first;
-        }
-        segmentIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
+        chunkDrawable->Update(grid);
     }
 }
 

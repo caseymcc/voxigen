@@ -2,7 +2,7 @@
 #define _voxigen_dataStore_h_
 
 #include "voxigen/chunkHandle.h"
-#include "voxigen/segmentHandle.h"
+#include "voxigen/regionHandle.h"
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/generator.h"
 #include "voxigen/jsonSerializer.h"
@@ -69,16 +69,16 @@ struct IOWriteRequest:public IORequest<_Chunk>
 
 namespace fs=boost::filesystem;
 
-template<typename _Segment, typename _Chunk>
-class DataStore:public DataHandler<SegmentHash, SegmentHandle<_Segment>, _Segment>
+template<typename _Region, typename _Chunk>
+class DataStore:public DataHandler<RegionHash, RegionHandle<_Region>, _Region>
 {
 public:
-    typedef _Segment SegmentType;
-    typedef SegmentHandle<_Segment> SegmentHandleType;
-    typedef std::shared_ptr<SegmentHandleType> SharedSegmentHandle;
-//    typedef std::weak_ptr<SegmentHandleType> WeakSegmentHandle;
-//    typedef std::unordered_map<SegmentHash, WeakSegmentHandle> WeakSegmentHandleMap;
-//    typedef std::unordered_map<SegmentHash, SharedSegmentHandle> SegmentHandleMap;
+    typedef _Region RegionType;
+    typedef RegionHandle<_Region> RegionHandleType;
+    typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
+//    typedef std::weak_ptr<RegionHandleType> WeakRegionHandle;
+//    typedef std::unordered_map<RegionHash, WeakRegionHandle> WeakRegionHandleMap;
+//    typedef std::unordered_map<RegionHash, SharedRegionHandle> RegionHandleMap;
 
     typedef _Chunk ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunk;
@@ -102,8 +102,8 @@ public:
     void ioThread();
     void generatorThread();
 
-    SharedSegmentHandle getSegment(SegmentHash segmentHash);
-    SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
+    SharedRegionHandle getRegion(RegionHash regionHash);
+    SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
 
     void loadChunk(SharedChunkHandle handle, size_t lod);
 //    void removeHandle(ChunkHandleType *chunkHandle);
@@ -149,8 +149,8 @@ private:
     UpdateQueue *m_updateQueue;
 };
 
-template<typename _Segment, typename _Chunk>
-DataStore<_Segment, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue):
+template<typename _Region, typename _Chunk>
+DataStore<_Region, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue):
 m_descriptors(descriptors),
 m_generatorQueue(generatorQueue),
 m_updateQueue(updateQueue)
@@ -158,15 +158,15 @@ m_updateQueue(updateQueue)
     m_version=0;
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::initialize()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::initialize()
 {
     m_ioThreadRun=true;
-    m_ioThread=std::thread(std::bind(&DataStore<_Segment, _Chunk>::ioThread, this));
+    m_ioThread=std::thread(std::bind(&DataStore<_Region, _Chunk>::ioThread, this));
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::terminate()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::terminate()
 {
     //thread flags are not atomic so we need the mutexes to coordinate the setting, 
     //otherwise would have to loop re-notifiying thread until it stopped
@@ -179,14 +179,14 @@ void DataStore<_Segment, _Chunk>::terminate()
     m_ioThread.join();
 }
 
-template<typename _Segment, typename _Chunk>
-typename DataStore<_Segment, _Chunk>::DataHandle *DataStore<_Segment, _Chunk>::newHandle(HashType hash)
+template<typename _Region, typename _Chunk>
+typename DataStore<_Region, _Chunk>::DataHandle *DataStore<_Region, _Chunk>::newHandle(HashType hash)
 {
-    return new SegmentHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
+    return new RegionHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
 }
 
-template<typename _Segment, typename _Chunk>
-bool DataStore<_Segment, _Chunk>::load(const std::string &directory)
+template<typename _Region, typename _Chunk>
+bool DataStore<_Region, _Chunk>::load(const std::string &directory)
 {
     m_directory=directory;
     fs::path worldPath(directory);
@@ -212,8 +212,8 @@ bool DataStore<_Segment, _Chunk>::load(const std::string &directory)
     return true;
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::loadConfig()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::loadConfig()
 {
     //    m_configFile=m_directory.string()+"/chunkConfig.json";
 //    FILE *filePtr=fopen(m_configFile.c_str(), "rb");
@@ -229,20 +229,20 @@ void DataStore<_Segment, _Chunk>::loadConfig()
 //
 //    m_version=document["version"].GetUint();
 //
-//    const rapidjson::Value &segments=document["segments"];
-//    assert(segments.IsArray());
+//    const rapidjson::Value &regions=document["regions"];
+//    assert(regions.IsArray());
 //
-//    for(rapidjson::SizeType i=0; i<segments.Size(); ++i)
+//    for(rapidjson::SizeType i=0; i<regions.Size(); ++i)
 //    {
-//        const rapidjson::Value &segmentValue=segments[i];
+//        const rapidjson::Value &regionValue=regions[i];
 //
-//        SegmentHash hash=segmentValue["id"].GetUint();
-//        SharedSegmentHandle segmentHandle(newHandle(hash));
+//        RegionHash hash=regionValue["id"].GetUint();
+//        SharedRegionHandle regionHandle(newHandle(hash));
 //
-//        segmentHandle->cachedOnDisk=true;
-//        segmentHandle->empty=segmentValue["empty"].GetBool();
+//        regionHandle->cachedOnDisk=true;
+//        regionHandle->empty=regionValue["empty"].GetBool();
 //
-//        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
+//        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, regionHandle));
 //    }
 //    fclose(filePtr);
 
@@ -254,7 +254,7 @@ void DataStore<_Segment, _Chunk>::loadConfig()
     if(serializer.key("version"))
         m_version=serializer.getUInt();
 
-    if(serializer.key("segments"))
+    if(serializer.key("regions"))
     {
         if(serializer.openArray())
         {
@@ -264,17 +264,17 @@ void DataStore<_Segment, _Chunk>::loadConfig()
                 {
                     if(serializer.key("id"))
                     {
-                        SegmentHash hash=serializer.getUInt();
-                        SharedSegmentHandle segmentHandle(newHandle(hash));
+                        RegionHash hash=serializer.getUInt();
+                        SharedRegionHandle regionHandle(newHandle(hash));
 
-                        segmentHandle->cachedOnDisk=true;
+                        regionHandle->cachedOnDisk=true;
 
                         if(serializer.key("empty"))
-                            segmentHandle->empty=serializer.getBool();
+                            regionHandle->empty=serializer.getBool();
                         else
-                            segmentHandle->empty=true;
+                            regionHandle->empty=true;
 
-                        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, segmentHandle));
+                        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, regionHandle));
                     }
 
                     serializer.closeObject();
@@ -286,8 +286,8 @@ void DataStore<_Segment, _Chunk>::loadConfig()
     serializer.closeObject();
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::saveConfig()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::saveConfig()
 {
     //    m_configFile=m_directory.string()+"/chunkConfig.json";
 //    FILE *filePtr=fopen(m_configFile.c_str(), "wb");
@@ -301,7 +301,7 @@ void DataStore<_Segment, _Chunk>::saveConfig()
 //    writer.Key("version");
 //    writer.Uint(m_version);
 //
-//    writer.Key("segments");
+//    writer.Key("regions");
 //    writer.StartArray();
 //    for(auto &handle:m_dataHandles)
 //    {
@@ -330,7 +330,7 @@ void DataStore<_Segment, _Chunk>::saveConfig()
     serializer.addKey("version");
     serializer.addInt(m_version);
 
-    serializer.addKey("segments");
+    serializer.addKey("regions");
     serializer.startArray();
     for(auto &handle:m_dataHandles)
     {
@@ -349,23 +349,23 @@ void DataStore<_Segment, _Chunk>::saveConfig()
     serializer.endObject();
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::addConfig(SharedDataHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
     if(handle->empty)
     {
 //        rapidjson::Document::AllocatorType &allocator=m_configDocument.GetAllocator();
-//        rapidjson::Value &segments=m_configDocument["segments"];
-//        assert(segments.IsArray());
+//        rapidjson::Value &regions=m_configDocument["regions"];
+//        assert(regions.IsArray());
 //
-//        rapidjson::Value segment(rapidjson::kObjectType);
+//        rapidjson::Value region(rapidjson::kObjectType);
 //
-//        segment.AddMember("id", handle->chunkHash, allocator);
-//        segment.AddMember("empty", handle->empty, allocator);
+//        region.AddMember("id", handle->chunkHash, allocator);
+//        region.AddMember("empty", handle->empty, allocator);
 //
-//        segments.PushBack(segment, allocator);
+//        regions.PushBack(region, allocator);
 //        //    m_configFile=m_directory.string()+"/chunkConfig.json";
 //
 //        std::string tempConfig=m_configFile+ror".tmp";
@@ -395,9 +395,9 @@ void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
             serializer.addUInt(version);
         }
 
-        if(unserializer.key("segments"))
+        if(unserializer.key("regions"))
         {
-            serializer.addKey("segments");
+            serializer.addKey("regions");
             if(unserializer.openArray())
             {
                 serializer.startArray();
@@ -409,7 +409,7 @@ void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
 
                         if(unserializer.key("id"))
                         {
-                            SegmentHash hash=unserializer.GetUint();
+                            RegionHash hash=unserializer.GetUint();
 
                             serializer.addKey("id");
                             serializer.addUInt(hash);
@@ -442,21 +442,21 @@ void DataStore<_Segment, _Chunk>::addConfig(SharedDataHandle handle)
     }
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::addConfig(SharedChunkHandle handle)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::addConfig(SharedChunkHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
     if(handle->empty)
     {
-        SharedSegmentHandle segmentHandle=getSegment(handle->segmentHash);
+        SharedRegionHandle regionHandle=getRegion(handle->regionHash);
 
-        segmentHandle->addConfig(handle);
+        regionHandle->addConfig(handle);
     }
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::loadDataStore()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::loadDataStore()
 {
     fs::path chunkDirectory(m_directory);
 
@@ -465,11 +465,11 @@ void DataStore<_Segment, _Chunk>::loadDataStore()
         if(fs::is_directory(entry.path()))
         {
             std::istringstream fileNameStream(entry.path().stem().string());
-            SegmentHash hash;
+            RegionHash hash;
 
             fileNameStream>>std::hex>>hash;
 
-            SharedSegmentHandle handle(newHandle(hash));
+            SharedRegionHandle handle(newHandle(hash));
 
             handle->cachedOnDisk=true;
             handle->empty=false;
@@ -479,43 +479,43 @@ void DataStore<_Segment, _Chunk>::loadDataStore()
     }
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::verifyDirectory()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::verifyDirectory()
 {
 
 }
 
-template<typename _Segment, typename _Chunk>
-typename DataStore<_Segment, _Chunk>::SharedSegmentHandle DataStore<_Segment, _Chunk>::getSegment(SegmentHash hash)
+template<typename _Region, typename _Chunk>
+typename DataStore<_Region, _Chunk>::SharedRegionHandle DataStore<_Region, _Chunk>::getRegion(RegionHash hash)
 {
-    SharedSegmentHandle segmentHandle=getDataHandle(hash);
+    SharedRegionHandle regionHandle=getDataHandle(hash);
 
-    if(segmentHandle->getStatus()!=SegmentHandleType::Loaded)
+    if(regionHandle->getStatus()!=RegionHandleType::Loaded)
     {
         std::ostringstream directoryName;
 
         directoryName<<std::hex<<hash;
         std::string directory=m_directory+"/"+directoryName.str();
 
-        segmentHandle->load(directory);
+        regionHandle->load(directory);
     }
-    return segmentHandle;
+    return regionHandle;
 }
 
-template<typename _Segment, typename _Chunk>
-typename DataStore<_Segment, _Chunk>::SharedChunkHandle DataStore<_Segment, _Chunk>::getChunk(SegmentHash segmentHash, ChunkHash chunkHash)
+template<typename _Region, typename _Chunk>
+typename DataStore<_Region, _Chunk>::SharedChunkHandle DataStore<_Region, _Chunk>::getChunk(RegionHash regionHash, ChunkHash chunkHash)
 {
-    return getSegment(segmentHash)->getChunk(chunkHash);
+    return getRegion(regionHash)->getChunk(chunkHash);
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::loadChunk(SharedChunkHandle handle, size_t lod)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::loadChunk(SharedChunkHandle handle, size_t lod)
 {
-    return getSegment(handle->segmentHash)->loadChunk(handle, lod);
+    return getRegion(handle->regionHash)->loadChunk(handle, lod);
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::ioThread()
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::ioThread()
 {
     std::unique_lock<std::mutex> lock(m_ioMutex);
 
@@ -578,8 +578,8 @@ void DataStore<_Segment, _Chunk>::ioThread()
     }
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::readChunk(IORequestType *request)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::readChunk(IORequestType *request)
 {
     IOReadRequestType *readRequest=(IOReadRequestType *)request;
     SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
@@ -614,8 +614,8 @@ void DataStore<_Segment, _Chunk>::readChunk(IORequestType *request)
     m_updateQueue->add(chunkHandle->hash);
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::writeChunk(IORequestType *request)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::writeChunk(IORequestType *request)
 {
     IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
     SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
@@ -646,8 +646,8 @@ void DataStore<_Segment, _Chunk>::writeChunk(IORequestType *request)
     writeRequest->chunkHandle.reset();
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::read(SharedChunkHandle chunkHandle)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::read(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
@@ -659,8 +659,8 @@ void DataStore<_Segment, _Chunk>::read(SharedChunkHandle chunkHandle)
     m_ioEvent.notify_all();
 }
 
-template<typename _Segment, typename _Chunk>
-void DataStore<_Segment, _Chunk>::write(SharedChunkHandle chunkHandle)
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::write(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);

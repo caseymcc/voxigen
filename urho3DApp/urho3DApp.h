@@ -38,6 +38,7 @@ public:
 
 private:
     void CreateConsoleAndDebugHud();
+    void CreateUIInfo();
 
     Urho3D::SharedPtr<Urho3D::Scene> m_scene;
     Urho3D::SharedPtr<Urho3D::Node> m_cameraNode;

@@ -95,16 +95,20 @@ void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
 
-    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
-    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, encodedPosition))); //take the first 3 floats from every sizeof(decltype(vecVertices)::value_type)
+//    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
+//    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, encodedPosition)));
+//    glEnableVertexAttribArray(1); // Attrib '1' is the vertex normals.
+//    glVertexAttribPointer(1, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, data)));
 
+    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
+    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(ChunkMeshVertex), (GLvoid*)(offsetof(ChunkMeshVertex, x)));
     glEnableVertexAttribArray(1); // Attrib '1' is the vertex normals.
-    glVertexAttribPointer(1, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, data)));
-    
+    glVertexAttribPointer(1, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(ChunkMeshVertex), (GLvoid*)(offsetof(ChunkMeshVertex, data)));
     
     glBindVertexArray(0);
 
-    m_indexType=sizeof(typename MeshType::IndexType)==2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+//    m_indexType=sizeof(typename MeshType::IndexType)==2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+    m_indexType=GL_UNSIGNED_INT;
 
     glGenQueries(1, &m_queryId);
 
@@ -206,30 +210,44 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 //    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*validCells, translations.data(), GL_STATIC_DRAW);
 //    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    ChunkVolume<_Chunk> chunkVolume(m_chunkHandle->chunk.get());
+//    ChunkVolume<_Chunk> chunkVolume(m_chunkHandle->chunk.get());
+//
+//    PolyVox::Region region(PolyVox::Vector3DInt32(0, 0, 0), PolyVox::Vector3DInt32(_Chunk::sizeX::value-1, _Chunk::sizeY::value-1, _Chunk::sizeZ::value-1));
+//
+//#ifdef NDEBUG
+//    m_mesh=PolyVox::extractCubicMesh(&chunkVolume, region);
+//#else //NDEBUG
+//    m_mesh=PolyVox::extractCubicMesh(&chunkVolume, region, PolyVox::DefaultIsQuadNeeded<ChunkVolume<_Chunk>::VoxelType>(), false);
+//#endif //NDEBUG
+//
+//    size_t vertexBufferSize=sizeof(typename MeshType::VertexType);
+//    size_t vertexBufferSize2=sizeof(CubicVertex);
+//    size_t indexBufferSize=sizeof(typename MeshType::IndexType);
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+//    glBufferData(GL_ARRAY_BUFFER, m_mesh.getNoOfVertices()*sizeof(typename MeshType::VertexType), m_mesh.getRawVertexData(), GL_STATIC_DRAW);
+//    assert(glGetError()==GL_NO_ERROR);
+//
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh.getNoOfIndices()*sizeof(typename MeshType::IndexType), m_mesh.getRawIndexData(), GL_STATIC_DRAW);
+//    assert(glGetError()==GL_NO_ERROR);
 
-    PolyVox::Region region(PolyVox::Vector3DInt32(0, 0, 0), PolyVox::Vector3DInt32(_Chunk::sizeX::value-1, _Chunk::sizeY::value-1, _Chunk::sizeZ::value-1));
+    buildCubicMesh(m_mesh, m_chunkHandle->chunk.get());
 
-#ifdef NDEBUG
-    m_mesh=PolyVox::extractCubicMesh(&chunkVolume, region);
-#else //NDEBUG
-    m_mesh=PolyVox::extractCubicMesh(&chunkVolume, region, PolyVox::DefaultIsQuadNeeded<ChunkVolume<_Chunk>::VoxelType>(), false);
-#endif //NDEBUG
-
-    size_t vertexBufferSize=sizeof(typename MeshType::VertexType);
-    size_t vertexBufferSize2=sizeof(CubicVertex);
-    size_t indexBufferSize=sizeof(typename MeshType::IndexType);
+    std::vector<ChunkMeshVertex> &verticies=m_mesh.getVerticies();
+    std::vector<int> &indices=m_mesh.getIndices();
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, m_mesh.getNoOfVertices()*sizeof(typename MeshType::VertexType), m_mesh.getRawVertexData(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, verticies.size()*sizeof(ChunkMeshVertex), verticies.data(), GL_STATIC_DRAW);
     assert(glGetError()==GL_NO_ERROR);
-
+    
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh.getNoOfIndices()*sizeof(typename MeshType::IndexType), m_mesh.getRawIndexData(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
     assert(glGetError()==GL_NO_ERROR);
 
     m_vertexBufferSync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    m_validBlocks=m_mesh.getNoOfIndices();
+    //m_validBlocks=m_mesh.getNoOfIndices();
+    m_validBlocks=indices.size();
 
     //m_state=Built;
 //    m_state=Copy;

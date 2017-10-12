@@ -133,7 +133,7 @@ void GeneratorQueue<_Chunk>::generatorThread()
         lock.unlock();//drop lock while working
 
         glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
-        glm::vec3 startPos=m_descriptors->segmentOffset(chunkHandle->segmentHash);
+        glm::vec3 startPos=m_descriptors->regionOffset(chunkHandle->regionHash);
         glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
 
         startPos+=chunkOffset;
@@ -151,7 +151,7 @@ void GeneratorQueue<_Chunk>::generatorThread()
         else
             chunkHandle->empty=false;
 
-        m_updateQueue->add(Key(chunkHandle->segmentHash, chunkHandle->hash));
+        m_updateQueue->add(Key(chunkHandle->regionHash, chunkHandle->hash));
         chunkHandle.reset();//release pointer while not holding lock as there is a chance this will call removeHandle
                             //which will lock m_chunkMutex and safer to only have one lock at a time
         lock.lock();

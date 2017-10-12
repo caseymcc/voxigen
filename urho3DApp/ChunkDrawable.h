@@ -1,24 +1,35 @@
 #pragma once
 
+#include "Urho3D/Graphics/IndexBuffer.h"
 #include "Urho3D/Graphics/Drawable.h"
 
 namespace Urho3D
 {
 
 class Geometry;
-template<typename _Segment>
-class SegmentComponent;
+template<typename _Region>
+class RegionComponent;
 class VertexBuffer;
 
-struct    
-/// Individually rendered part of a heightmap terrain.
-template<typename _Segment, typename _Chunk>
+
+/// Individually rendered part grid
+template<typename _Region, typename _Chunk>
 class URHO3D_API ChunkDrawable: public Drawable
 {
     URHO3D_OBJECT(ChunkDrawable, Drawable);
 
 public:
+    enum Status
+    {
+        Init,
+        LoadingChunk,
+        BuildingMesh,
+        Ready
+    };
+
     typedef _Chunk ChunkType;
+    typedef typename _Region::ChunkHandleType ChunkHandle;
+    typedef typename _Region::SharedChunkHandle SharedChunkHandle;
 
     /// Construct.
     ChunkDrawable(Context* context);
@@ -47,12 +58,14 @@ public:
     ///
     voxigen::ChunkHash GetChunkHash();
     ///
-    void SetChunk(std::shared_ptr<_Chunk> chunk);
+    void SetChunk(SharedChunkHandle chunkHandle);
+
+    Status GetStatus() { return status_; }
 
     ///Check to see if we need to update anything
     void OnUpdate();
     /// Set owner terrain.
-    void SetOwner(SegmentComponent<_Segment> *terrain);
+    void SetOwner(RegionComponent<_Region> *terrain);
 //    /// Set neighbor patches.
 //    void SetNeighbors(ChunkDrawable* north, ChunkDrawable* south, ChunkDrawable* west, ChunkDrawable* east, ChunkDrawable* up, ChunkDrawable* down);
     /// Set material.
@@ -73,7 +86,7 @@ public:
     /// Return vertex buffer.
     VertexBuffer* GetVertexBuffer() const;
     /// Return owner terrain.
-    SegmentComponent<_Segment>* GetOwner() const;
+    RegionComponent<_Region>* GetOwner() const;
 
 //    /// Return north neighbor patch.
 //    ChunkDrawable* GetNorthPatch() const { return north_; }
@@ -96,6 +109,10 @@ public:
     /// Return current LOD level.
     unsigned GetLodLevel() const { return lodLevel_; }
 
+    ///
+    template<typename _Grid>
+    void Update(_Grid *grid);
+
 protected:
     /// Recalculate the world-space bounding box.
     virtual void OnWorldBoundingBoxUpdate();
@@ -108,7 +125,10 @@ private:
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
     //voxel chunk
-    std::shared_ptr<_Chunk> m_chunk;
+    SharedChunkHandle chunkHandle_;
+
+    ///
+    Status status_;
     ///
     bool updateGeometry_;
     /// Geometry.
@@ -117,10 +137,13 @@ private:
     SharedPtr<Geometry> maxLodGeometry_;
     /// Geometry that is used for occlusion.
     SharedPtr<Geometry> occlusionGeometry_;
+
+    /// Index buffer.
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Vertex buffer.
     SharedPtr<VertexBuffer> vertexBuffer_;
     /// Parent terrain.
-    SegmentComponent<_Segment> *owner_;
+    RegionComponent<_Region> *owner_;
 //    /// North neighbor chunk.
 //    WeakPtr<ChunkDrawable> north_;
 //    /// South neighbor chunk.

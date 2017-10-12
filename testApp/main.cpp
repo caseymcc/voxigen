@@ -24,8 +24,8 @@ bool key_space=false;
 bool key_left_shift=false;
 voxigen::SimpleFpsCamera player;
 
-unsigned int playerSegment;
-glm::ivec3 playerSegmentIndex;
+unsigned int playerRegion;
+glm::ivec3 playerRegionIndex;
 unsigned int playerChunk;
 
 namespace voxigen
@@ -90,7 +90,7 @@ int main(int argc, char ** argv)
     else
         world.load(worldDirectories[0].path().string());
     
-    glm::ivec3 segmentCellSize=world.segmentCellSize();
+    glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
     worldMiddle.z+=5.0f;
@@ -100,12 +100,12 @@ int main(int argc, char ** argv)
     
     voxigen::Key hashes=world.getHashes(worldMiddle);
 
-    playerSegment=hashes.segmentHash;
+    playerRegion=hashes.regionHash;
     playerChunk=hashes.chunkHash;
-    playerSegmentIndex=world.getSegmentIndex(playerSegment);
+    playerRegionIndex=world.getRegionIndex(playerRegion);
     
-    //set player position to local segment
-    player.setPosition(playerSegment, world.gridPosToSegmentPos(playerSegment, worldMiddle));
+    //set player position to local region
+    player.setPosition(playerRegion, world.gridPosToRegionPos(playerRegion, worldMiddle));
 
     voxigen::SimpleRenderer<World> renderer(&world);
 
@@ -211,57 +211,57 @@ int main(int argc, char ** argv)
 //
 //            if(resetPos)
 //                player.setPosition(playerPos);
-            unsigned int segmentHash=playerSegment;
-            bool updateSegment=false;
+            unsigned int regionHash=playerRegion;
+            bool updateRegion=false;
 
             if(playerPos.x<0)
             {
-                playerSegmentIndex.x--;
-                playerPos.x+=segmentCellSize.x;
-                updateSegment=true;
+                playerRegionIndex.x--;
+                playerPos.x+=regionCellSize.x;
+                updateRegion=true;
             }
-            else if(playerPos.x>segmentCellSize.x)
+            else if(playerPos.x>regionCellSize.x)
             {
-                playerSegmentIndex.x++;
-                playerPos.x-=segmentCellSize.x;
-                updateSegment=true; 
+                playerRegionIndex.x++;
+                playerPos.x-=regionCellSize.x;
+                updateRegion=true; 
             }
 
             if(playerPos.y<0)
             {
-                playerSegmentIndex.y--;
-                playerPos.y+=segmentCellSize.y;
-                updateSegment=true;
+                playerRegionIndex.y--;
+                playerPos.y+=regionCellSize.y;
+                updateRegion=true;
             }
-            else if(playerPos.y>segmentCellSize.y)
+            else if(playerPos.y>regionCellSize.y)
             {
-                playerSegmentIndex.y++;
-                playerPos.y-=segmentCellSize.y;
-                updateSegment=true;
+                playerRegionIndex.y++;
+                playerPos.y-=regionCellSize.y;
+                updateRegion=true;
             }
 
             if(playerPos.z<0)
             {
-                playerSegmentIndex.z--;
-                playerPos.z+=segmentCellSize.z;
-                updateSegment=true;
+                playerRegionIndex.z--;
+                playerPos.z+=regionCellSize.z;
+                updateRegion=true;
             }
-            else if(playerPos.z>segmentCellSize.z)
+            else if(playerPos.z>regionCellSize.z)
             {
-                playerSegmentIndex.z++;
-                playerPos.z-=segmentCellSize.z;
-                updateSegment=true;
+                playerRegionIndex.z++;
+                playerPos.z-=regionCellSize.z;
+                updateRegion=true;
             }
 
-            if(updateSegment)
+            if(updateRegion)
             {
-                segmentHash=world.getSegmentHash(playerSegmentIndex);
-                player.setPosition(segmentHash, playerPos);
-                playerSegment=segmentHash;
+                regionHash=world.getRegionHash(playerRegionIndex);
+                player.setPosition(regionHash, playerPos);
+                playerRegion=regionHash;
 
-                //segment changed, chunk hash will change too.
+                //region changed, chunk hash will change too.
             }
-            chunkHash=world.getChunkHash(segmentHash, playerPos);
+            chunkHash=world.getChunkHash(regionHash, playerPos);
 
             if(playerChunk!=chunkHash)
             {

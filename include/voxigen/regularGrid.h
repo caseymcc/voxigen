@@ -3,7 +3,7 @@
 
 #include "voxigen/biome.h"
 #include "voxigen/chunk.h"
-#include "voxigen/segment.h"
+#include "voxigen/region.h"
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/generator.h"
 #include "voxigen/dataStore.h"
@@ -26,25 +26,25 @@ namespace voxigen
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 using UniqueChunkMap=std::unordered_map<ChunkHash, UniqueChunk<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>>;
 
-template<typename _Cell, size_t _ChunkSizeX=64, size_t _ChunkSizeY=64, size_t _ChunkSizeZ=64, size_t _SegmentSizeX=16, size_t _SegmentSizeY=16, size_t _SegmentSizeZ=16>
+template<typename _Cell, size_t _ChunkSizeX=64, size_t _ChunkSizeY=64, size_t _ChunkSizeZ=64, size_t _RegionSizeX=16, size_t _RegionSizeY=16, size_t _RegionSizeZ=16>
 class RegularGrid
 {
 public:
     RegularGrid();
     ~RegularGrid();
 
-    typedef std::integral_constant<size_t, _ChunkSizeX*_SegmentSizeX> segmentCellSizeX;
-    typedef std::integral_constant<size_t, _ChunkSizeY*_SegmentSizeY> segmentCellSizeY;
-    typedef std::integral_constant<size_t, _ChunkSizeZ*_SegmentSizeZ> segmentCellSizeZ;
+    typedef std::integral_constant<size_t, _ChunkSizeX*_RegionSizeX> regionCellSizeX;
+    typedef std::integral_constant<size_t, _ChunkSizeY*_RegionSizeY> regionCellSizeY;
+    typedef std::integral_constant<size_t, _ChunkSizeZ*_RegionSizeZ> regionCellSizeZ;
 
     typedef Chunk<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> ChunkType;
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    typedef Segment<ChunkType, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ> SegmentType;
-    typedef SegmentHandle<SegmentType> SegmentHandleType;
-    typedef std::shared_ptr<SegmentHandleType> SharedSegmentHandle;
-//    typedef std::unordered_map<SegmentHash, SharedSegment> SharedSegmentMap;
+    typedef Region<ChunkType, _RegionSizeX, _RegionSizeY, _RegionSizeZ> RegionType;
+    typedef RegionHandle<RegionType> RegionHandleType;
+    typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
+//    typedef std::unordered_map<RegionHash, SharedRegion> SharedRegionMap;
 
 //    typedef UniqueChunkMap<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> UniqueChunkMap;
 //    typedef std::shared_ptr<ChunkType> SharedChunk;
@@ -57,43 +57,43 @@ public:
     void load(std::string directory);
     void save();
 
-    SharedSegmentHandle getSegment(const glm::ivec3 &index);
-    SharedSegmentHandle getSegment(SegmentHash hash);
-//    SegmentHash getSegmentHash(const glm::vec3 &gridPosition);
+    SharedRegionHandle getRegion(const glm::ivec3 &index);
+    SharedRegionHandle getRegion(RegionHash hash);
+//    RegionHash getRegionHash(const glm::vec3 &gridPosition);
 
     glm::ivec3 size();
-    glm::ivec3 segmentCellSize();
+    glm::ivec3 regionCellSize();
 
     SharedChunkHandle getChunk(const glm::ivec3 &index);
-    SharedChunkHandle getChunk(SegmentHash segmentHash, ChunkHash chunkHash);
+    SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
     std::vector<Key> getUpdatedChunks();
 
-    SegmentHash getSegmentHash(const glm::ivec3 &index);
-    glm::ivec3 getSegmentIndex(const glm::vec3 &position);
-    glm::ivec3 getSegmentIndex(SegmentHash hash);
+    RegionHash getRegionHash(const glm::ivec3 &index);
+    glm::ivec3 getRegionIndex(const glm::vec3 &position);
+    glm::ivec3 getRegionIndex(RegionHash hash);
 
     glm::ivec3 getChunkIndex(const glm::vec3 &position);
     ChunkHash chunkHash(const glm::ivec3 &chunkIndex) const;
-    ChunkHash getChunkHash(SegmentHash segmentHash, const glm::vec3 &gridPosition);
+    ChunkHash getChunkHash(RegionHash regionHash, const glm::vec3 &gridPosition);
     ChunkHash getChunkHash(const glm::vec3 &gridPosition);
 
     Key getHashes(const glm::vec3 &gridPosition);
-    Key getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex);
+    Key getHashes(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
 
     
 
 //Sizes
     glm::ivec3 getChunkSize();
 
-    glm::vec3 gridPosToSegmentPos(SegmentHash segmentHash, const glm::vec3 &gridPosition);
+    glm::vec3 gridPosToRegionPos(RegionHash regionHash, const glm::vec3 &gridPosition);
 
     GridDescriptors &getDescriptors() { return m_descriptors; }
 
     glm::mat4 &getTransform() { return m_transform; }
 
 private:
-    void loadSegments(std::string directory);
+    void loadRegions(std::string directory);
 
     std::string m_directory;
     std::string m_name;
@@ -103,44 +103,44 @@ private:
 
     GeneratorQueue<ChunkType> m_generatorQueue;
     SharedGenerator m_generator;
-    DataStore<SegmentType, ChunkType> m_dataStore;
+    DataStore<RegionType, ChunkType> m_dataStore;
     UpdateQueue m_updateQueue;
 
     glm::mat4 m_transform;
 };
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::RegularGrid():
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::RegularGrid():
 m_dataStore(&m_descriptors, &m_generatorQueue, &m_updateQueue),
 m_generatorQueue(&m_descriptors, &m_updateQueue)
 //m_chunkHandler(&m_descriptors)
 {
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::~RegularGrid()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::~RegularGrid()
 {
     m_dataStore.terminate();
     m_generatorQueue.terminate();
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::create(std::string directory, std::string name, glm::ivec3 size, std::string generatorName)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::create(std::string directory, std::string name, glm::ivec3 size, std::string generatorName)
 {
     m_name=name;
     m_directory=directory;
 
-    m_descriptors.create(name, 0, size, glm::ivec3(_SegmentSizeX, _SegmentSizeY, _SegmentSizeZ), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
+    m_descriptors.create(name, 0, size, glm::ivec3(_RegionSizeX, _RegionSizeY, _RegionSizeZ), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
     m_descriptors.init();
     m_descriptors.m_generator=generatorName;
 
     std::string configFile=directory+"/gridConfig.json";
     m_descriptors.save(configFile);
     
-    std::string segmentDirectory=directory+"/segments";
-    fs::path segmentPath(segmentDirectory);
+    std::string regionDirectory=directory+"/regions";
+    fs::path regionPath(regionDirectory);
 
-    fs::create_directory(segmentPath);
+    fs::create_directory(regionPath);
 
     m_generator=createClass<Generator>(generatorName);
     m_generatorQueue.setGenerator(m_generator.get());
@@ -151,8 +151,8 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _S
 
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::load(std::string directory)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::load(std::string directory)
 {
     m_directory=directory;
 
@@ -162,8 +162,8 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _S
     m_generator=createClass<Generator>(m_descriptors.m_generator);
     m_generatorQueue.setGenerator(m_generator.get());
 
-    std::string segmentDirectory=directory+"/segments";
-    m_dataStore.load(segmentDirectory);
+    std::string regionDirectory=directory+"/regions";
+    m_dataStore.load(regionDirectory);
 
     m_generator->initialize(&m_descriptors);
     m_dataStore.initialize();
@@ -175,45 +175,45 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _S
 //    m_chunkHandler.initialize();
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::save()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::save()
 {
     std::string configFile=directory+"/gridConfig.json";
     m_descriptors.save(configFile)
 }
 
-//template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-//Biome &RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getBiome(glm::ivec3 cell)
+//template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+//Biome &RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getBiome(glm::ivec3 cell)
 //{}
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::SharedSegmentHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegment(const glm::ivec3 &index)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::SharedRegionHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getRegion(const glm::ivec3 &index)
 {
-    SegmentHash hash=m_descriptors.segmentHash(index);
+    RegionHash hash=m_descriptors.regionHash(index);
 
-    return m_dataStore.getSegment(hash);
+    return m_dataStore.getRegion(hash);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::SharedSegmentHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegment(SegmentHash hash)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::SharedRegionHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getRegion(RegionHash hash)
 {
-    return m_dataStore.getSegment(hash);
+    return m_dataStore.getRegion(hash);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::size()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::size()
 {
     return m_descriptors.m_size;
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::segmentCellSize()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::regionCellSize()
 {
-    return glm::ivec3(segmentCellSizeX::value, segmentCellSizeY::value, segmentCellSizeZ::value);
+    return glm::ivec3(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunk(const glm::ivec3 &cell)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunk(const glm::ivec3 &cell)
 {
     glm::ivec3 chunkIndex=cell/m_descriptors.m_chunkSize;
 
@@ -222,20 +222,20 @@ typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX
     return m_chunkHandler.getChunk(chunkHash);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunk(SegmentHash segmentHash, ChunkHash chunkHash)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunk(RegionHash regionHash, ChunkHash chunkHash)
 {
-    return m_dataStore.getChunk(segmentHash, chunkHash);
+    return m_dataStore.getChunk(regionHash, chunkHash);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
 {
     m_dataStore.loadChunk(chunkHandle, lod);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getUpdatedChunks()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getUpdatedChunks()
 {
     std::vector<Key> updatedChunks;
 
@@ -243,32 +243,32 @@ std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _Segm
     return updatedChunks;
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-SegmentHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegmentHash(const glm::ivec3 &index)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+RegionHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getRegionHash(const glm::ivec3 &index)
 {
-    return m_descriptors.segmentHash(index);
+    return m_descriptors.regionHash(index);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegmentIndex(const glm::vec3 &position)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getRegionIndex(const glm::vec3 &position)
 {
-    return m_descriptors.segmentIndex(position);
+    return m_descriptors.regionIndex(position);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getSegmentIndex(SegmentHash hash)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getRegionIndex(RegionHash hash)
 {
-    return m_descriptors.segmentIndex(hash);
+    return m_descriptors.regionIndex(hash);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::chunkHash(const glm::ivec3 &index) const
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::chunkHash(const glm::ivec3 &index) const
 {
     return m_descriptors.chunkHash(index);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunkIndex(const glm::vec3 &position)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunkIndex(const glm::vec3 &position)
 {
     glm::ivec3 pos=glm::floor(position);
 
@@ -276,52 +276,52 @@ glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSiz
 }
 
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::vec3 &gridPosition)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getHashes(const glm::vec3 &gridPosition)
 {
     glm::ivec3 position=glm::floor(gridPosition);
-    glm::ivec3 segmentCellSize(segmentCellSizeX::value, segmentCellSizeY::value, segmentCellSizeZ::value);
-    glm::ivec3 segmentIndex=position/segmentCellSize;
-    glm::ivec3 chunkIndex=position-(segmentIndex*segmentCellSize);
+    glm::ivec3 regionCellSize(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
+    glm::ivec3 regionIndex=position/regionCellSize;
+    glm::ivec3 chunkIndex=position-(regionIndex*regionCellSize);
 
-    return Key(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
+    return Key(m_descriptors.regionHash(regionIndex), m_descriptors.chunkHash(chunkIndex));
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getHashes(const glm::ivec3 &segmentIndex, const glm::ivec3 &chunkIndex)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getHashes(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
 {
-    return Key(m_descriptors.segmentHash(segmentIndex), m_descriptors.chunkHash(chunkIndex));
+    return Key(m_descriptors.regionHash(regionIndex), m_descriptors.chunkHash(chunkIndex));
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunkHash(SegmentHash segmentHash, const glm::vec3 &gridPosition)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunkHash(RegionHash regionHash, const glm::vec3 &gridPosition)
 {
     glm::ivec3 position=glm::floor(gridPosition);
 
     return m_descriptors.chunkHash(position);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunkHash(const glm::vec3 &gridPosition)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunkHash(const glm::vec3 &gridPosition)
 {
     glm::ivec3 position=glm::floor(gridPosition);
-    glm::ivec3 segmentCellSize(segmentCellSizeX::value, segmentCellSizeY::value, segmentCellSizeZ::value);
-    glm::ivec3 segmentIndex=position/segmentCellSize;
-    glm::ivec3 chunkIndex=position-(segmentIndex*segmentCellSize);
+    glm::ivec3 regionCellSize(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
+    glm::ivec3 regionIndex=position/regionCellSize;
+    glm::ivec3 chunkIndex=position-(regionIndex*regionCellSize);
 
     return m_descriptors.chunkHash(chunkIndex);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::getChunkSize()
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::getChunkSize()
 {
     return glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _SegmentSizeX, size_t _SegmentSizeY, size_t _SegmentSizeZ>
-glm::vec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _SegmentSizeX, _SegmentSizeY, _SegmentSizeZ>::gridPosToSegmentPos(SegmentHash segmentHash, const glm::vec3 &gridPosition)
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+glm::vec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::gridPosToRegionPos(RegionHash regionHash, const glm::vec3 &gridPosition)
 {
-    glm::vec3 pos=gridPosition-m_descriptors.segmentOffset(playerSegment);
+    glm::vec3 pos=gridPosition-m_descriptors.regionOffset(playerRegion);
 
     return pos;
 }

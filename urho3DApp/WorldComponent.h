@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SegmentComponent.h"
+#include "RegionComponent.h"
 
 #include "Urho3D/Container/ArrayPtr.h"
 #include "Urho3D/Scene/Component.h"
@@ -24,12 +24,12 @@ class URHO3D_API WorldComponent: public Component
 
 public:
     typedef _Grid GridType;
-    typedef typename _Grid::SegmentType SegmentType;
+    typedef typename _Grid::RegionType RegionType;
     typedef typename _Grid::ChunkType ChunkType;
 
-    typedef SegmentComponent<SegmentType> SegmentComponentType;
-    typedef std::shared_ptr<SegmentComponentType> SharedSegmentComponent;
-    typedef std::vector<SharedSegmentComponent> SharedSegmentComponents;
+    typedef RegionComponent<RegionType> RegionComponentType;
+    typedef std::shared_ptr<RegionComponentType> SharedRegionComponent;
+    typedef std::vector<SharedRegionComponent> SharedRegionComponents;
 
     /// Construct.
     WorldComponent(Context* context);
@@ -44,27 +44,33 @@ public:
     virtual void ApplyAttributes();
     /// Handle enabled/disabled state change.
     virtual void OnSetEnabled();
+
+    ///
+    void UpdateSubscriptions();
     ///
     void SetGrid(GridType *grid);
     ///
-    voxigen::SegmentHash GetSegment();
+    voxigen::RegionHash GetRegion();
     ///
-    void SetSegment(voxigen::SegmentHash segment);
+    void SetRegion(voxigen::RegionHash region);
     ///
-    float GetDrawDistance();
+    float GetDrawDistance() const;
     ///
     void SetDrawDistance(float distance);
     ///
     bool UpdatePosition(Vector3 &position);
+    ///
+    void OnSceneUpdate(StringHash eventType, VariantMap &eventData);
     ///
     bool UpdateGeometry();
 
 private:
     GridType *grid_;
 
-    SharedSegmentComponents segments_;
+    SharedRegionComponents regions_;
 
-    voxigen::SegmentHash segment_;
+    voxigen::RegionHash regionHash_;
+    glm::vec3 currentPosition_;
 
     float viewRadius_;
     float viewRadiusMax_;

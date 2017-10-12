@@ -24,6 +24,8 @@
 #include <stack>
 #include <unordered_map>
 
+#include <glm/ext.hpp>
+
 namespace Urho3D
 {
 
@@ -32,6 +34,7 @@ WorldComponent<_Grid>::WorldComponent(Context* context) :
 Component(context),
 chunkRadius_(0)
 {
+    UpdateSubscriptions();
 }
 
 template<typename _Grid>
@@ -45,7 +48,7 @@ void WorldComponent<_Grid>::RegisterObject(Context* context)
     context->RegisterFactory<WorldComponent<_Grid>>(GEOMETRY_CATEGORY);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 120.0f, AM_DEFAULT);
 
 //    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Height Map", GetHeightMapAttr, SetHeightMapAttr, ResourceRef, ResourceRef(Image::GetTypeStatic()),
 //        AM_DEFAULT);
@@ -110,6 +113,16 @@ void WorldComponent<_Grid>::OnSetEnabled()
 //        if (patches_[i])
 //            patches_[i]->SetEnabled(enabled);
 //    }
+    UpdateSubscriptions();
+}
+
+template<typename _Grid>
+void WorldComponent<_Grid>::UpdateSubscriptions()
+{
+    if(IsEnabled())
+        SubscribeToEvent(Urho3D::E_UPDATE, URHO3D_HANDLER(WorldComponent<_Grid>, OnSceneUpdate));
+    else
+        UnsubscribeFromEvent(Urho3D::E_UPDATE);
 }
 
 template<typename _Grid>
@@ -121,18 +134,17 @@ void WorldComponent<_Grid>::SetGrid(GridType *grid)
 template<typename _Grid>
 voxigen::SegmentHash WorldComponent<_Grid>::GetSegment()
 {
-    return segment_;
+    return segmentHash_;
 }
 
 template<typename _Grid>
 void WorldComponent<_Grid>::SetSegment(voxigen::SegmentHash segment)
 {
-    segment_=segment;
-    updateGeometry();
+    segmentHash_=segment;
 }
 
 template<typename _Grid>
-float WorldComponent<_Grid>::GetDrawDistance()
+float WorldComponent<_Grid>::GetDrawDistance() const
 {
     return viewRadius_;
 }
@@ -143,7 +155,7 @@ void WorldComponent<_Grid>::SetDrawDistance(float distance)
     viewRadius_=distance;
     viewRadiusMax_=distance*1.5f;
 
-    glm::ivec3 chunkSize=grid_->getShunkSize();
+    glm::ivec3 chunkSize=grid_->getChunkSize();
 
     chunkRadiusMax_=std::ceil(distance/glm::compMax(chunkSize));
 
@@ -151,7 +163,7 @@ void WorldComponent<_Grid>::SetDrawDistance(float distance)
     chunkIndices_.resize(chunkRadiusMax_);
 
     for(size_t i=0; i<chunkIndices_.size(); ++i)
-        ringCube<_Grid::ChunkType>(chunkIndices_[i], i);
+        voxigen::ringCube<_Grid::ChunkType>(chunkIndices_[i], i);
 
 //    chunkIndices_.clear();
 //    std::vector<glm::ivec3> chunkIndices;
@@ -171,14 +183,14 @@ void WorldComponent<_Grid>::SetDrawDistance(float distance)
 //    }
 
     chunkRadius_=0;
-    updateGeometry();
+    UpdateGeometry();
 }
 
 template<typename _Grid>
 bool WorldComponent<_Grid>::UpdatePosition(Vector3 &position)
 {
     bool updateSegment=false;
-    glm::ivec3 playerSegmentIndex=grid_->getSegmentIndex(segment_);
+    glm::ivec3 playerSegmentIndex=grid_->getSegmentIndex(segmentHash_);
     glm::ivec3 segmentCellSize=grid_->segmentCellSize();
 
     if(position.x_<0)
@@ -220,15 +232,44 @@ bool WorldComponent<_Grid>::UpdatePosition(Vector3 &position)
         updateSegment=true;
     }
 
+    currentPosition_=glm::vec3(position.x_, position.y_, position.z_);
+
     if(updateSegment)
     {
         unsigned int segmentHash=grid_->getSegmentHash(playerSegmentIndex);
 
-        segment_=segmentHash;
+        segmentHash_=segmentHash;
+
+        //reset from center
+        chunkRadius_=0;
         UpdateGeometry();
         return true;
     }
     return false;
+}
+
+template<typename _Grid>
+void WorldComponent<_Grid>::OnSceneUpdate(StringHash eventType, VariantMap& eventData)
+{
+    std::vector<voxigen::Key> updatedChunks=grid_->getUpdatedChunks();
+
+    if(!updatedChunks.empty())
+    {
+        std::unordered_map<voxigen::Key::SegmentHashType, voxigen::ChunkHashSet> map;
+
+        for(voxigen::Key &key:updatedChunks)
+            map[key.segmentHash].insert(key.chunkHash);
+
+        for(size_t i=0; i<segments_.size(); ++i)
+        {
+            auto iter=map.find(segments_[i]->GetSegment());
+
+            if(iter!=map.end())
+                segments_[i]->UpdatedChunks(grid_, iter->second);
+        }
+    }
+
+    UpdateGeometry();
 }
 
 struct SegmentInfo
@@ -237,6 +278,7 @@ struct SegmentInfo
     SegmentInfo(size_t index):index(index) {}
 
     size_t index;
+//    voxigen::ChunkHashSet updateChunks;
     voxigen::ChunkHashSet chunks;
 };
 typedef std::unordered_map<voxigen::Key::SegmentHashType, SegmentInfo> SegmentMap;
@@ -244,18 +286,15 @@ typedef std::unordered_map<voxigen::Key::SegmentHashType, SegmentInfo> SegmentMa
 template<typename _Grid>
 bool WorldComponent<_Grid>::UpdateGeometry()
 {
-    glm::ivec3 playerSegmentIndex=grid_->getSegmentIndex(m_camera->getSegmentHash());
-    glm::ivec3 playerChunkIndex=grid_->getChunkIndex(m_camera->getPosition());
+    if(chunkRadius_>=chunkRadiusMax_)
+        return false;
 
-    std::vector<glm::ivec3> &chunkIndices=chunkIndices_[chunkRadius_]=
-
-//    std::unordered_map<voxigen::Key::Type, glm::vec3> chunks;
+    glm::ivec3 playerSegmentIndex=grid_->getSegmentIndex(segmentHash_);
+    glm::ivec3 playerChunkIndex=grid_->getChunkIndex(currentPosition_);
+    std::vector<glm::ivec3> &chunkIndices=chunkIndices_[chunkRadius_];
     SegmentMap segments;
-    //SegmentChunkMap chunks;
-
     glm::ivec3 index;
     glm::ivec3 currentSegmentIndex;
-    
     
     for(size_t i=0; i<chunkIndices.size(); ++i)
     {
@@ -265,7 +304,6 @@ bool WorldComponent<_Grid>::UpdateGeometry()
         glm::vec3 segmentOffset=grid_->getDescriptors().adjustSegment(currentSegmentIndex, index);
         voxigen::Key key=grid_->getHashes(currentSegmentIndex, index);
 
-//        chunks.insert(std::pair<Key::Type, glm::vec3>(key.hash, segmentOffset));
         segments[key.segmentHash].chunks.insert(key.chunkHash);
     }
 
@@ -279,95 +317,22 @@ bool WorldComponent<_Grid>::UpdateGeometry()
 
     for(auto iter:segments)
     {
-        size_t index=iter->second.index;
+        size_t index=iter.second.index;
 
         if(index==std::numeric_limits<size_t>::max())
         {
             SharedSegmentComponent segment(new SegmentComponentType(GetContext()));
             
-            segment->SetSegment(iter->first);
+            segment->SetSegment(iter.first);
             index=segments_.size();
             segments_.push_back(segment);
         }
 
-        segments_[index]->UpdateChunks(iter->second.chunks);
+        segments_[index]->UpdateChunks(grid_, iter.second.chunks);
     }
 
-//    glm::ivec3 currentSegmentIndex=grid_->getSegmentIndex(segment_);
-//    glm::ivec3 segmentIndex;
-//
-//    std::set<voxigen::SegmentHash> neededSegments;
-//    std::stack<size_t> unusedSegments;
-//
-//    //figure out segments needed
-//    for(size_t z=currentSegmentIndex.z-1; z<=currentSegmentIndex.z+1; ++z)
-//    {
-//        segmentIndex.z=z;
-//        for(size_t y=currentSegmentIndex.y-1; y<=currentSegmentIndex.y+1; ++y)
-//        {
-//            segmentIndex.y=y;
-//            for(size_t x=currentSegmentIndex.x-1; x<=currentSegmentIndex.x+1; ++x)
-//            {
-//                segmentIndex.x=x;
-//                neededSegments.insert(grid_->getSegmentHash(segmentIndex));
-//            }
-//
-//        }
-//
-//    }
-//
-//    //remove segments that exists, and keep track of segments no longer in use
-//    for(size_t i=0; i<segments_.size(); ++i)
-//    {
-//        auto iter=neededSegments.find(segments_[i]->GetSegment());
-//
-//        if(iter!=neededSegments.end())
-//            neededSegments.erase(iter);
-//        else
-//            unusedSegments.push(i);
-//    }
-//
-//    //add segments that don't exist
-//    for(auto &hash:neededSegments)
-//    {
-//        if(!unusedSegments.empty())
-//        {
-//            size_t index=unusedSegments.top();
-//            unusedSegments.pop();
-//
-//            segments_[index]->SetSegment(hash);
-//        }
-//        else
-//        {
-//            SharedSegmentComponent segment(new SegmentComponentType(GetContext()));
-//
-//            segment->SetSegment(hash);
-//            segments_.push_back(segment);
-//        }
-//    }
-//
-//    //hide segments not in use
-//    while(!unusedSegments.empty())
-//    {
-//        size_t index=unusedSegments.top();
-//        
-//        unusedSegments.pop();
-//        segments_[index]->SetEnabled(false);
-//    }
-//
-//    //update segment positions
-//    glm::ivec3 segmentCellSize=grid_->segmentCellSize();
-//    for(size_t i=0; i<segments_.size(); ++i)
-//    {
-//        voxigen::SegmentHash segmentHash=segmentIndex=segments_[i].GetSegment();
-//        glm::ivec3 segmentIndex=grid_->getSegmentIndex(segmentHash);
-//        
-//        glm::ivec3 offset=(segmentIndex-currentSegmentIndex)*segmentCellSize;
-//
-//        segments_[i].SetOffset(offset);
-//    }
-//
-//    return true;
+    chunkRadius_++;
+    return true;
 }
 
 }//namespace Urho3D

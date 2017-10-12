@@ -6,9 +6,10 @@
 #include "voxigen/chunkHandle.h"
 #include "voxigen/chunkInfo.h"
 #include "voxigen/chunkVolume.h"
+#include "voxigen/cubicMeshBuilder.h"
 
-#include "PolyVox/CubicSurfaceExtractor.h"
-#include "PolyVox/Mesh.h"
+//#include "PolyVox/CubicSurfaceExtractor.h"
+//#include "PolyVox/Mesh.h"
 
 #include <string>
 #include <vector>
@@ -31,8 +32,8 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    typedef PolyVox::CubicVertex<typename ChunkVolume<_Chunk>::VoxelType> CubicVertex;
-    typedef PolyVox::Mesh<CubicVertex> MeshType;
+//    typedef PolyVox::CubicVertex<typename ChunkVolume<_Chunk>::VoxelType> CubicVertex;
+//    typedef PolyVox::Mesh<CubicVertex> MeshType;
 //    typedef std::shared_ptr<ChunkType> SharedChunk;
 
     SimpleChunkRenderer();
@@ -54,7 +55,7 @@ public:
     State getState() { return m_state; }
 
     void setParent(RenderType *parent);
-//    void setSegmentHash(SegmentHash hash);
+//    void setRegionHash(RegionHash hash);
     void setChunk(SharedChunkHandle chunk);
     void setEmpty();
 //    void setChunkOffset(glm::vec3 chunkOffset);
@@ -80,18 +81,18 @@ public:
         void drawOutline();
 //#endif //NDEBUG
 
-    const SegmentHash getSegmentHash() { return m_chunkHandle->segmentHash; }
+    const RegionHash getRegionHash() { return m_chunkHandle->regionHash; }
     const ChunkHash getChunkHash() { return m_chunkHandle->hash; }
     SharedChunkHandle getChunkHandle() { return m_chunkHandle; }
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
-    glm::vec3 getGridOffset() const { return m_chunkHandle->segmentOffset;/* m_chunkHandle->chunk->getGridOffset();*/ }
+    glm::vec3 getGridOffset() const { return m_chunkHandle->regionOffset;/* m_chunkHandle->chunk->getGridOffset();*/ }
     
     unsigned int refCount;
 private:
     RenderType *m_parent;
 
     State m_state;
-//    SegmentHash m_segmentHash;
+//    RegionHash m_regionHash;
     SharedChunkHandle m_chunkHandle;
 
  //   bool m_empty;
@@ -111,7 +112,8 @@ private:
     unsigned int m_offsetVBO;
     std::vector<glm::vec4> m_ChunkInfoOffset;
 
-    MeshType m_mesh;
+//    MeshType m_mesh;
+    ChunkMesh m_mesh;
 
     GLsync m_vertexBufferSync;
     int m_delayedFrames;

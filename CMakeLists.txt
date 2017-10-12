@@ -60,8 +60,10 @@ set(voxigen_headers
     include/voxigen/chunk.h
     include/voxigen/chunkHandle.h
     include/voxigen/chunkFunctions.h
+    include/voxigen/chunkMesh.h
     include/voxigen/classFactory.h
     include/voxigen/coords.h
+    include/voxigen/cubicMeshBuilder.h
     include/voxigen/dataHandler.h
     include/voxigen/dataStore.h
     include/voxigen/defines.h
@@ -73,8 +75,8 @@ set(voxigen_headers
     include/voxigen/jsonSerializer.h
     include/voxigen/object.h
     include/voxigen/regularGrid.h
-    include/voxigen/segment.h
-    include/voxigen/segmentHandle.h
+    include/voxigen/region.h
+    include/voxigen/regionHandle.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleRenderer.h
@@ -87,6 +89,7 @@ set(voxigen_sources
     src/data/gridDescriptors.cpp
     src/data/object.cpp
     src/rendering/initGlew.cpp
+    src/rendering/chunkMesh.cpp
     src/rendering/simpleCamera.cpp
     src/utils/coords.cpp
     src/utils/jsonSerializer.cpp
@@ -136,14 +139,14 @@ add_definitions(-DURHO3D_WIN32_CONSOLE)
 
 set(Urho3DApp_headers
     urho3DApp/ChunkDrawable.h
-    urho3DApp/SegmentComponent.h
+    urho3DApp/RegionComponent.h
     urho3DApp/WorldComponent.h
     urho3DApp/urho3DApp.h
 )
 
 set(Urho3DApp_sources
 #    urho3DApp/ChunkDrawable.cpp
-#    urho3DApp/SegmentComponent.cpp
+#    urho3DApp/RegionComponent.cpp
     urho3DApp/urho3DApp.cpp
 )
 

@@ -21,6 +21,9 @@ struct VOXIGEN_EXPORT Cell
     unsigned int age;
 };
 
+bool empty(Cell &cell) { return (cell.type==0); }
+unsigned int type(Cell &cell) { return cell.type; }
+
 }//namesapce voxigen
 
 #endif //_voxigen_cell_h_
