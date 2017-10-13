@@ -61,6 +61,7 @@ set(voxigen_headers
     include/voxigen/regionHandle.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
+    include/voxigen/simpleFileSystem.h
     include/voxigen/simpleRenderer.h
     include/voxigen/simpleShapes.h
 )
@@ -75,6 +76,7 @@ set(voxigen_sources
     src/rendering/simpleCamera.cpp
     src/utils/coords.cpp
     src/utils/jsonSerializer.cpp
+    src/utils/simpleFileSystem.cpp
 )
 
 set(voxigen_libraries

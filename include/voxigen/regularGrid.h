@@ -136,7 +136,8 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
     m_descriptors.save(configFile);
     
     std::string regionDirectory=directory+"/regions";
-    fs::path regionPath(regionDirectory);
+//    fs::path regionPath(regionDirectory);
+    std::string regionPath(regionDirectory);
 
     fs::create_directory(regionPath);
 

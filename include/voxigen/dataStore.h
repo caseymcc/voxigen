@@ -6,6 +6,7 @@
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/generator.h"
 #include "voxigen/jsonSerializer.h"
+#include "voxigen/simpleFileSystem.h"
 
 #include <thread>
 #include <mutex>
@@ -14,14 +15,6 @@
 #include <queue>
 #include <sstream>
 #include <iomanip>
-
-//#include <rapidjson/prettywriter.h>
-//#include <rapidjson/filewritestream.h>
-//#include <rapidjson/filereadstream.h>
-//#include <rapidjson/document.h>
-
-#include <boost/filesystem.hpp>
-namespace fs=boost::filesystem;
 
 namespace voxigen
 {
@@ -66,8 +59,6 @@ struct IOWriteRequest:public IORequest<_Chunk>
 
     SharedChunkHandleType chunkHandle;
 };
-
-namespace fs=boost::filesystem;
 
 template<typename _Region, typename _Chunk>
 class DataStore:public DataHandler<RegionHash, RegionHandle<_Region>, _Region>
@@ -125,6 +116,7 @@ private:
 
     void loadConfig();
     void saveConfig();
+    void saveConfigTo(std::string configFile);
     void loadDataStore();
     void verifyDirectory();
 
@@ -189,20 +181,18 @@ template<typename _Region, typename _Chunk>
 bool DataStore<_Region, _Chunk>::load(const std::string &directory)
 {
     m_directory=directory;
-    fs::path worldPath(directory);
 
-    if(!fs::is_directory(worldPath))
+    if(!fs::is_directory(directory))
     {
-        if(fs::exists(worldPath))
+        if(fs::exists(directory))
             return false;
 
-        fs::create_directory(worldPath);
+        fs::create_directory(directory);
     }
 
     m_configFile=m_directory+"/cacheConfig.json";
-    fs::path configPath(m_configFile);
 
-    if(!fs::exists(configPath))
+    if(!fs::exists(m_configFile))
         saveConfig();
     else
         loadConfig();
@@ -215,37 +205,6 @@ bool DataStore<_Region, _Chunk>::load(const std::string &directory)
 template<typename _Region, typename _Chunk>
 void DataStore<_Region, _Chunk>::loadConfig()
 {
-    //    m_configFile=m_directory.string()+"/chunkConfig.json";
-//    FILE *filePtr=fopen(m_configFile.c_str(), "rb");
-//    char readBuffer[65536];
-//
-//    rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
-//
-//    rapidjson::Document document;
-//
-//    document.ParseStream(readStream);
-//
-//    assert(document.IsObject());
-//
-//    m_version=document["version"].GetUint();
-//
-//    const rapidjson::Value &regions=document["regions"];
-//    assert(regions.IsArray());
-//
-//    for(rapidjson::SizeType i=0; i<regions.Size(); ++i)
-//    {
-//        const rapidjson::Value &regionValue=regions[i];
-//
-//        RegionHash hash=regionValue["id"].GetUint();
-//        SharedRegionHandle regionHandle(newHandle(hash));
-//
-//        regionHandle->cachedOnDisk=true;
-//        regionHandle->empty=regionValue["empty"].GetBool();
-//
-//        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, regionHandle));
-//    }
-//    fclose(filePtr);
-
     JsonUnserializer serializer;
 
     serializer.open(m_configFile.c_str());
@@ -289,41 +248,15 @@ void DataStore<_Region, _Chunk>::loadConfig()
 template<typename _Region, typename _Chunk>
 void DataStore<_Region, _Chunk>::saveConfig()
 {
-    //    m_configFile=m_directory.string()+"/chunkConfig.json";
-//    FILE *filePtr=fopen(m_configFile.c_str(), "wb");
-//    char writeBuffer[65536];
-//
-//    rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
-//    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
-//
-//    writer.StartObject();
-//
-//    writer.Key("version");
-//    writer.Uint(m_version);
-//
-//    writer.Key("regions");
-//    writer.StartArray();
-//    for(auto &handle:m_dataHandles)
-//    {
-//        if(handle.second->empty)
-//        {
-//            writer.StartObject();
-//            writer.Key("id");
-//            writer.Uint(handle.second->hash);
-//            writer.Key("empty");
-//            writer.Bool(handle.second->empty);
-//            writer.EndObject();
-//        }
-//    }
-//    writer.EndArray();
-//
-//    writer.EndObject();
-//
-//    fclose(filePtr);
+    saveConfigTo(m_configFile);
+}
 
+template<typename _Region, typename _Chunk>
+void DataStore<_Region, _Chunk>::saveConfigTo(std::string configFile)
+{
     JsonSerializer serializer;
 
-    serializer.open(m_configFile.c_str());
+    serializer.open(configFile.c_str());
 
     serializer.startObject();
 
@@ -352,93 +285,72 @@ void DataStore<_Region, _Chunk>::saveConfig()
 template<typename _Region, typename _Chunk>
 void DataStore<_Region, _Chunk>::addConfig(SharedDataHandle handle)
 {
-    //TODO - fix
-    //lazy programming for the moment, see remarks in ioThread below
     if(handle->empty)
     {
-//        rapidjson::Document::AllocatorType &allocator=m_configDocument.GetAllocator();
-//        rapidjson::Value &regions=m_configDocument["regions"];
-//        assert(regions.IsArray());
+        std::string tempConfig=m_configFile+".tmp";
+
+        saveConfigTo(tempConfig);
+//        JsonUnserializer unserializer;
+//        JsonSerializer serializer;
 //
-//        rapidjson::Value region(rapidjson::kObjectType);
+//        unserializer.open(m_configFile.c_str());
+//        serializer.open(tempConfig.c_str());
 //
-//        region.AddMember("id", handle->chunkHash, allocator);
-//        region.AddMember("empty", handle->empty, allocator);
+//        unserializer.openObject();
+//        serializer.startObject();
 //
-//        regions.PushBack(region, allocator);
-//        //    m_configFile=m_directory.string()+"/chunkConfig.json";
+//        if(unserializer.key("version"))
+//        {
+//            unsigned int version=unserializer.getUInt();
+//            serializer.addKey("version");
+//            serializer.addUInt(version);
+//        }
 //
-//        std::string tempConfig=m_configFile+ror".tmp";
-//        FILE *filePtr=fopen(tempConfig.c_str(), "wb");
-//        char writeBuffer[65536];
+//        if(unserializer.key("regions"))
+//        {
+//            serializer.addKey("regions");
+//            if(unserializer.openArray())
+//            {
+//                serializer.startArray();
+//                do
+//                {
+//                    if(unserializer.openObject())
+//                    {
+//                        serializer.startObject();
 //
-//        rapidjson::FileWriteStream fileStream(filePtr, writeBuffer, sizeof(writeBuffer));
-//        rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fileStream);
+//                        if(unserializer.key("id"))
+//                        {
+//                            RegionHash hash=unserializer.GetUint();
 //
-//        m_configDocument.Accept(writer);
-//        fclose(filePtr);
+//                            serializer.addKey("id");
+//                            serializer.addUInt(hash);
+//                            
+//                            bool empty=true;
+//
+//                            if(unserializer.key("empty"))
+//                                empty=unserializer.GetBool();
+//
+//                            serializer.addKey("empty");
+//                            serializer.addBool(empty);
+//                        }
+//
+//                        unserializer.closeObject();
+//                        serializer.endObject();
+//                    }
+//                } while(unserializer.advance());
+//                
+//                unserializer.closeArray();
+//                serializer.endArray();
+//            }
+//        }
+//        
+//        unserializer.closeObject();
+//        serializer.endObject();
 
-        std::string tempConfig=m_configFile+ror".tmp";
-        JsonUnserializer unserializer;
-        JsonSerializer serializer;
-
-        unserializer.open(m_configFile.c_str());
-        serializer.open(tempConfig.c_str());
-
-        unserializer.openObject();
-        serializer.startObject();
-
-        if(unserializer.key("version"))
-        {
-            unsigned int version=unserializer.getUInt();
-            serializer.addKey("version");
-            serializer.addUInt(version);
-        }
-
-        if(unserializer.key("regions"))
-        {
-            serializer.addKey("regions");
-            if(unserializer.openArray())
-            {
-                serializer.startArray();
-                do
-                {
-                    if(unserializer.openObject())
-                    {
-                        serializer.startObject();
-
-                        if(unserializer.key("id"))
-                        {
-                            RegionHash hash=unserializer.GetUint();
-
-                            serializer.addKey("id");
-                            serializer.addUInt(hash);
-                            
-                            bool empty=true;
-
-                            if(unserializer.key("empty"))
-                                empty=unserializer.GetBool();
-
-                            serializer.addKey("empty");
-                            serializer.addBool(empty);
-                        }
-
-                        unserializer.closeObject();
-                        serializer.endObject();
-                    }
-                } while(unserializer.advance());
-                
-                unserializer.closeArray();
-                serializer.endArray();
-            }
-        }
-        
-        unserializer.closeObject();
-        serializer.endObject();
-
-        fs::path configPath(m_configFile);
-        fs::path tempPath(tempConfig);
-        copy_file(tempPath, configPath, fs::copy_option::overwrite_if_exists);
+//        fs::path configPath(m_configFile);
+//        fs::path tempPath(tempConfig);
+//        copy_file(tempPath, configPath, fs::copy_option::overwrite_if_exists);
+        fs::copy_file(tempConfig, m_configFile, true);
     }
 }
 
@@ -458,24 +370,21 @@ void DataStore<_Region, _Chunk>::addConfig(SharedChunkHandle handle)
 template<typename _Region, typename _Chunk>
 void DataStore<_Region, _Chunk>::loadDataStore()
 {
-    fs::path chunkDirectory(m_directory);
+    std::vector<std::string> directories=fs::get_directories(m_directory);
 
-    for(auto &entry:fs::directory_iterator(chunkDirectory))
+    for(auto &entry:directories)
     {
-        if(fs::is_directory(entry.path()))
-        {
-            std::istringstream fileNameStream(entry.path().stem().string());
-            RegionHash hash;
+        std::istringstream fileNameStream(entry);
+        RegionHash hash;
 
-            fileNameStream>>std::hex>>hash;
+        fileNameStream>>std::hex>>hash;
 
-            SharedRegionHandle handle(newHandle(hash));
+        SharedRegionHandle handle(newHandle(hash));
 
-            handle->cachedOnDisk=true;
-            handle->empty=false;
+        handle->cachedOnDisk=true;
+        handle->empty=false;
 
-            m_dataHandles.insert(SharedDataHandleMap::value_type(hash, handle));
-        }
+        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, handle));
     }
 }
 
