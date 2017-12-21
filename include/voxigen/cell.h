@@ -1,17 +1,18 @@
 #ifndef _voxigen_cell_h_
 #define _voxigen_cell_h_
+#pragma once
 
 #include "voxigen/voxigen_export.h"
 
 namespace voxigen
 {
 
-struct VOXIGEN_EXPORT BlockDescriptor
+struct BlockDescriptor
 {
 
 };
 
-struct VOXIGEN_EXPORT Cell
+struct Cell
 {
     typedef unsigned int Type;
 
@@ -21,8 +22,8 @@ struct VOXIGEN_EXPORT Cell
     unsigned int age;
 };
 
-bool empty(Cell &cell) { return (cell.type==0); }
-unsigned int type(Cell &cell) { return cell.type; }
+inline bool empty(Cell &cell) { return (cell.type==0); }
+inline unsigned int type(Cell &cell) { return cell.type; }
 
 }//namesapce voxigen
 

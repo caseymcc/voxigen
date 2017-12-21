@@ -27,6 +27,13 @@ set(opengl_util_libraries
     glew::glew
 )
 
+if(VOXIGEN_OUTPUT_DIRECTORY_DEBUG)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
+endif()
+if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
+endif()
+
 add_library(opengl_util SHARED
     ${opengl_util_sources}
     ${opengl_util_headers}

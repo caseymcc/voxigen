@@ -2,7 +2,7 @@
 #define _voxigen_chunk_h_
 
 #include "voxigen/defines.h"
-#include "voxigen/boundingBox.h"
+//#include "voxigen/boundingBox.h"
 #include "voxigen/gridDescriptors.h"
 
 #include <vector>

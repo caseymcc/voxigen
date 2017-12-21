@@ -12,19 +12,48 @@
 namespace voxigen
 {
 
-template<typename _Chunk>
+struct VOXIGEN_EXPORT EquiRectDescriptors
+{
+    EquiRectDescriptors()
+    {
+        m_noiseScale=0.001;
+
+        //    contientFrequency=1.0;
+        m_contientFrequency=0.005;
+        m_contientOctaves=2;
+        m_contientLacunarity=2.2;
+
+        m_seaLevel=0.0f;
+    }
+
+    bool load(const char *json);
+    bool save(char *json, size_t &size);
+
+    float m_noiseScale;
+    float m_contientFrequency;
+    int m_contientOctaves;
+    float m_contientLacunarity;
+
+    float m_seaLevel;
+    float m_continentaShelf;
+};
+
+template<typename _Grid>
 class EquiRectWorldGenerator
 {
 public:
-    typedef _Chunk ChunkType;
-    typedef std::unique_ptr<_Chunk> UniqueChunkType;
+    typedef typename _Grid::ChunkType ChunkType;
+    typedef std::unique_ptr<ChunkType> UniqueChunkType;
 
     EquiRectWorldGenerator();
     ~EquiRectWorldGenerator();
 
     static char *typeName(){return "EquiRectWorldGenerator";}
 
-    void initialize(GridDescriptors *descriptors);
+    void initialize(IGridDescriptors *descriptors);
+    void save(IGridDescriptors *descriptors);
+    void save(std::string &descriptors);
+//    void initialize(IGridDescriptors *descriptors);
 //    void setWorld(GridDescriptors descriptors);
 //    void setWorldDiscriptors(GridDescriptors descriptors);
     
@@ -36,7 +65,8 @@ public:
     unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize);
 
 private:
-    GridDescriptors *m_descriptors;
+    GridDescriptors<_Grid> *m_descriptors;
+    EquiRectDescriptors m_descriptorValues;
 
     std::unique_ptr<FastNoiseSIMD> m_continentPerlin;
     std::unique_ptr<FastNoiseSIMD> m_layersPerlin;
@@ -48,58 +78,91 @@ private:
 //    noise::module::Perlin m_layersPerlin;
 };
 
-template<typename _Chunk>
-EquiRectWorldGenerator<_Chunk>::EquiRectWorldGenerator()
+template<typename _Grid>
+EquiRectWorldGenerator<_Grid>::EquiRectWorldGenerator()
 {
 }
 
-template<typename _Chunk>
-EquiRectWorldGenerator<_Chunk>::~EquiRectWorldGenerator()
+template<typename _Grid>
+EquiRectWorldGenerator<_Grid>::~EquiRectWorldGenerator()
 {}
 
-template<typename _Chunk>
-void EquiRectWorldGenerator<_Chunk>::initialize(GridDescriptors *descriptors)
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 {
-    m_descriptors=descriptors;
+    m_descriptors=dynamic_cast<GridDescriptors<_Grid> *>(descriptors);
+    
+    bool loaded=m_descriptorValues.load(m_descriptors->m_generatorDescriptors.c_str());
 
-    assert(descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
+    if(!loaded)
+        save(m_descriptors->m_generatorDescriptors);
+
+//    m_descriptors=descriptors;
+//    assert(m_descriptors!=nullptr);
+
+    assert(m_descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     int seed=m_descriptors->m_seed;
 
     m_continentPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed));
 
     m_continentPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
-    m_continentPerlin->SetFrequency(m_descriptors->m_contientFrequency);
-    m_continentPerlin->SetFractalLacunarity(m_descriptors->m_contientLacunarity);
-    m_continentPerlin->SetFractalOctaves(m_descriptors->m_contientOctaves);
+    m_continentPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
+    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
+    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 
 
     m_layersPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed+1));
 
     m_layersPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
-    m_layersPerlin->SetFrequency(m_descriptors->m_contientFrequency);
-    m_layersPerlin->SetFractalLacunarity(m_descriptors->m_contientLacunarity);
-    m_layersPerlin->SetFractalOctaves(m_descriptors->m_contientOctaves);
+    m_layersPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
+    m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
+    m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 }
 
-//template<typename _Chunk>
-//void EquiRectWorldGenerator<_Chunk>::setWorldDiscriptors(GridDescriptors descriptors)
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::save(IGridDescriptors *descriptors)
+{
+    std::string descriptorsString;
+
+    save(descriptorsString);
+    descriptors->setGeneratorDescriptors(descriptorsString.c_str());
+}
+
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::save(std::string &descriptors)
+{
+    size_t size=1024;
+
+    descriptors.resize(size);
+
+    //removing const as we plan to stay inside the memory range from the resize above
+    if(!m_descriptorValues.save((char *)descriptors.data(), size))
+    {
+        descriptors.resize(size);
+        m_descriptorValues.save((char *)descriptors.data(), size);
+    }
+    descriptors.resize(size);
+}
+
+//template<typename _Grid>
+//void EquiRectWorldGenerator<_Grid>::setWorldDiscriptors(GridDescriptors descriptors)
 //{
 //
 //}
 
-template<typename _Chunk>
-void EquiRectWorldGenerator<_Chunk>::generateWorldOverview()
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 {
 
 }
 
-template<typename _Chunk>
-unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize)
+template<typename _Grid>
+unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize)
 {
-//    glm::vec3 offset=glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value)*chunkIndex;
-    glm::vec3 scaledOffset=startPos*m_descriptors->m_noiseScale;
+//    glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+    glm::vec3 scaledOffset=startPos*m_descriptorValues.m_noiseScale;
     glm::vec3 position=scaledOffset;
-    float noiseScale=m_descriptors->m_noiseScale;
+    float noiseScale=m_descriptorValues.m_noiseScale;
     
    
 //    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, startPos);
@@ -108,11 +171,11 @@ unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &star
     ChunkType::CellType *cells=(ChunkType::CellType *)buffer;
 
     //verify chunkSize matches template chunk size
-    assert(chunkSize==glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value));
+    assert(chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     //verify buffer is large enough for data
-    assert(bufferSize>=(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value)*sizeof(ChunkType::CellType));
+    assert(bufferSize>=(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value)*sizeof(ChunkType::CellType));
 
-    int heightMapSize=FastNoiseSIMD::AlignedSize(_Chunk::sizeX::value*_Chunk::sizeY::value);
+    int heightMapSize=FastNoiseSIMD::AlignedSize(ChunkType::sizeX::value*ChunkType::sizeY::value);
     std::vector<float> heightMap(heightMapSize);
     std::vector<float> xMap(heightMapSize);
     std::vector<float> yMap(heightMapSize);
@@ -126,13 +189,13 @@ unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &star
     for(int y=0; y<chunkSize.y; ++y)
     {
         mapPos.y=startPos.y+y;
-        for(int x=0; x<_Chunk::sizeX::value; ++x)
+        for(int x=0; x<ChunkType::sizeX::value; ++x)
         {
             mapPos.x=startPos.x+x;
 
             glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
 
-//            pos*=m_descriptors->noiseScale;
+//            pos*=m_descriptors.noiseScale;
             xMap[index]=pos.x;
             yMap[index]=pos.y;
             zMap[index]=pos.z;
@@ -140,9 +203,9 @@ unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &star
         }
     }
 
-    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), _Chunk::sizeX::value, _Chunk::sizeY::value, 1);
+    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), ChunkType::sizeX::value, ChunkType::sizeY::value, 1);
 
-    int chunkMapSize=FastNoiseSIMD::AlignedSize(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value);
+    int chunkMapSize=FastNoiseSIMD::AlignedSize(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value);
 
     std::vector<float> layerMap(chunkMapSize);
 
@@ -155,16 +218,16 @@ unsigned int EquiRectWorldGenerator<_Chunk>::generateChunk(const glm::vec3 &star
     index=0;
     size_t heightIndex=0;
     position.z=scaledOffset.z;
-    for(int z=0; z<_Chunk::sizeZ::value; ++z)
+    for(int z=0; z<ChunkType::sizeZ::value; ++z)
     {
         heightIndex=0;
         position.y=scaledOffset.y;
 
         int blockZ=startPos.z+z;
-        for(int y=0; y<_Chunk::sizeY::value; ++y)
+        for(int y=0; y<ChunkType::sizeY::value; ++y)
         {
             position.x=scaledOffset.x;
-            for(int x=0; x<_Chunk::sizeX::value; ++x)
+            for(int x=0; x<ChunkType::sizeX::value; ++x)
             {
                 unsigned int blockType;
                 int blockHeight=heightMap[heightIndex]*heightScale+seaLevel;

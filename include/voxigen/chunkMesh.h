@@ -1,7 +1,6 @@
 #ifndef _voxigen_chunkMesh_h_
 #define _voxigen_chunkMesh_h_
 
-#include "voxigen/voxigen_export.h"
 #include "voxigen/defines.h"
 #include "voxigen/chunk.h"
 
@@ -10,16 +9,16 @@
 namespace voxigen
 {
 
-struct VOXIGEN_EXPORT ChunkMeshVertex
+struct ChunkMeshVertex
 {
     uint8_t x, y, z;
     uint32_t data;
 };
 
-class VOXIGEN_EXPORT ChunkMesh
+class ChunkMesh
 {
 public:
-    ChunkMesh();
+    ChunkMesh() {};
 
     void addFace(const std::array<uint8_t, 12>& blockFace, glm::ivec3 position);
     void addFace(const std::array<uint8_t, 12>& blockFace, glm::ivec3 position, unsigned int data);
@@ -33,6 +32,57 @@ private:
     
 };
 
+inline void ChunkMesh::addFace(const std::array<uint8_t, 12> &face, glm::ivec3 position)
+{
+    size_t index=m_verticies.size();
+    size_t vertIndex=index;
+    m_verticies.resize(index+4);
+
+    for(size_t i=0, faceIndex=0; i<4; ++i)
+    {
+        m_verticies[index].x=face[faceIndex++]+position.x;
+        m_verticies[index].y=face[faceIndex++]+position.y;
+        m_verticies[index].z=face[faceIndex++]+position.z;
+        m_verticies[index].data=0;
+        index++;
+    }
+
+    size_t indicesIndex=m_indices.size();
+    m_indices.resize(indicesIndex+6);
+
+    m_indices[indicesIndex++]=vertIndex;
+    m_indices[indicesIndex++]=vertIndex+1;
+    m_indices[indicesIndex++]=vertIndex+2;
+    m_indices[indicesIndex++]=vertIndex+2;
+    m_indices[indicesIndex++]=vertIndex+3;
+    m_indices[indicesIndex]=vertIndex;
+}
+
+inline void ChunkMesh::addFace(const std::array<uint8_t, 12> &face, glm::ivec3 position, unsigned int data)
+{
+    size_t index=m_verticies.size();
+    size_t vertIndex=index;
+    m_verticies.resize(index+4);
+
+    for(size_t i=0, faceIndex=0; i<4; ++i)
+    {
+        m_verticies[index].x=face[faceIndex++]+position.x;
+        m_verticies[index].y=face[faceIndex++]+position.y;
+        m_verticies[index].z=face[faceIndex++]+position.z;
+        m_verticies[index].data=data;
+        index++;
+    }
+
+    size_t indicesIndex=m_indices.size();
+    m_indices.resize(indicesIndex+6);
+
+    m_indices[indicesIndex++]=vertIndex;
+    m_indices[indicesIndex++]=vertIndex+1;
+    m_indices[indicesIndex++]=vertIndex+2;
+    m_indices[indicesIndex++]=vertIndex+2;
+    m_indices[indicesIndex++]=vertIndex+3;
+    m_indices[indicesIndex]=vertIndex;
+}
 } //namespace voxigen
 
 #endif //_voxigen_chunkMesh_h_

@@ -26,9 +26,9 @@ struct JsonSerializerHidden
             fclose(jsonFile);
     }
 
-    bool open(const std::string &fileName, bool pretty)
+    bool open(const char *fileName, bool pretty)
     {
-        jsonFile=fopen(fileName.c_str(), "wb");
+        jsonFile=fopen(fileName, "wb");
 
         if(jsonFile==NULL)
             return false;
@@ -60,7 +60,7 @@ JsonSerializer::~JsonSerializer()
     delete m_hidden;
 }
 
-bool JsonSerializer::open(std::string fileName, bool pretty)
+bool JsonSerializer::open(const char *fileName, bool pretty)
 { return m_hidden->open(fileName, pretty); }
 
 void JsonSerializer::startObject()
@@ -74,14 +74,14 @@ void JsonSerializer::startArray()
 void JsonSerializer::endArray()
 { m_hidden->writer->EndArray(); }
 
-void JsonSerializer::addKey(const std::string key)
-{ m_hidden->writer->Key(key.c_str()); }
+void JsonSerializer::addKey(const char *key)
+{ m_hidden->writer->Key(key); }
 
 void JsonSerializer::addBool(const bool &value)
 { m_hidden->writer->Bool(value); }
 
-void JsonSerializer::addString(const std::string &value)
-{ m_hidden->writer->String(value.c_str()); }
+void JsonSerializer::addString(const char *value)
+{ m_hidden->writer->String(value); }
 
 void JsonSerializer::addInt(const int &value)
 { m_hidden->writer->Int(value); }
@@ -107,9 +107,9 @@ struct JsonUnserializerHidden
     JsonUnserializerHidden():fileStream(nullptr), jsonFile(NULL), currentValid(false), iteratorValid(false), valueIteratorValid(false) {}
     ~JsonUnserializerHidden() {}
 
-    bool open(std::string fileName)
+    bool open(const char *fileName)
     {
-        jsonFile=fopen(fileName.c_str(), "rb");
+        jsonFile=fopen(fileName, "rb");
 
         if(jsonFile==NULL)
             return false;
@@ -129,9 +129,9 @@ struct JsonUnserializerHidden
         return true;
     }
 
-    bool parse(std::string json)
+    bool parse(const char *json)
     {
-        bool error=document.Parse(json.c_str()).HasParseError();
+        bool error=document.Parse(json).HasParseError();
 
         if(error)
             return false;
@@ -159,6 +159,8 @@ struct JsonUnserializerHidden
     bool valueIteratorValid;
     rapidjson::Value::ConstValueIterator currentValueIterator;
     std::stack<rapidjson::Value::ConstValueIterator> valueIteratorStack;
+
+    std::string returnValue;
 };
 
 JsonUnserializer::JsonUnserializer()
@@ -170,21 +172,21 @@ JsonUnserializer::~JsonUnserializer()
     delete m_hidden;
 }
 
-bool JsonUnserializer::open(std::string fileName)
+bool JsonUnserializer::open(const char *fileName)
 {
     return m_hidden->open(fileName);
 }
 
-bool JsonUnserializer::parse(std::string json)
+bool JsonUnserializer::parse(const char *json)
 {
     return m_hidden->parse(json);
 }
 
-bool JsonUnserializer::key(const std::string &key)
+bool JsonUnserializer::key(const char *key)
 {
     if(m_hidden->iteratorValid)
     {
-        m_hidden->currentIterator=m_hidden->currentValue->FindMember(key.c_str());
+        m_hidden->currentIterator=m_hidden->currentValue->FindMember(key);
 
         if(m_hidden->currentIterator==m_hidden->currentValue->MemberEnd())
         {
@@ -231,18 +233,20 @@ bool JsonUnserializer::key(const std::string &key)
 //    return Type::UNKNOWN;
 //}
 
-std::string JsonUnserializer::name()
+const char *JsonUnserializer::name()
 {
     if(m_hidden->iteratorValid)
     {
-        return m_hidden->currentIterator->name.GetString();
+        m_hidden->returnValue=m_hidden->currentIterator->name.GetString();
+        return m_hidden->returnValue.c_str();
     }
     //	else if(m_hidden->valueIteratorValid)
     //	{
     //		m_hidden->valueStack.top()->Get
     //		type=m_hidden->currentValueIterator->GetType();
     //	}
-    return m_hidden->currentValue->GetString();
+    m_hidden->returnValue=m_hidden->currentValue->GetString();
+    return m_hidden->returnValue.c_str();
 }
 
 bool JsonUnserializer::openObject()
@@ -388,18 +392,21 @@ bool JsonUnserializer::getBool()
     }
     return false;
 }
-std::string JsonUnserializer::getString()
+const char *JsonUnserializer::getString()
 {
     if(m_hidden->iteratorValid)
-        return std::string(m_hidden->currentIterator->value.GetString());
+    {
+        m_hidden->returnValue=m_hidden->currentIterator->value.GetString();
+        return m_hidden->returnValue.c_str();
+    }
     else if(m_hidden->valueIteratorValid)
     {
-        std::string value=m_hidden->currentValueIterator->GetString();
+        m_hidden->returnValue=m_hidden->currentValueIterator->GetString();
 
         advanceValueIterator();
-        return value;
+        return m_hidden->returnValue.c_str();
     }
-    return std::string();
+    return "";
 }
 int JsonUnserializer::getInt()
 {

@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <queue>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 
 namespace voxigen
@@ -60,29 +61,29 @@ struct IOWriteRequest:public IORequest<_Chunk>
     SharedChunkHandleType chunkHandle;
 };
 
-template<typename _Region, typename _Chunk>
-class DataStore:public DataHandler<RegionHash, RegionHandle<_Region>, _Region>
+template<typename _Grid>
+class DataStore:public DataHandler<RegionHash, RegionHandle<_Grid>, typename _Grid::RegionType>
 {
 public:
-    typedef _Region RegionType;
-    typedef RegionHandle<_Region> RegionHandleType;
+    typedef typename _Grid::RegionType RegionType;
+    typedef RegionHandle<_Grid> RegionHandleType;
     typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
 //    typedef std::weak_ptr<RegionHandleType> WeakRegionHandle;
 //    typedef std::unordered_map<RegionHash, WeakRegionHandle> WeakRegionHandleMap;
 //    typedef std::unordered_map<RegionHash, SharedRegionHandle> RegionHandleMap;
 
-    typedef _Chunk ChunkType;
+    typedef typename _Grid::ChunkType ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunk;
 
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    typedef IORequest<_Chunk> IORequestType;
-    typedef IOReadRequest<_Chunk> IOReadRequestType;
-    typedef IOWriteRequest<_Chunk> IOWriteRequestType;
+    typedef IORequest<ChunkType> IORequestType;
+    typedef IOReadRequest<ChunkType> IOReadRequestType;
+    typedef IOWriteRequest<ChunkType> IOWriteRequestType;
     typedef std::shared_ptr<IORequestType> SharedIORequest;
 
-    DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue);
+    DataStore(GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue);
 
     void initialize();
     void terminate();
@@ -120,8 +121,8 @@ private:
     void loadDataStore();
     void verifyDirectory();
 
-    GridDescriptors *m_descriptors;
-    GeneratorQueue<ChunkType> *m_generatorQueue;
+    GridDescriptors<_Grid> *m_descriptors;
+    GeneratorQueue<_Grid> *m_generatorQueue;
 
 //World files
     std::string m_directory;
@@ -141,8 +142,8 @@ private:
     UpdateQueue *m_updateQueue;
 };
 
-template<typename _Region, typename _Chunk>
-DataStore<_Region, _Chunk>::DataStore(GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, UpdateQueue *updateQueue):
+template<typename _Grid>
+DataStore<_Grid>::DataStore(GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue):
 m_descriptors(descriptors),
 m_generatorQueue(generatorQueue),
 m_updateQueue(updateQueue)
@@ -150,15 +151,15 @@ m_updateQueue(updateQueue)
     m_version=0;
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::initialize()
+template<typename _Grid>
+void DataStore<_Grid>::initialize()
 {
     m_ioThreadRun=true;
-    m_ioThread=std::thread(std::bind(&DataStore<_Region, _Chunk>::ioThread, this));
+    m_ioThread=std::thread(std::bind(&DataStore<_Grid>::ioThread, this));
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::terminate()
+template<typename _Grid>
+void DataStore<_Grid>::terminate()
 {
     //thread flags are not atomic so we need the mutexes to coordinate the setting, 
     //otherwise would have to loop re-notifiying thread until it stopped
@@ -171,14 +172,14 @@ void DataStore<_Region, _Chunk>::terminate()
     m_ioThread.join();
 }
 
-template<typename _Region, typename _Chunk>
-typename DataStore<_Region, _Chunk>::DataHandle *DataStore<_Region, _Chunk>::newHandle(HashType hash)
+template<typename _Grid>
+typename DataStore<_Grid>::DataHandle *DataStore<_Grid>::newHandle(HashType hash)
 {
     return new RegionHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
 }
 
-template<typename _Region, typename _Chunk>
-bool DataStore<_Region, _Chunk>::load(const std::string &directory)
+template<typename _Grid>
+bool DataStore<_Grid>::load(const std::string &directory)
 {
     m_directory=directory;
 
@@ -202,8 +203,8 @@ bool DataStore<_Region, _Chunk>::load(const std::string &directory)
     return true;
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::loadConfig()
+template<typename _Grid>
+void DataStore<_Grid>::loadConfig()
 {
     JsonUnserializer serializer;
 
@@ -245,14 +246,14 @@ void DataStore<_Region, _Chunk>::loadConfig()
     serializer.closeObject();
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::saveConfig()
+template<typename _Grid>
+void DataStore<_Grid>::saveConfig()
 {
     saveConfigTo(m_configFile);
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::saveConfigTo(std::string configFile)
+template<typename _Grid>
+void DataStore<_Grid>::saveConfigTo(std::string configFile)
 {
     JsonSerializer serializer;
 
@@ -282,8 +283,8 @@ void DataStore<_Region, _Chunk>::saveConfigTo(std::string configFile)
     serializer.endObject();
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::addConfig(SharedDataHandle handle)
+template<typename _Grid>
+void DataStore<_Grid>::addConfig(SharedDataHandle handle)
 {
     if(handle->empty)
     {
@@ -354,8 +355,8 @@ void DataStore<_Region, _Chunk>::addConfig(SharedDataHandle handle)
     }
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::addConfig(SharedChunkHandle handle)
+template<typename _Grid>
+void DataStore<_Grid>::addConfig(SharedChunkHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
@@ -367,8 +368,8 @@ void DataStore<_Region, _Chunk>::addConfig(SharedChunkHandle handle)
     }
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::loadDataStore()
+template<typename _Grid>
+void DataStore<_Grid>::loadDataStore()
 {
     std::vector<std::string> directories=fs::get_directories(m_directory);
 
@@ -388,14 +389,14 @@ void DataStore<_Region, _Chunk>::loadDataStore()
     }
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::verifyDirectory()
+template<typename _Grid>
+void DataStore<_Grid>::verifyDirectory()
 {
 
 }
 
-template<typename _Region, typename _Chunk>
-typename DataStore<_Region, _Chunk>::SharedRegionHandle DataStore<_Region, _Chunk>::getRegion(RegionHash hash)
+template<typename _Grid>
+typename DataStore<_Grid>::SharedRegionHandle DataStore<_Grid>::getRegion(RegionHash hash)
 {
     SharedRegionHandle regionHandle=getDataHandle(hash);
 
@@ -411,20 +412,20 @@ typename DataStore<_Region, _Chunk>::SharedRegionHandle DataStore<_Region, _Chun
     return regionHandle;
 }
 
-template<typename _Region, typename _Chunk>
-typename DataStore<_Region, _Chunk>::SharedChunkHandle DataStore<_Region, _Chunk>::getChunk(RegionHash regionHash, ChunkHash chunkHash)
+template<typename _Grid>
+typename DataStore<_Grid>::SharedChunkHandle DataStore<_Grid>::getChunk(RegionHash regionHash, ChunkHash chunkHash)
 {
     return getRegion(regionHash)->getChunk(chunkHash);
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::loadChunk(SharedChunkHandle handle, size_t lod)
+template<typename _Grid>
+void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod)
 {
     return getRegion(handle->regionHash)->loadChunk(handle, lod);
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::ioThread()
+template<typename _Grid>
+void DataStore<_Grid>::ioThread()
 {
     std::unique_lock<std::mutex> lock(m_ioMutex);
 
@@ -487,8 +488,8 @@ void DataStore<_Region, _Chunk>::ioThread()
     }
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::readChunk(IORequestType *request)
+template<typename _Grid>
+void DataStore<_Grid>::readChunk(IORequestType *request)
 {
     IOReadRequestType *readRequest=(IOReadRequestType *)request;
     SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
@@ -514,7 +515,7 @@ void DataStore<_Region, _Chunk>::readChunk(IORequestType *request)
         file.open(fileName, std::ofstream::in|std::ofstream::binary);
         //        for(auto block:blocks)
         //            block->deserialize(file);
-        file.read((char *)cells.data(), cells.size()*sizeof(_Chunk::CellType));
+        file.read((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
         file.close();
     }
 
@@ -523,8 +524,8 @@ void DataStore<_Region, _Chunk>::readChunk(IORequestType *request)
     m_updateQueue->add(chunkHandle->hash);
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::writeChunk(IORequestType *request)
+template<typename _Grid>
+void DataStore<_Grid>::writeChunk(IORequestType *request)
 {
     IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
     SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
@@ -542,7 +543,7 @@ void DataStore<_Region, _Chunk>::writeChunk(IORequestType *request)
         file.open(fileName, std::ofstream::out|std::ofstream::trunc|std::ofstream::binary);
         //        for(auto block:blocks)
         //            block->serialize(file);
-        file.write((char *)cells.data(), cells.size()*sizeof(_Chunk::CellType));
+        file.write((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
         file.close();
     }
 
@@ -555,8 +556,8 @@ void DataStore<_Region, _Chunk>::writeChunk(IORequestType *request)
     writeRequest->chunkHandle.reset();
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::read(SharedChunkHandle chunkHandle)
+template<typename _Grid>
+void DataStore<_Grid>::read(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);
@@ -568,8 +569,8 @@ void DataStore<_Region, _Chunk>::read(SharedChunkHandle chunkHandle)
     m_ioEvent.notify_all();
 }
 
-template<typename _Region, typename _Chunk>
-void DataStore<_Region, _Chunk>::write(SharedChunkHandle chunkHandle)
+template<typename _Grid>
+void DataStore<_Grid>::write(SharedChunkHandle chunkHandle)
 {
     {
         std::unique_lock<std::mutex> lock(m_ioMutex);

@@ -20,7 +20,8 @@ public:
     Generator() {}
     virtual ~Generator() {}
 
-    virtual void initialize(GridDescriptors *descriptors)=0;
+    virtual void initialize(IGridDescriptors *descriptors)=0;
+    virtual void save(IGridDescriptors *descriptors)=0;
 //    virtual void terminate()=0;
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
@@ -37,7 +38,8 @@ public:
 
     static char *typeName() { return _Generator::typeName(); }
 
-    virtual void initialize(GridDescriptors *descriptors) { m_generator->initialize(descriptors); }
+    virtual void initialize(IGridDescriptors *descriptors){ m_generator->initialize(descriptors); }
+    virtual void save(IGridDescriptors *descriptors) { m_generator->save(descriptors); }
 //    virtual void terminate() { m_generator->terminate(); }
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
@@ -47,15 +49,15 @@ private:
     std::unique_ptr<_Generator> m_generator;
 };
 
-template<typename _Chunk>
+template<typename _Grid>
 class GeneratorQueue
 {
 public:
-    typedef _Chunk ChunkType;
+    typedef typename _Grid::ChunkType ChunkType;
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    GeneratorQueue(GridDescriptors *descriptors, UpdateQueue *updateQueue):m_descriptors(descriptors), m_generator(nullptr), m_updateQueue(updateQueue){}
+    GeneratorQueue(GridDescriptors<_Grid> *descriptors, UpdateQueue *updateQueue):m_descriptors(descriptors), m_generator(nullptr), m_updateQueue(updateQueue){}
 
     void setGenerator(Generator *generator) { m_generator=generator; }
 
@@ -71,7 +73,7 @@ public:
 
 private:
     Generator *m_generator;
-    GridDescriptors *m_descriptors;
+    GridDescriptors<_Grid> *m_descriptors;
 
     //generator thread/queue
     std::mutex m_generatorMutex;
@@ -84,15 +86,15 @@ private:
     UpdateQueue *m_updateQueue;
 };
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::initialize()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::initialize()
 {
     m_generatorThreadRun=true;
-    m_generatorThread=std::thread(std::bind(&GeneratorQueue<_Chunk>::generatorThread, this));
+    m_generatorThread=std::thread(std::bind(&GeneratorQueue<_Grid>::generatorThread, this));
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::terminate()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::terminate()
 {
     //thread flags are not atomic so we need the mutexes to coordinate the setting, 
     //otherwise would have to loop re-notifiying thread until it stopped
@@ -106,8 +108,8 @@ void GeneratorQueue<_Chunk>::terminate()
 
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::generatorThread()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::generatorThread()
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 
@@ -141,7 +143,7 @@ void GeneratorQueue<_Chunk>::generatorThread()
 
         ChunkType::Cells &cells=chunkHandle->chunk->getCells();
 
-        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
+        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
 
         chunkHandle->chunk->setValidCellCount(validCells);
         chunkHandle->status=ChunkHandleType::Memory;
@@ -158,8 +160,8 @@ void GeneratorQueue<_Chunk>::generatorThread()
     }
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::add(SharedChunkHandle chunkHandle)
+template<typename _Grid>
+void GeneratorQueue<_Grid>::add(SharedChunkHandle chunkHandle)
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 

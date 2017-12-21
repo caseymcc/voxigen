@@ -1,14 +1,21 @@
 cmake_minimum_required (VERSION 3.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
-message(STATUS "module path:${CMAKE_MODULE_PATH}")
+option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
+message(STATUS "Module path:${CMAKE_MODULE_PATH}")
 
 #include(HunterPackage)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/HunterGate.cmake)
 
+#HunterGate(
+#    URL "https://github.com/ruslo/hunter/archive/v0.18.64.tar.gz"
+#    SHA1 "baf9c8cc4f65306f0e442b5419967b4c4c04589a"
+#    LOCAL
+#)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.18.64.tar.gz"
-    SHA1 "baf9c8cc4f65306f0e442b5419967b4c4c04589a"
+    URL "https://github.com/ruslo/hunter/archive/v0.19.208.tar.gz"
+    SHA1 "4128ac8c79c21b250bf825e8119ce0bff05e5132"
     LOCAL
 )
 
@@ -25,6 +32,8 @@ hunter_add_package(glew)
 find_package(glew CONFIG REQUIRED)
 hunter_add_package(RapidJSON)
 find_package(RapidJSON CONFIG REQUIRED)
+
+
 hunter_add_package(Boost COMPONENTS filesystem system)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 
@@ -71,6 +80,7 @@ set(voxigen_sources
     src/data/entity.cpp
     src/data/gridDescriptors.cpp
     src/data/object.cpp
+    src/generator/equiRectWorldGenerator.cpp
     src/rendering/initGlew.cpp
     src/rendering/chunkMesh.cpp
     src/rendering/simpleCamera.cpp
@@ -84,16 +94,22 @@ set(voxigen_libraries
     opengl_util
     fastNoise
     glew::glew
-    RapidJSON::rapidjson
     Boost::filesystem
     Boost::system
+    RapidJSON::rapidjson
 )
+
+if(VOXIGEN_OUTPUT_DIRECTORY_DEBUG)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
+endif()
+if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
+endif()
 
 add_library(voxigen SHARED
     ${voxigen_headers}
     ${voxigen_sources}
 )
-
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 

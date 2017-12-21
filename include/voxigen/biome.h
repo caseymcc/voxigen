@@ -1,13 +1,12 @@
 #ifndef _voxigen_biome_h_
 #define _voxigen_biome_h_
 
-#include "voxigen/voxigen_export.h"
 #include <string>
 
 namespace voxigen
 {
 
-struct VOXIGEN_EXPORT BiomeDescriptors
+struct BiomeDescriptors
 {
     std::string m_name;
 
@@ -19,10 +18,10 @@ struct VOXIGEN_EXPORT BiomeDescriptors
     float m_heightMaximum;
 };
 
-class VOXIGEN_EXPORT Biome
+class Biome
 {
 public:
-    Biome(unsigned int type);
+    Biome(unsigned int type) {};
 
 private:
     BiomeDescriptors m_descriptors;

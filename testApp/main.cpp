@@ -28,11 +28,11 @@ unsigned int playerRegion;
 glm::ivec3 playerRegionIndex;
 unsigned int playerChunk;
 
+typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
 namespace voxigen
 {
 //force generator instantiation
-typedef Chunk<Cell, 64, 64, 16> Chunk_64_64_16;
-template GeneratorTemplate<EquiRectWorldGenerator<Chunk_64_64_16>>;
+template GeneratorTemplate<EquiRectWorldGenerator<World>>;
 }
 
 int main(int argc, char ** argv)
@@ -66,7 +66,6 @@ int main(int argc, char ** argv)
     glewInit();
     glViewport(0, 0, width, height);
 
-    typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
     World world;
 
     fs::path worldsDirectory("worlds");

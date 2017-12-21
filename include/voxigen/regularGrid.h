@@ -1,7 +1,7 @@
 #ifndef _voxigen_regularGrid_h_
 #define _voxigen_regularGrid_h_
 
-#include "voxigen/biome.h"
+//#include "voxigen/biome.h"
 #include "voxigen/chunk.h"
 #include "voxigen/region.h"
 #include "voxigen/gridDescriptors.h"
@@ -14,9 +14,6 @@
 #include <unordered_map>
 #include <memory>
 #include <limits>
-
-#include <boost/filesystem.hpp>
-namespace fs=boost::filesystem;
 
 namespace voxigen
 {
@@ -31,16 +28,19 @@ public:
     RegularGrid();
     ~RegularGrid();
 
+    typedef RegularGrid< _Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ> GridType;
     typedef std::integral_constant<size_t, _ChunkSizeX*_RegionSizeX> regionCellSizeX;
     typedef std::integral_constant<size_t, _ChunkSizeY*_RegionSizeY> regionCellSizeY;
     typedef std::integral_constant<size_t, _ChunkSizeZ*_RegionSizeZ> regionCellSizeZ;
+
+    typedef _Cell CellType;
 
     typedef Chunk<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> ChunkType;
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
     typedef Region<ChunkType, _RegionSizeX, _RegionSizeY, _RegionSizeZ> RegionType;
-    typedef RegionHandle<RegionType> RegionHandleType;
+    typedef RegionHandle<GridType> RegionHandleType;
     typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
 //    typedef std::unordered_map<RegionHash, SharedRegion> SharedRegionMap;
 
@@ -86,7 +86,7 @@ public:
 
     glm::vec3 gridPosToRegionPos(RegionHash regionHash, const glm::vec3 &gridPosition);
 
-    GridDescriptors &getDescriptors() { return m_descriptors; }
+    GridDescriptors<GridType> &getDescriptors() { return m_descriptors; }
 
     glm::mat4 &getTransform() { return m_transform; }
 
@@ -96,12 +96,12 @@ private:
     std::string m_directory;
     std::string m_name;
 
-    GridDescriptors m_descriptors;
+    GridDescriptors<GridType> m_descriptors;
 //    ChunkHandler<ChunkType> m_chunkHandler;
 
-    GeneratorQueue<ChunkType> m_generatorQueue;
+    GeneratorQueue<GridType> m_generatorQueue;
     SharedGenerator m_generator;
-    DataStore<RegionType, ChunkType> m_dataStore;
+    DataStore<GridType> m_dataStore;
     UpdateQueue m_updateQueue;
 
     glm::mat4 m_transform;
@@ -128,21 +128,22 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
     m_name=name;
     m_directory=directory;
 
-    m_descriptors.create(name, 0, size, glm::ivec3(_RegionSizeX, _RegionSizeY, _RegionSizeZ), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
+    m_descriptors.create(name, 0, size);// , glm::ivec3(_RegionSizeX, _RegionSizeY, _RegionSizeZ), glm::ivec3(_ChunkSizeX, _ChunkSizeY, _ChunkSizeZ));
     m_descriptors.init();
     m_descriptors.m_generator=generatorName;
 
+    m_generator=createClass<Generator>(generatorName);
+    m_generator->save(&m_descriptors);
+    m_generatorQueue.setGenerator(m_generator.get());
+
     std::string configFile=directory+"/gridConfig.json";
     m_descriptors.save(configFile);
-    
+
     std::string regionDirectory=directory+"/regions";
-//    fs::path regionPath(regionDirectory);
+    //    fs::path regionPath(regionDirectory);
     std::string regionPath(regionDirectory);
 
     fs::create_directory(regionPath);
-
-    m_generator=createClass<Generator>(generatorName);
-    m_generatorQueue.setGenerator(m_generator.get());
 
     m_generator->initialize(&m_descriptors);
     m_dataStore.initialize();

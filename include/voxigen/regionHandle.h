@@ -25,14 +25,14 @@
 namespace voxigen
 {
 
-template<typename _Region, typename _Chunk>
+template<typename _Grid>
 class DataStore;
 
-template<typename _Region>
-class RegionHandle:public DataHandler<ChunkHash, ChunkHandle<typename _Region::ChunkType>, typename _Region::ChunkType>
+template<typename _Grid>
+class RegionHandle:public DataHandler<ChunkHash, ChunkHandle<typename _Grid::ChunkType>, typename _Grid::ChunkType>
 {
 public:
-    typedef _Region RegionType;
+    typedef typename _Grid::RegionType RegionType;
     typedef typename RegionType::ChunkType ChunkType;
 
     typedef ChunkHandle<ChunkType> ChunkHandleType;
@@ -44,7 +44,7 @@ public:
         Loaded
     };
 
-    RegionHandle(RegionHash regionHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<RegionType, ChunkType> *dataStore, UpdateQueue *updateQueue);
+    RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue);
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
@@ -70,9 +70,9 @@ private:
     void loadDataStore();
     void verifyDirectory();
 
-    GridDescriptors *m_descriptors;
-    DataStore<_Region, typename _Region::ChunkType> *m_dataStore;
-    GeneratorQueue<ChunkType> *m_generatorQueue;
+    GridDescriptors<_Grid> *m_descriptors;
+    DataStore<_Grid> *m_dataStore;
+    GeneratorQueue<_Grid> *m_generatorQueue;
     UpdateQueue *m_updateQueue;
 
     Status m_status;
@@ -83,8 +83,8 @@ private:
     //rapidjson::Document m_configDocument;
 };
 
-template<typename _Region>
-RegionHandle<_Region>::RegionHandle(RegionHash regionHash, GridDescriptors *descriptors, GeneratorQueue<ChunkType> *generatorQueue, DataStore<RegionType, ChunkType> *dataStore, UpdateQueue *updateQueue):
+template<typename _Grid>
+RegionHandle<_Grid>::RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue):
 m_status(Unknown),
 m_version(0),
 hash(regionHash),
@@ -97,8 +97,8 @@ empty(false)
 {
 }
 
-template<typename _Region>
-bool RegionHandle<_Region>::load(const std::string &directory)
+template<typename _Grid>
+bool RegionHandle<_Grid>::load(const std::string &directory)
 {
     m_directory=directory;
 
@@ -125,14 +125,14 @@ bool RegionHandle<_Region>::load(const std::string &directory)
     return true;
 }
 
-template<typename _Region>
-typename RegionHandle<_Region>::DataHandle *RegionHandle<_Region>::newHandle(HashType chunkHash)
+template<typename _Grid>
+typename RegionHandle<_Grid>::DataHandle *RegionHandle<_Grid>::newHandle(HashType chunkHash)
 {
     return new ChunkHandleType(hash, chunkHash);
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::loadConfig()
+template<typename _Grid>
+void RegionHandle<_Grid>::loadConfig()
 {
     JsonUnserializer serializer;
 
@@ -174,14 +174,14 @@ void RegionHandle<_Region>::loadConfig()
     serializer.closeObject();
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::saveConfig()
+template<typename _Grid>
+void RegionHandle<_Grid>::saveConfig()
 {
     saveConfigTo(m_configFile);
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::saveConfigTo(std::string configFile)
+template<typename _Grid>
+void RegionHandle<_Grid>::saveConfigTo(std::string configFile)
 {
     JsonSerializer serializer;
 
@@ -211,8 +211,8 @@ void RegionHandle<_Region>::saveConfigTo(std::string configFile)
     serializer.endObject();
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::addConfig(SharedChunkHandle handle)
+template<typename _Grid>
+void RegionHandle<_Grid>::addConfig(SharedChunkHandle handle)
 {
     if(handle->empty)
     {
@@ -222,8 +222,8 @@ void RegionHandle<_Region>::addConfig(SharedChunkHandle handle)
     }
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::loadDataStore()
+template<typename _Grid>
+void RegionHandle<_Grid>::loadDataStore()
 {
     std::vector<std::string> directories=fs::get_directories(m_directory);
 
@@ -244,14 +244,14 @@ void RegionHandle<_Region>::loadDataStore()
     }
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::verifyDirectory()
+template<typename _Grid>
+void RegionHandle<_Grid>::verifyDirectory()
 {
 
 }
 
-template<typename _Region>
-typename RegionHandle<_Region>::SharedChunkHandle RegionHandle<_Region>::getChunk(ChunkHash chunkHash)
+template<typename _Grid>
+typename RegionHandle<_Grid>::SharedChunkHandle RegionHandle<_Grid>::getChunk(ChunkHash chunkHash)
 {
     SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
 
@@ -279,8 +279,8 @@ typename RegionHandle<_Region>::SharedChunkHandle RegionHandle<_Region>::getChun
     return chunkHandle;
 }
 
-template<typename _Region>
-void RegionHandle<_Region>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+template<typename _Grid>
+void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
 {
     if(chunkHandle->status!=ChunkHandleType::Memory)
     {
