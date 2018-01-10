@@ -23,13 +23,13 @@ struct ChunkHandle
         Memory
     };
 
-    ChunkHandle(unsigned int regionHash, unsigned int chunkHash):regionHash(regionHash), hash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
+    ChunkHandle(RegionHash regionHash, ChunkHash chunkHash):regionHash(regionHash), hash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
 
     void release() { chunk.reset(nullptr); status=Unknown; }
 
     Status status;
-    unsigned int regionHash;
-    unsigned int hash;
+    RegionHash regionHash;
+    ChunkHash hash;
     UniqueChunk chunk;
     
     glm::ivec3 regionOffset;

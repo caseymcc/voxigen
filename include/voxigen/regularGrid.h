@@ -51,9 +51,10 @@ public:
 ////registers default generators
 //    typedef voxigen::GeneratorTemplate<voxigen::EquiRectWorldGenerator<ChunkType>> EquiRectWorldGenerator;
 
-    void create(std::string directory, std::string name, glm::ivec3 size, std::string generatorName);
-    void load(std::string directory);
-    void save();
+    void create(const std::string &directory, const std::string &name, const glm::ivec3 &size, const std::string &generatorName);
+    bool load(const std::string &directory);
+    bool save();
+    bool saveTo(const std::string &directory);
 
     SharedRegionHandle getRegion(const glm::ivec3 &index);
     SharedRegionHandle getRegion(RegionHash hash);
@@ -123,7 +124,7 @@ RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionS
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::create(std::string directory, std::string name, glm::ivec3 size, std::string generatorName)
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::create(const std::string &directory, const std::string &name, const glm::ivec3 &size, const std::string &generatorName)
 {
     m_name=name;
     m_directory=directory;
@@ -143,7 +144,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
     //    fs::path regionPath(regionDirectory);
     std::string regionPath(regionDirectory);
 
-    fs::create_directory(regionPath);
+    fs::create_directory(regionPath.c_str());
 
     m_generator->initialize(&m_descriptors);
     m_dataStore.initialize();
@@ -152,12 +153,14 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::load(std::string directory)
+bool RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::load(const std::string &directory)
 {
     m_directory=directory;
 
     std::string configFile=directory+"/gridConfig.json";
-    m_descriptors.load(configFile);
+    
+    if(!m_descriptors.load(configFile))
+        return false;
 
     m_generator=createClass<Generator>(m_descriptors.m_generator);
     m_generatorQueue.setGenerator(m_generator.get());
@@ -169,6 +172,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
     m_dataStore.initialize();
     m_generatorQueue.initialize();
 
+    return true;
 //    std::string chunkDirectory=directory+"/chunks";
 //
 //    m_chunkHandler.load(chunkDirectory);
@@ -176,10 +180,19 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::save()
+bool RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::save()
+{
+    std::string configFile=m_directory+"/gridConfig.json";
+    m_descriptors.save(configFile);
+    return true;
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>
+bool RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ>::saveTo(const std::string &directory)
 {
     std::string configFile=directory+"/gridConfig.json";
-    m_descriptors.save(configFile)
+    m_descriptors.save(configFile);
+    return true;
 }
 
 //template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ>

@@ -160,7 +160,7 @@ void checkX(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::
 template<typename _Chunk, bool _ZNegFace=true, bool _ZPosFace=true>
 void checkY(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position)
 {
-    position.y=0.0;
+    position.y=0;
 
     checkX<_Chunk, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
     position.y+=1;

@@ -90,7 +90,7 @@ EquiRectWorldGenerator<_Grid>::~EquiRectWorldGenerator()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 {
-    m_descriptors=dynamic_cast<GridDescriptors<_Grid> *>(descriptors);
+    m_descriptors=(GridDescriptors<_Grid> *)(descriptors);
     
     bool loaded=m_descriptorValues.load(m_descriptors->m_generatorDescriptors.c_str());
 
@@ -183,9 +183,9 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 
     size_t index=0;
     glm::vec3 mapPos;
-    glm::vec3 size=m_descriptors->m_size;
+    glm::ivec3 size=m_descriptors->m_size;
 
-    mapPos.z=size.x/2;
+    mapPos.z=(float)size.x/2.0f;
     for(int y=0; y<chunkSize.y; ++y)
     {
         mapPos.y=startPos.y+y;
@@ -212,7 +212,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 //    m_layersPerlin->FillNoiseSet(layerMap.data(), offset.x, offset.y, offset.z, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value);
 
     int seaLevel=(size.z/2);
-    float heightScale=(size.z/2);
+    float heightScale=((float)size.z/2.0f);
     unsigned int validCells=0;
 
     index=0;
@@ -223,14 +223,14 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
         heightIndex=0;
         position.y=scaledOffset.y;
 
-        int blockZ=startPos.z+z;
+        int blockZ=(int)startPos.z+z;
         for(int y=0; y<ChunkType::sizeY::value; ++y)
         {
             position.x=scaledOffset.x;
             for(int x=0; x<ChunkType::sizeX::value; ++x)
             {
                 unsigned int blockType;
-                int blockHeight=heightMap[heightIndex]*heightScale+seaLevel;
+                int blockHeight=(int)(heightMap[heightIndex]*heightScale)+seaLevel;
 
 //                if(position.z > heightMap[heightIndex]) //larger than height map, air
                 if(blockZ>blockHeight)

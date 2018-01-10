@@ -11,6 +11,10 @@ namespace voxigen
 bool loadDescriptors(IGridDescriptors *descriptors, const char *fileName)
 {
     FILE *filePtr=fopen(fileName, "rb");
+
+    if(filePtr==nullptr)
+        return false;
+
     char readBuffer[65536];
 
     rapidjson::FileReadStream readStream(filePtr, readBuffer, sizeof(readBuffer));
