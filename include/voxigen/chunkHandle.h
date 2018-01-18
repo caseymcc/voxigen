@@ -26,6 +26,7 @@ struct ChunkHandle
     ChunkHandle(RegionHash regionHash, ChunkHash chunkHash):regionHash(regionHash), hash(chunkHash), status(Unknown), cachedOnDisk(false), empty(false){}
 
     void release() { chunk.reset(nullptr); status=Unknown; }
+    glm::ivec3 size() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
     Status status;
     RegionHash regionHash;
@@ -33,6 +34,7 @@ struct ChunkHandle
     UniqueChunk chunk;
     
     glm::ivec3 regionOffset;
+    
 
     bool cachedOnDisk;
     bool empty;

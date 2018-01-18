@@ -17,6 +17,7 @@ class Chunk//:public BoundingBox
 {
 public:
     Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset);
+    ~Chunk() {};
 
     typedef std::vector<_Cell> Cells;
     typedef _Cell CellType;

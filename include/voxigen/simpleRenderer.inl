@@ -249,6 +249,10 @@ void SimpleRenderer<_Grid>::draw()
     if(cameraDirty)
     {
         m_program.uniform(m_uniformProjectionViewId)=m_camera->getProjectionViewMat();
+
+        //camera moved restart queries
+        m_currentQueryRing=0;
+
 //        m_program.uniform(m_lightPositionId)=m_camera->getPosition();
     }
 
@@ -297,7 +301,7 @@ void SimpleRenderer<_Grid>::draw()
         {
 //            m_chunksUpdated[i]->refCount=0; //done in the prepThread
             m_chunksUpdated[i]->updated();
-            m_chunksUpdated[i]->getChunkHandle();//drop chunk as we have a mesh for it
+            m_chunksUpdated[i]->getChunkHandle()->release();//drop chunk as we have a mesh for it
         }
 
         m_chunksUpdated.clear();
@@ -348,14 +352,15 @@ void SimpleRenderer<_Grid>::draw()
         {
             ChunkRenderType *chunkRenderer=chunkIter.second;
             
-            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw, could be copying
-                m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
-
             if(chunkRenderer->getState()==ChunkRenderType::Copy)
             {
                 if(chunkRenderer->incrementCopy())
                     m_outstandingChunkPreps--;
             }
+
+            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw, could be copying
+                m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
+
             chunkRenderer->draw();
         }
     }

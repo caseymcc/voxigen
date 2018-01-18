@@ -33,6 +33,7 @@ public:
     typedef std::integral_constant<size_t, _ChunkSizeY*_RegionSizeY> regionCellSizeY;
     typedef std::integral_constant<size_t, _ChunkSizeZ*_RegionSizeZ> regionCellSizeZ;
 
+    typedef GridDescriptors<GridType> DescriptorType;
     typedef _Cell CellType;
 
     typedef Chunk<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ> ChunkType;
@@ -87,7 +88,7 @@ public:
 
     glm::vec3 gridPosToRegionPos(RegionHash regionHash, const glm::vec3 &gridPosition);
 
-    GridDescriptors<GridType> &getDescriptors() { return m_descriptors; }
+    DescriptorType &getDescriptors() { return m_descriptors; }
 
     glm::mat4 &getTransform() { return m_transform; }
 
@@ -97,7 +98,7 @@ private:
     std::string m_directory;
     std::string m_name;
 
-    GridDescriptors<GridType> m_descriptors;
+    DescriptorType m_descriptors;
 //    ChunkHandler<ChunkType> m_chunkHandler;
 
     GeneratorQueue<GridType> m_generatorQueue;

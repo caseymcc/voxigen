@@ -20,8 +20,8 @@ class ChunkMesh
 public:
     ChunkMesh() {};
 
-    void addFace(const std::array<uint8_t, 12>& blockFace, glm::ivec3 position);
-    void addFace(const std::array<uint8_t, 12>& blockFace, glm::ivec3 position, unsigned int data);
+    void addFace(const std::vector<glm::ivec3>& blockFace, glm::ivec3 position);
+    void addFace(const std::vector<glm::ivec3>& blockFace, glm::ivec3 position, unsigned int data);
 
     std::vector<ChunkMeshVertex> &getVerticies() { return m_verticies; }
     std::vector<int> &getIndices() { return m_indices; }
@@ -32,17 +32,17 @@ private:
     
 };
 
-inline void ChunkMesh::addFace(const std::array<uint8_t, 12> &face, glm::ivec3 position)
+inline void ChunkMesh::addFace(const std::vector<glm::ivec3> &face, glm::ivec3 position)
 {
     size_t index=m_verticies.size();
     size_t vertIndex=index;
     m_verticies.resize(index+4);
 
-    for(size_t i=0, faceIndex=0; i<4; ++i)
+    for(size_t i=0; i<4; ++i)
     {
-        m_verticies[index].x=face[faceIndex++]+position.x;
-        m_verticies[index].y=face[faceIndex++]+position.y;
-        m_verticies[index].z=face[faceIndex++]+position.z;
+        m_verticies[index].x=face[i].x+position.x;
+        m_verticies[index].y=face[i].y+position.y;
+        m_verticies[index].z=face[i].z+position.z;
         m_verticies[index].data=0;
         index++;
     }
@@ -58,17 +58,17 @@ inline void ChunkMesh::addFace(const std::array<uint8_t, 12> &face, glm::ivec3 p
     m_indices[indicesIndex]=vertIndex;
 }
 
-inline void ChunkMesh::addFace(const std::array<uint8_t, 12> &face, glm::ivec3 position, unsigned int data)
+inline void ChunkMesh::addFace(const std::vector<glm::ivec3> &face, glm::ivec3 position, unsigned int data)
 {
     size_t index=m_verticies.size();
     size_t vertIndex=index;
     m_verticies.resize(index+4);
 
-    for(size_t i=0, faceIndex=0; i<4; ++i)
+    for(size_t i=0; i<4; ++i)
     {
-        m_verticies[index].x=face[faceIndex++]+position.x;
-        m_verticies[index].y=face[faceIndex++]+position.y;
-        m_verticies[index].z=face[faceIndex++]+position.z;
+        m_verticies[index].x=face[i].x+position.x;
+        m_verticies[index].y=face[i].y+position.y;
+        m_verticies[index].z=face[i].z+position.z;
         m_verticies[index].data=data;
         index++;
     }

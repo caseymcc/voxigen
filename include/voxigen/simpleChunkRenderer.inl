@@ -250,8 +250,8 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
     m_validBlocks=indices.size();
 
 
-    //we have mesh lets drop the data
-    m_chunkHandle->release();
+//    //we have mesh lets drop the data
+//    m_chunkHandle->release();
 
     //m_state=Built;
 //    m_state=Copy;
@@ -309,7 +309,7 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::incrementCopy()
     }
     else
     {
-        //now delay a few frames, sync on says copy was started
+        //now delay a few frames, sync only says copy was started
         m_delayedFrames++;
         if(m_delayedFrames>3)
         {

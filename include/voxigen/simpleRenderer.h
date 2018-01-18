@@ -7,6 +7,7 @@
 #include "voxigen/SimpleCamera.h"
 #include "voxigen/SimpleChunkRenderer.h"
 #include "voxigen/simpleShapes.h"
+#include "voxigen/object.h"
 
 #include <string>
 #include <algorithm>
@@ -97,6 +98,7 @@ private:
     bool m_queryComplete;
 
     SimpleFpsCamera *m_camera;
+    Object m_playerPos;
     glm::vec3 m_lastUpdatePosition;
 
     bool m_outlineChunks;

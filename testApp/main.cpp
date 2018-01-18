@@ -92,7 +92,7 @@ int main(int argc, char ** argv)
     glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
-    worldMiddle.z+=5.0f;
+    worldMiddle.z+=worldMiddle.z/2;
     
     player.setYaw(0.0f);
     player.setPitch(0.0f);
@@ -110,7 +110,7 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&player);
     renderer.build();
-    renderer.setViewRadius(512.0f);
+    renderer.setViewRadius(1024.0f);
     renderer.updateChunks();
 
     float movementSpeed=100;
