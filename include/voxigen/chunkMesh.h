@@ -26,6 +26,8 @@ public:
     std::vector<ChunkMeshVertex> &getVerticies() { return m_verticies; }
     std::vector<int> &getIndices() { return m_indices; }
 
+    size_t memoryUsed();
+
 private:
     std::vector<ChunkMeshVertex> m_verticies;
     std::vector<int> m_indices;
@@ -83,6 +85,17 @@ inline void ChunkMesh::addFace(const std::vector<glm::ivec3> &face, glm::ivec3 p
     m_indices[indicesIndex++]=vertIndex+3;
     m_indices[indicesIndex]=vertIndex;
 }
+
+size_t ChunkMesh::memoryUsed()
+{
+    size_t memoryUsed=0;
+
+    memoryUsed+=m_verticies.size()*sizeof(ChunkMeshVertex);
+    memoryUsed+=m_indices.size()*sizeof(int);
+
+    return memoryUsed;
+}
+
 } //namespace voxigen
 
 #endif //_voxigen_chunkMesh_h_

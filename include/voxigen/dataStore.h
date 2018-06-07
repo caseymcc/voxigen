@@ -7,6 +7,7 @@
 #include "voxigen/generator.h"
 #include "voxigen/jsonSerializer.h"
 #include "voxigen/simpleFileSystem.h"
+#include "voxigen/processQueue.h"
 
 #include <thread>
 #include <mutex>
@@ -83,7 +84,7 @@ public:
     typedef IOWriteRequest<ChunkType> IOWriteRequestType;
     typedef std::shared_ptr<IORequestType> SharedIORequest;
 
-    DataStore(GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue);
+    DataStore(GridDescriptors<_Grid> *descriptors, ProcessQueue<_Grid> *processQueue, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue);
 
     void initialize();
     void terminate();
@@ -103,8 +104,13 @@ public:
     void addUpdated(Key hash);
     std::vector<Key> getUpdated();
 
+    void generate(SharedChunkHandle chunkHandle);
     void read(SharedChunkHandle chunkHandle);
     void write(SharedChunkHandle chunkHandle);
+    void empty(SharedChunkHandle chunkHandle);
+
+    void readChunk(SharedChunkHandle handle);
+    void writeChunk(SharedChunkHandle handle);
 
 protected:
     virtual DataHandle *newHandle(HashType hash);
@@ -123,6 +129,7 @@ private:
 
     GridDescriptors<_Grid> *m_descriptors;
     GeneratorQueue<_Grid> *m_generatorQueue;
+    ProcessQueue<_Grid> *m_processQueue;
 
 //World files
     std::string m_directory;
@@ -143,8 +150,9 @@ private:
 };
 
 template<typename _Grid>
-DataStore<_Grid>::DataStore(GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue):
+DataStore<_Grid>::DataStore(GridDescriptors<_Grid> *descriptors, ProcessQueue<_Grid> *processQueue, GeneratorQueue<_Grid> *generatorQueue, UpdateQueue *updateQueue):
 m_descriptors(descriptors),
+m_processQueue(processQueue),
 m_generatorQueue(generatorQueue),
 m_updateQueue(updateQueue)
 {
@@ -227,12 +235,12 @@ void DataStore<_Grid>::loadConfig()
                         RegionHash hash=serializer.getUInt();
                         SharedRegionHandle regionHandle(newHandle(hash));
 
-                        regionHandle->cachedOnDisk=true;
+                        regionHandle->setCachedOnDisk(true);
 
                         if(serializer.key("empty"))
-                            regionHandle->empty=serializer.getBool();
+                            regionHandle->setEmpty(serializer.getBool());
                         else
-                            regionHandle->empty=true;
+                            regionHandle->setEmpty(true);
 
                         m_dataHandles.insert(SharedDataHandleMap::value_type(hash, regionHandle));
                     }
@@ -268,13 +276,13 @@ void DataStore<_Grid>::saveConfigTo(std::string configFile)
     serializer.startArray();
     for(auto &handle:m_dataHandles)
     {
-        if(handle.second->empty)
+        if(handle.second->empty())
         {
             serializer.startObject();
             serializer.addKey("id");
-            serializer.addUInt(handle.second->hash);
+            serializer.addUInt(handle.second->hash());
             serializer.addKey("empty");
-            serializer.addBool(handle.second->empty);
+            serializer.addBool(handle.second->empty());
             serializer.endObject();
         }
     }
@@ -360,9 +368,9 @@ void DataStore<_Grid>::addConfig(SharedChunkHandle handle)
 {
     //TODO - fix
     //lazy programming for the moment, see remarks in ioThread below
-    if(handle->empty)
+    if(handle->empty())
     {
-        SharedRegionHandle regionHandle=getRegion(handle->regionHash);
+        SharedRegionHandle regionHandle=getRegion(handle->regionHash());
 
         regionHandle->addConfig(handle);
     }
@@ -382,8 +390,8 @@ void DataStore<_Grid>::loadDataStore()
 
         SharedRegionHandle handle(newHandle(hash));
 
-        handle->cachedOnDisk=true;
-        handle->empty=false;
+        handle->setCachedOnDisk(true);
+        handle->setEmpty(false);
 
         m_dataHandles.insert(SharedDataHandleMap::value_type(hash, handle));
     }
@@ -421,7 +429,7 @@ typename DataStore<_Grid>::SharedChunkHandle DataStore<_Grid>::getChunk(RegionHa
 template<typename _Grid>
 void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod)
 {
-    return getRegion(handle->regionHash)->loadChunk(handle, lod);
+    return getRegion(handle->regionHash())->loadChunk(handle, lod);
 }
 
 template<typename _Grid>
@@ -492,94 +500,130 @@ template<typename _Grid>
 void DataStore<_Grid>::readChunk(IORequestType *request)
 {
     IOReadRequestType *readRequest=(IOReadRequestType *)request;
-    SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
+
+    readChunk(readRequest->chunkHandle.lock());
+}
+
+template<typename _Grid>
+void DataStore<_Grid>::readChunk(SharedChunkHandle chunkHandle)
+{
+//    IOReadRequestType *readRequest=(IOReadRequestType *)request;
+//    SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
 
     if(!chunkHandle) //chunk no longer needed, drop it
         return;
 
-    if(!chunkHandle->empty)
+    if(!chunkHandle->empty())
     {
         std::ostringstream fileNameStream;
 
-        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash<<".chk";
+        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash()<<".chk";
         std::string fileName=m_directory+fileNameStream.str();
 
-        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
-        glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
-
-        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, offset);
-
-        auto &cells=chunkHandle->chunk->getCells();
-        std::ifstream file;
-
-        file.open(fileName, std::ofstream::in|std::ofstream::binary);
-        //        for(auto block:blocks)
-        //            block->deserialize(file);
-        file.read((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
-        file.close();
+        chunkHandle->read(m_descriptors, fileName);
+//        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
+//        glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+//
+//        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, offset);
+//
+//        auto &cells=chunkHandle->chunk->getCells();
+//        std::ifstream file;
+//
+//        file.open(fileName, std::ofstream::in|std::ofstream::binary);
+//        //        for(auto block:blocks)
+//        //            block->deserialize(file);
+//        file.read((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
+//        file.close();
     }
 
-    chunkHandle->status=ChunkHandleType::Memory;
+//    chunkHandle->status=ChunkHandleType::Memory;
 //    addToUpdatedQueue(chunkHandle->hash);
-    m_updateQueue->add(chunkHandle->hash);
+    m_updateQueue->add(chunkHandle->hash());
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::writeChunk(IORequestType *request)
 {
     IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
-    SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
 
-    if(!chunkHandle->empty)
-    {
-        std::ostringstream fileNameStream;
-
-        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash<<".chk";
-        std::string fileName=m_directory+fileNameStream.str();
-
-        auto &cells=chunkHandle->chunk->getCells();
-        std::ofstream file;
-
-        file.open(fileName, std::ofstream::out|std::ofstream::trunc|std::ofstream::binary);
-        //        for(auto block:blocks)
-        //            block->serialize(file);
-        file.write((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
-        file.close();
-    }
-
-    chunkHandle->cachedOnDisk=true;
-    
-    //need to alter this to save in batched and update config then
-    addConfig(chunkHandle);
+    writeChunk(writeRequest->chunkHandle);
 
     //drop shared_ptr
     writeRequest->chunkHandle.reset();
 }
 
 template<typename _Grid>
+void DataStore<_Grid>::writeChunk(SharedChunkHandle chunkHandle)
+{
+//    IOWriteRequestType *writeRequest=(IOWriteRequestType *)request;
+//    SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
+
+    if(!chunkHandle->empty())
+    {
+        std::ostringstream fileNameStream;
+
+        fileNameStream<<"/chunk_"<<std::right<<std::setfill('0')<<std::setw(8)<<std::hex<<chunkHandle->hash()<<".chk";
+        std::string fileName=m_directory+fileNameStream.str();
+
+        chunkHandle->write(m_descriptors, fileName);
+//        auto &cells=chunkHandle->chunk->getCells();
+//        std::ofstream file;
+//
+//        file.open(fileName, std::ofstream::out|std::ofstream::trunc|std::ofstream::binary);
+//        //        for(auto block:blocks)
+//        //            block->serialize(file);
+//        file.write((char *)cells.data(), cells.size()*sizeof(_Grid::CellType));
+//        file.close();
+    }
+
+//    chunkHandle->cachedOnDisk=true;
+    
+    //need to alter this to save in batched and update config then
+    addConfig(chunkHandle);
+
+    //drop shared_ptr
+//    writeRequest->chunkHandle.reset();
+}
+
+
+template<typename _Grid>
+void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle)
+{
+    m_processQueue->addGenerate(chunkHandle);
+}
+
+template<typename _Grid>
 void DataStore<_Grid>::read(SharedChunkHandle chunkHandle)
 {
-    {
-        std::unique_lock<std::mutex> lock(m_ioMutex);
-
-        std::shared_ptr<IOReadRequestType> request=std::make_shared<IOReadRequestType>(IORequestType::Read, chunkHandle);
-
-        m_ioQueue.push(request);
-    }
-    m_ioEvent.notify_all();
+    m_processQueue->addRead(chunkHandle);
+//    {
+//        std::unique_lock<std::mutex> lock(m_ioMutex);
+//
+//        std::shared_ptr<IOReadRequestType> request=std::make_shared<IOReadRequestType>(IORequestType::Read, chunkHandle);
+//
+//        m_ioQueue.push(request);
+//    }
+//    m_ioEvent.notify_all();
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::write(SharedChunkHandle chunkHandle)
 {
-    {
-        std::unique_lock<std::mutex> lock(m_ioMutex);
+    m_processQueue->addWrite(chunkHandle);
+//    {
+//        std::unique_lock<std::mutex> lock(m_ioMutex);
+//
+//        std::shared_ptr<IOWriteRequestType> request=std::make_shared<IOWriteRequestType>(IORequestType::Write, chunkHandle);
+//
+//        m_ioQueue.push(request);
+//    }
+//    m_ioEvent.notify_all();
+}
 
-        std::shared_ptr<IOWriteRequestType> request=std::make_shared<IOWriteRequestType>(IORequestType::Write, chunkHandle);
-
-        m_ioQueue.push(request);
-    }
-    m_ioEvent.notify_all();
+template<typename _Grid>
+void DataStore<_Grid>::empty(SharedChunkHandle chunkHandle)
+{
+    m_processQueue->addUpdate(chunkHandle);
 }
 
 

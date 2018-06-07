@@ -16,12 +16,12 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
 {
     EquiRectDescriptors()
     {
-        m_noiseScale=0.001;
+        m_noiseScale=0.001f;
 
         //    contientFrequency=1.0;
-        m_contientFrequency=0.005;
+        m_contientFrequency=0.005f;
         m_contientOctaves=2;
-        m_contientLacunarity=2.2;
+        m_contientLacunarity=2.2f;
 
         m_seaLevel=0.0f;
     }
@@ -237,7 +237,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
                     blockType=0;
                 else
                 {
-                    blockType=(blockHeight-blockZ)/13;
+                    blockType=(blockHeight-blockZ)/13+1;
                     validCells++;
                 }
 

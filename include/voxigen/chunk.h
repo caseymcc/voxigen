@@ -9,6 +9,8 @@
 #include <memory>
 #include <type_traits>
 
+#include <glog/logging.h>
+
 namespace voxigen
 {
 
@@ -17,7 +19,12 @@ class Chunk//:public BoundingBox
 {
 public:
     Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset);
-    ~Chunk() {};
+    ~Chunk()
+    {
+#ifdef DEBUG_ALLOCATION
+        LOG(INFO)<<"chunk ("<<m_hash<<") freed - data "<<std::hex<<m_cells.data()<<std::dec<<"\n";
+#endif
+    };
 
     typedef std::vector<_Cell> Cells;
     typedef _Cell CellType;
@@ -61,6 +68,10 @@ m_gridOffset(gridOffset),
 m_validCells(0)
 {
     m_cells.resize(_x*_y*_z);
+    
+#ifdef DEBUG_ALLOCATION
+    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data"<<std::hex<<m_cells.data()<<std::dec<<"\n";
+#endif
 }
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>

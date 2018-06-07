@@ -443,8 +443,8 @@ void buildCubicMesh(Mesh &mesh, _Chunk *chunk)
     unsigned int *scratch=mesh.scratch;
     size_t scratchIndex=0;
     size_t verticesIndex=0;
-    Vertex vertex;
-
+//    Vertex vertex;
+//
 //    for(vertex.z=0; vertex.z<=_Chunk::sizeZ::value; ++vertex.z)
 //    {
 //        for(vertex.y=0; vertex.y<=_Chunk::sizeY::value; ++vertex.y)

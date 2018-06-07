@@ -39,6 +39,9 @@ struct IGridDescriptors
     
     virtual glm::ivec3 getRegionCount() const=0;
 
+    virtual RegionHash getRegionHash(const glm::ivec3 &index) const=0;
+    virtual glm::ivec3 getRegionIndex(RegionHash hash) const=0;
+    virtual glm::vec3 getRegionOffset(RegionHash hash) const=0;
     virtual glm::ivec3 getRegionStride() const=0;
 
     virtual glm::ivec3 getChunkSize() const=0;
@@ -46,6 +49,9 @@ struct IGridDescriptors
 
     virtual glm::ivec3 getChunkCount() const=0;
 
+    virtual ChunkHash getChunkHash(const glm::ivec3 &index) const=0;
+    virtual glm::ivec3 getChunkIndex(ChunkHash hash) const=0;
+    virtual glm::vec3 getChunkOffset(ChunkHash hash) const=0;
     virtual glm::ivec3 getChunkStride() const=0;
 
     virtual const char *getGenerator() const=0;
@@ -53,6 +59,8 @@ struct IGridDescriptors
 
     virtual const char *getGeneratorDescriptors() const=0;
     virtual void setGeneratorDescriptors(const char *value)=0;
+
+    virtual float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const=0;
 };
 
 VOXIGEN_EXPORT bool loadDescriptors(IGridDescriptors *descriptors, const char *fileName);
@@ -76,7 +84,7 @@ struct GridDescriptors:IGridDescriptors
     glm::vec3 regionOffset(RegionHash hash) const;
 
     glm::vec3 adjustRegion(glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
-    float distance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const;
+    float distance(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2) const;
 
     ChunkHash chunkHash(const glm::ivec3 &index) const;
     glm::ivec3 chunkIndex(ChunkHash hash) const;
@@ -88,11 +96,11 @@ struct GridDescriptors:IGridDescriptors
     std::string m_generatorDescriptors;
 
     glm::ivec3 m_size;
-    glm::ivec3 m_regionSize; //from compile time value
-    glm::ivec3 m_regionCellSize; //calculated
+    static glm::ivec3 m_regionSize; //from compile time value
+    static glm::ivec3 m_regionCellSize; //calculated
     glm::ivec3 m_regionCount; //calculated
     glm::ivec3 m_regionStride; //calculated
-    glm::ivec3 m_chunkSize; //from compile time value
+    static glm::ivec3 m_chunkSize; //from compile time value
     glm::ivec3 m_chunkCount; //calculated
     glm::ivec3 m_chunkStride; //calculated
 
@@ -121,6 +129,9 @@ struct GridDescriptors:IGridDescriptors
 
     virtual glm::ivec3 getRegionCount() const { return m_regionCount; }
 
+    virtual RegionHash getRegionHash(const glm::ivec3 &index) const { return regionHash(index); }
+    virtual glm::ivec3 getRegionIndex(RegionHash hash) const { return regionIndex(hash); }
+    virtual glm::vec3 getRegionOffset(RegionHash hash) const { return regionOffset(hash); }
     virtual glm::ivec3 getRegionStride() const { return m_regionStride; }
 
     virtual glm::ivec3 getChunkSize() const { return m_chunkSize; }
@@ -128,6 +139,9 @@ struct GridDescriptors:IGridDescriptors
 
     virtual glm::ivec3 getChunkCount() const { return m_chunkCount; }
 
+    virtual ChunkHash getChunkHash(const glm::ivec3 &index) const { return chunkHash(index); }
+    virtual glm::ivec3 getChunkIndex(ChunkHash hash) const { return chunkIndex(hash); }
+    virtual glm::vec3 getChunkOffset(ChunkHash hash) const { return chunkOffset(hash); }
     virtual glm::ivec3 getChunkStride() const { return m_chunkStride; }
 
     virtual const char *getGenerator() const { return m_generator.c_str(); }
@@ -135,7 +149,18 @@ struct GridDescriptors:IGridDescriptors
 
     virtual const char *getGeneratorDescriptors() const { return m_generatorDescriptors.c_str(); }
     virtual void setGeneratorDescriptors(const char *value) { m_generatorDescriptors=value; }
+
+    virtual float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const { return distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2); }
 };
+
+template<typename _Grid>
+glm::ivec3 GridDescriptors<_Grid>::m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
+
+template<typename _Grid>
+glm::ivec3 GridDescriptors<_Grid>::m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
+
+template<typename _Grid>
+glm::ivec3 GridDescriptors<_Grid>::m_regionCellSize=GridDescriptors<_Grid>::m_regionSize*GridDescriptors<_Grid>::m_chunkSize;
 
 template<typename _Grid>
 GridDescriptors<_Grid>::GridDescriptors()
@@ -143,8 +168,8 @@ GridDescriptors<_Grid>::GridDescriptors()
     m_seed=0;
 
     m_size=glm::ivec3(1024, 1024, 256);
-    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
-    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
+//    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
+//    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
 
 //    m_noiseScale=0.001;
 //
@@ -270,7 +295,7 @@ glm::vec3 GridDescriptors<_Grid>::adjustRegion(glm::ivec3 &regionIndex, glm::ive
 }
 
 template<typename _Grid>
-float GridDescriptors<_Grid>::distance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const
+float GridDescriptors<_Grid>::distance(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2) const
 {
     glm::ivec3 offset(0.0f, 0.0f, 0.0f);
 
@@ -279,7 +304,7 @@ float GridDescriptors<_Grid>::distance(glm::ivec3 &regionIndex1, glm::ivec3 &chu
 
     glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
     glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
-    return glm::length(glm::vec3(chunkPos1-chunkPos2));
+    return glm::length(glm::vec3(chunkPos2-chunkPos1));
 }
 
 template<typename _Grid>

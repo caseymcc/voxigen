@@ -2,15 +2,18 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <boost/filesystem.hpp>
+
 #include "voxigen/defines.h"
 #include "voxigen/cell.h"
 #include "voxigen/regularGrid.h"
 #include "voxigen/simpleRenderer.h"
 #include "voxigen/equiRectWorldGenerator.h"
 
-#include <boost/filesystem.hpp>
+#include <gflags/gflags.h>
+#include <glog/logging.h>
 
-namespace fs=boost::filesystem;
+namespace bfs=boost::filesystem;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -26,7 +29,9 @@ voxigen::SimpleFpsCamera player;
 
 unsigned int playerRegion;
 glm::ivec3 playerRegionIndex;
+glm::ivec3 playerChunkIndex;
 unsigned int playerChunk;
+bool lastUpdateAdded;
 
 typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
 namespace voxigen
@@ -37,6 +42,12 @@ template GeneratorTemplate<EquiRectWorldGenerator<World>>;
 
 int main(int argc, char ** argv)
 {
+    FLAGS_log_dir="E:/projects/lumberyard_git/dev/Code/SDKs/voxigen/log";
+//    FLAGS_logtostderr=true;
+    FLAGS_alsologtostderr=true;
+
+    google::InitGoogleLogging(argv[0]);
+
     GLFWwindow* window;
 
     /* Initialize the library */
@@ -68,22 +79,22 @@ int main(int argc, char ** argv)
 
     World world;
 
-    fs::path worldsDirectory("worlds");
+    bfs::path worldsDirectory("worlds");
 
-    if(!fs::exists(worldsDirectory))
-        fs::create_directory(worldsDirectory);
+    if(!bfs::exists(worldsDirectory))
+        bfs::create_directory(worldsDirectory);
 
-    std::vector<fs::directory_entry> worldDirectories;
+    std::vector<bfs::directory_entry> worldDirectories;
 
-    for(auto &entry:fs::directory_iterator(worldsDirectory))
+    for(auto &entry:bfs::directory_iterator(worldsDirectory))
         worldDirectories.push_back(entry);
 
     if(worldDirectories.empty())
     {
         std::string worldDirectory=worldsDirectory.string()+"/TestApWorld";
-        fs::path worldPath(worldDirectory);
+        bfs::path worldPath(worldDirectory);
         
-        fs::create_directory(worldPath);
+        bfs::create_directory(worldPath);
         world.create(worldDirectory, "TestApWorld", glm::ivec3(2048, 2048, 1024), "EquiRectWorldGenerator");
     }
     else
@@ -102,15 +113,18 @@ int main(int argc, char ** argv)
     playerRegion=hashes.regionHash;
     playerChunk=hashes.chunkHash;
     playerRegionIndex=world.getRegionIndex(playerRegion);
+    playerChunkIndex=world.getChunkIndex(playerChunk);
     
     //set player position to local region
     player.setPosition(playerRegion, world.gridPosToRegionPos(playerRegion, worldMiddle));
+    world.updatePosition(playerRegionIndex, playerChunkIndex);
 
     voxigen::SimpleRenderer<World> renderer(&world);
 
     renderer.setCamera(&player);
     renderer.build();
-    renderer.setViewRadius(1024.0f);
+    renderer.setViewRadius(256.0f);
+//    lastUpdateAdded=renderer.updateChunks();
     renderer.updateChunks();
 
     float movementSpeed=100;
@@ -163,6 +177,8 @@ int main(int argc, char ** argv)
             direction+=glm::vec3(0.0f, 0.0f, -1.0f);
             move=true;
         }
+
+        bool updateChunks=false;
 
         if(move)
         {
@@ -257,18 +273,25 @@ int main(int argc, char ** argv)
                 regionHash=world.getRegionHash(playerRegionIndex);
                 player.setPosition(regionHash, playerPos);
                 playerRegion=regionHash;
-
                 //region changed, chunk hash will change too.
             }
-            chunkHash=world.getChunkHash(regionHash, playerPos);
+            chunkHash=world.getChunkHashFromRegionPos(playerPos);
 
             if(playerChunk!=chunkHash)
             {
-                renderer.updateChunks();
+                updateChunks=true;
                 playerChunk=chunkHash;
+
+                playerRegionIndex=world.getRegionIndex(regionHash);
+                playerChunkIndex=world.getChunkIndex(chunkHash);
+
+                world.updatePosition(playerRegionIndex, playerChunkIndex);
             }
         }
 
+        if(updateChunks)// || lastUpdateAdded)
+            renderer.updateChunks();
+//            lastUpdateAdded=renderer.updateChunks();
 
         /* Render here */
 //        glDepthFunc(GL_LESS);

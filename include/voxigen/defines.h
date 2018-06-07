@@ -3,6 +3,9 @@
 
 #include <set>
 
+//#define DEBUG_ALLOCATION
+//#define LOG_PROCESS_QUEUE
+
 namespace voxigen
 {
 

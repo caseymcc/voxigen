@@ -134,26 +134,28 @@ void GeneratorQueue<_Grid>::generatorThread()
 
         lock.unlock();//drop lock while working
 
-        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
-        glm::vec3 startPos=m_descriptors->regionOffset(chunkHandle->regionHash);
-        glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
+        chunkHandle->generate(m_descriptors, m_generator);
+//        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
+//        glm::vec3 startPos=m_descriptors->regionOffset(chunkHandle->regionHash);
+//        glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
+//
+//        startPos+=chunkOffset;
+//        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, chunkOffset);
+//
+//        ChunkType::Cells &cells=chunkHandle->chunk->getCells();
+//
+//        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
+//
+//        chunkHandle->chunk->setValidCellCount(validCells);
+//        chunkHandle->status=ChunkHandleType::Memory;
+//        chunkHandle->m_memoryUsed=validCells*sizeof(_Grid::CellType)
+//
+//        if(validCells<=0)
+//            chunkHandle->empty=true;
+//        else
+//            chunkHandle->empty=false;
 
-        startPos+=chunkOffset;
-        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, chunkOffset);
-
-        ChunkType::Cells &cells=chunkHandle->chunk->getCells();
-
-        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
-
-        chunkHandle->chunk->setValidCellCount(validCells);
-        chunkHandle->status=ChunkHandleType::Memory;
-
-        if(validCells<=0)
-            chunkHandle->empty=true;
-        else
-            chunkHandle->empty=false;
-
-        m_updateQueue->add(Key(chunkHandle->regionHash, chunkHandle->hash));
+        m_updateQueue->add(Key(chunkHandle->regionHash(), chunkHandle->hash()));
         chunkHandle.reset();//release pointer while not holding lock as there is a chance this will call removeHandle
                             //which will lock m_chunkMutex and safer to only have one lock at a time
         lock.lock();
@@ -165,7 +167,7 @@ void GeneratorQueue<_Grid>::add(SharedChunkHandle chunkHandle)
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 
-    chunkHandle->status=ChunkHandleType::Generating;
+    chunkHandle->setStatus(ChunkHandleType::Generating);
     m_generatorQueue.push(chunkHandle);
     m_generatorEvent.notify_all();
 }

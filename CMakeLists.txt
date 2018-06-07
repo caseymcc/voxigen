@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
 
 option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
+option(USE_OCTOMAP "Use octomap octree transversal" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
 message(STATUS "Module path:${CMAKE_MODULE_PATH}")
@@ -8,11 +9,6 @@ message(STATUS "Module path:${CMAKE_MODULE_PATH}")
 #include(HunterPackage)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/HunterGate.cmake)
 
-#HunterGate(
-#    URL "https://github.com/ruslo/hunter/archive/v0.18.64.tar.gz"
-#    SHA1 "baf9c8cc4f65306f0e442b5419967b4c4c04589a"
-#    LOCAL
-#)
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.19.208.tar.gz"
     SHA1 "4128ac8c79c21b250bf825e8119ce0bff05e5132"
@@ -21,7 +17,8 @@ HunterGate(
 
 project(voxigen)
 
-set_property( GLOBAL PROPERTY USE_FOLDERS ON)
+message(STATUS "USE_OCTOMAP ${USE_OCTOMAP}")
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #message(STATUS "module path:${CMAKE_MODULE_PATH}")
 
 hunter_add_package(glm)
@@ -32,13 +29,31 @@ hunter_add_package(glew)
 find_package(glew CONFIG REQUIRED)
 hunter_add_package(RapidJSON)
 find_package(RapidJSON CONFIG REQUIRED)
+hunter_add_package(gflags)
+find_package(gflags CONFIG REQUIRED)
+hunter_add_package(glog)
+find_package(glog CONFIG REQUIRED)
 
 
 hunter_add_package(Boost COMPONENTS filesystem system)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 add_subdirectory(FastNoiseSIMD)
+SET_TARGET_PROPERTIES (fastNoise PROPERTIES FOLDER Libraries)
 add_subdirectory(opengl_util)
+SET_TARGET_PROPERTIES (opengl_util PROPERTIES FOLDER Libraries)
+
+if(USE_OCTOMAP)
+    add_definitions(-DUSE_OCTOMAP)
+    set(OCTOVIS_QT5 OFF)
+    set(BUILD_OCTOVIS_SUBPROJECT OFF)
+    set(BUILD_DYNAMICETD3D_SUBPROJECT OFF)
+    add_subdirectory(octomap)
+    SET_TARGET_PROPERTIES (octomap PROPERTIES FOLDER Libraries)
+    SET_TARGET_PROPERTIES (octomap-static PROPERTIES FOLDER Libraries)
+    SET_TARGET_PROPERTIES (octomath PROPERTIES FOLDER Libraries)
+    SET_TARGET_PROPERTIES (octomath-static PROPERTIES FOLDER Libraries)
+endif()
 
 if(MSVC)
     add_definitions(-DNOMINMAX)
@@ -65,6 +80,7 @@ set(voxigen_headers
     include/voxigen/initGlew.h
     include/voxigen/jsonSerializer.h
     include/voxigen/object.h
+    include/voxigen/processQueue.h
     include/voxigen/regularGrid.h
     include/voxigen/region.h
     include/voxigen/regionHandle.h
@@ -73,6 +89,12 @@ set(voxigen_headers
     include/voxigen/simpleFileSystem.h
     include/voxigen/simpleRenderer.h
     include/voxigen/simpleShapes.h
+)
+
+set(voxigen_inline
+    include/voxigen/processQueue.inl
+    include/voxigen/simpleChunkRenderer.inl
+    include/voxigen/simpleRenderer.inl
 )
 
 set(voxigen_sources
@@ -97,7 +119,13 @@ set(voxigen_libraries
     Boost::filesystem
     Boost::system
     RapidJSON::rapidjson
+    gflags
+    glog::glog
 )
+
+if(USE_OCTOMAP)
+    set(voxigen_libraries ${voxigen_libraries} octomap-static)
+endif()
 
 if(VOXIGEN_OUTPUT_DIRECTORY_DEBUG)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
@@ -108,9 +136,11 @@ endif()
 
 add_library(voxigen SHARED
     ${voxigen_headers}
+    ${voxigen_inline}
     ${voxigen_sources}
 )
 
+source_group("Source Files" FILES ${voxigen_inline})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 target_link_libraries(voxigen ${voxigen_libraries})

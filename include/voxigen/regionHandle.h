@@ -8,6 +8,10 @@
 #include "voxigen/generator.h"
 #include "voxigen/simpleFilesystem.h"
 
+#ifdef USE_OCTOMAP
+#include "octomap/OcTree.h"
+#endif //USE_OCTOMAP
+
 #include <thread>
 #include <mutex>
 #include <memory>
@@ -56,9 +60,15 @@ public:
 
     void addConfig(SharedChunkHandle handle);
 
-    RegionHash hash;
-    bool cachedOnDisk;
-    bool empty;
+    RegionHash hash() { return m_hash; }
+    bool cachedOnDisk() { return m_cachedOnDisk; }
+    void setCachedOnDisk(bool cached) { m_cachedOnDisk=cached; }
+    bool empty() { return m_empty; }
+    void setEmpty(bool empty) { m_empty=empty; }
+
+#ifdef USE_OCTOMAP
+    octomap::OcTree<SharedChunkHandle> m_chunkTree;
+#endif //USE_OCTOMAP
 
 protected:
     virtual DataHandle *newHandle(HashType hash);
@@ -75,6 +85,10 @@ private:
     GeneratorQueue<_Grid> *m_generatorQueue;
     UpdateQueue *m_updateQueue;
 
+    RegionHash m_hash;
+    bool m_cachedOnDisk;
+    bool m_empty;
+
     Status m_status;
     unsigned int m_version;
     std::string m_directory;
@@ -87,13 +101,13 @@ template<typename _Grid>
 RegionHandle<_Grid>::RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue):
 m_status(Unknown),
 m_version(0),
-hash(regionHash),
+m_hash(regionHash),
 m_descriptors(descriptors),
 m_generatorQueue(generatorQueue),
 m_dataStore(dataStore),
 m_updateQueue(updateQueue),
-cachedOnDisk(false),
-empty(false)
+m_cachedOnDisk(false),
+m_empty(false)
 {
 }
 
@@ -128,7 +142,10 @@ bool RegionHandle<_Grid>::load(const std::string &directory)
 template<typename _Grid>
 typename RegionHandle<_Grid>::DataHandle *RegionHandle<_Grid>::newHandle(HashType chunkHash)
 {
-    return new ChunkHandleType(hash, chunkHash);
+    glm::ivec3 regionIndex=m_descriptors->getRegionIndex(m_hash);
+    glm::ivec3 chunkIndex=m_descriptors->getChunkIndex(chunkHash);
+
+    return new ChunkHandleType(m_hash, regionIndex, chunkHash, chunkIndex);
 }
 
 template<typename _Grid>
@@ -155,12 +172,12 @@ void RegionHandle<_Grid>::loadConfig()
                         RegionHash hash=serializer.getUInt();
                         SharedChunkHandle chunkHandle(newHandle(hash));
 
-                        chunkHandle->cachedOnDisk=true;
+                        chunkHandle->setCachedOnDisk(true);
 
                         if(serializer.key("empty"))
-                            chunkHandle->empty=serializer.getBool();
+                            chunkHandle->setEmpty(serializer.getBool());
                         else
-                            chunkHandle->empty=true;
+                            chunkHandle->setEmpty(true);
 
                         m_dataHandles.insert(SharedDataHandleMap::value_type(hash, chunkHandle));
                     }
@@ -196,13 +213,13 @@ void RegionHandle<_Grid>::saveConfigTo(std::string configFile)
     serializer.startArray();
     for(auto &handle:m_dataHandles)
     {
-        if(handle.second->empty)
+        if(handle.second->empty())
         {
             serializer.startObject();
             serializer.addKey("id");
-            serializer.addUInt(handle.second->hash);
+            serializer.addUInt(handle.second->hash());
             serializer.addKey("empty");
-            serializer.addBool(handle.second->empty);
+            serializer.addBool(handle.second->empty());
             serializer.endObject();
         }
     }
@@ -214,7 +231,7 @@ void RegionHandle<_Grid>::saveConfigTo(std::string configFile)
 template<typename _Grid>
 void RegionHandle<_Grid>::addConfig(SharedChunkHandle handle)
 {
-    if(handle->empty)
+    if(handle->empty())
     {
         std::string tempConfig=m_configFile+".tmp";
         saveConfigTo(tempConfig);
@@ -235,10 +252,13 @@ void RegionHandle<_Grid>::loadDataStore()
         fileNameStream.ignore(6);
         fileNameStream>>std::hex>>chunkHash;
 
-        SharedChunkHandle handle=std::make_shared<ChunkHandleType>(hash, chunkHash);
+        glm::ivec3 regionIndex=m_descriptors->getRegionIndex(m_hash);
+        glm::ivec3 chunkIndex=m_descriptors->getChunkIndex(chunkHash);
 
-        handle->cachedOnDisk=true;
-        handle->empty=false;
+        SharedChunkHandle handle=std::make_shared<ChunkHandleType>(m_hash, regionIndex, chunkHash, chunkIndex);
+
+        handle->setCachedOnDisk(true);
+        handle->setEmpty(false);
 
         m_dataHandles.insert(SharedDataHandleMap::value_type(chunkHash, handle));
     }
@@ -256,7 +276,7 @@ typename RegionHandle<_Grid>::SharedChunkHandle RegionHandle<_Grid>::getChunk(Ch
     SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
 
     glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHash);
-    chunkHandle->regionOffset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
+    chunkHandle->setRegionOffset(glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex);
 
 
 //    if(chunkHandle->status!=ChunkHandleType::Memory)
@@ -282,18 +302,21 @@ typename RegionHandle<_Grid>::SharedChunkHandle RegionHandle<_Grid>::getChunk(Ch
 template<typename _Grid>
 void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
 {
-    if(chunkHandle->status!=ChunkHandleType::Memory)
+    if(chunkHandle->status()!=ChunkHandleType::Memory)
     {
-        if(chunkHandle->empty) //empty is already loaded
+        if(chunkHandle->empty()) //empty is already loaded
         {
-            chunkHandle->status=ChunkHandleType::Memory;
-            m_updateQueue->add(Key(chunkHandle->regionHash, chunkHandle->hash));
+//            chunkHandle->m_memoryUsed=0;
+//            chunkHandle->status=ChunkHandleType::Memory;
+//            m_updateQueue->add(Key(chunkHandle->regionHash(), chunkHandle->hash()));
+            m_dataStore->empty(chunkHandle);
         }
         else
         {
             //we dont have it in memory so we need to load or generate it
-            if(!chunkHandle->cachedOnDisk) 
-                m_generatorQueue->add(chunkHandle);
+            if(!chunkHandle->cachedOnDisk()) 
+//                m_generatorQueue->add(chunkHandle);
+                m_dataStore->generate(chunkHandle);
             else
                 m_dataStore->read(chunkHandle);
         }
