@@ -1,5 +1,5 @@
 # voxigen
-Voxel handling library, mainly for block worlds.
+Voxel handling library, mainly for block worlds. Video of current version - https://youtu.be/a7NxpDbzjAw
 
 Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
 
