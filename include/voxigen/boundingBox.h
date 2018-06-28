@@ -7,7 +7,7 @@
 namespace voxigen
 {
 
-class VOXIGEN_EXPORT BoundingBox
+class BoundingBox
 {
 public:
     BoundingBox() {}

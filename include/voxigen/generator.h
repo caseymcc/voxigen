@@ -20,11 +20,12 @@ public:
     Generator() {}
     virtual ~Generator() {}
 
-    virtual void initialize(GridDescriptors *descriptors)=0;
+    virtual void initialize(IGridDescriptors *descriptors)=0;
+    virtual void save(IGridDescriptors *descriptors)=0;
 //    virtual void terminate()=0;
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
-    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize)=0;
+    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod)=0;
 };
 typedef std::shared_ptr<Generator> SharedGenerator;
 
@@ -37,25 +38,26 @@ public:
 
     static char *typeName() { return _Generator::typeName(); }
 
-    virtual void initialize(GridDescriptors *descriptors) { m_generator->initialize(descriptors); }
+    virtual void initialize(IGridDescriptors *descriptors){ m_generator->initialize(descriptors); }
+    virtual void save(IGridDescriptors *descriptors) { m_generator->save(descriptors); }
 //    virtual void terminate() { m_generator->terminate(); }
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
-    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize); };
+    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
 
 private:
     std::unique_ptr<_Generator> m_generator;
 };
 
-template<typename _Chunk>
+template<typename _Grid>
 class GeneratorQueue
 {
 public:
-    typedef _Chunk ChunkType;
+    typedef typename _Grid::ChunkType ChunkType;
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
-    GeneratorQueue(GridDescriptors *descriptors, UpdateQueue *updateQueue):m_descriptors(descriptors), m_generator(nullptr), m_updateQueue(updateQueue){}
+    GeneratorQueue(GridDescriptors<_Grid> *descriptors, UpdateQueue *updateQueue):m_descriptors(descriptors), m_generator(nullptr), m_updateQueue(updateQueue){}
 
     void setGenerator(Generator *generator) { m_generator=generator; }
 
@@ -71,7 +73,7 @@ public:
 
 private:
     Generator *m_generator;
-    GridDescriptors *m_descriptors;
+    GridDescriptors<_Grid> *m_descriptors;
 
     //generator thread/queue
     std::mutex m_generatorMutex;
@@ -84,15 +86,15 @@ private:
     UpdateQueue *m_updateQueue;
 };
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::initialize()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::initialize()
 {
     m_generatorThreadRun=true;
-    m_generatorThread=std::thread(std::bind(&GeneratorQueue<_Chunk>::generatorThread, this));
+    m_generatorThread=std::thread(std::bind(&GeneratorQueue<_Grid>::generatorThread, this));
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::terminate()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::terminate()
 {
     //thread flags are not atomic so we need the mutexes to coordinate the setting, 
     //otherwise would have to loop re-notifiying thread until it stopped
@@ -106,8 +108,8 @@ void GeneratorQueue<_Chunk>::terminate()
 
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::generatorThread()
+template<typename _Grid>
+void GeneratorQueue<_Grid>::generatorThread()
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 
@@ -132,38 +134,40 @@ void GeneratorQueue<_Chunk>::generatorThread()
 
         lock.unlock();//drop lock while working
 
-        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
-        glm::vec3 startPos=m_descriptors->regionOffset(chunkHandle->regionHash);
-        glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
+        chunkHandle->generate(m_descriptors, m_generator);
+//        glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHandle->hash);
+//        glm::vec3 startPos=m_descriptors->regionOffset(chunkHandle->regionHash);
+//        glm::vec3 chunkOffset=m_descriptors->chunkOffset(chunkHandle->hash);
+//
+//        startPos+=chunkOffset;
+//        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, chunkOffset);
+//
+//        ChunkType::Cells &cells=chunkHandle->chunk->getCells();
+//
+//        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
+//
+//        chunkHandle->chunk->setValidCellCount(validCells);
+//        chunkHandle->status=ChunkHandleType::Memory;
+//        chunkHandle->m_memoryUsed=validCells*sizeof(_Grid::CellType)
+//
+//        if(validCells<=0)
+//            chunkHandle->empty=true;
+//        else
+//            chunkHandle->empty=false;
 
-        startPos+=chunkOffset;
-        chunkHandle->chunk=std::make_unique<ChunkType>(chunkHandle->hash, 0, chunkIndex, chunkOffset);
-
-        ChunkType::Cells &cells=chunkHandle->chunk->getCells();
-
-        unsigned int validCells=m_generator->generateChunk(startPos, glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
-
-        chunkHandle->chunk->setValidCellCount(validCells);
-        chunkHandle->status=ChunkHandleType::Memory;
-
-        if(validCells<=0)
-            chunkHandle->empty=true;
-        else
-            chunkHandle->empty=false;
-
-        m_updateQueue->add(Key(chunkHandle->regionHash, chunkHandle->hash));
+        m_updateQueue->add(Key(chunkHandle->regionHash(), chunkHandle->hash()));
         chunkHandle.reset();//release pointer while not holding lock as there is a chance this will call removeHandle
                             //which will lock m_chunkMutex and safer to only have one lock at a time
         lock.lock();
     }
 }
 
-template<typename _Chunk>
-void GeneratorQueue<_Chunk>::add(SharedChunkHandle chunkHandle)
+template<typename _Grid>
+void GeneratorQueue<_Grid>::add(SharedChunkHandle chunkHandle)
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 
-    chunkHandle->status=ChunkHandleType::Generating;
+    chunkHandle->setStatus(ChunkHandleType::Generating);
     m_generatorQueue.push(chunkHandle);
     m_generatorEvent.notify_all();
 }

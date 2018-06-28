@@ -16,6 +16,7 @@ std::string SimpleRenderer<_Grid>::vertShader=
 "out vec3 position;\n"
 "//out vec3 normal;\n"
 "out vec3 texCoords;\n"
+"flat out uint type;\n"
 "\n"
 "//layout (std140) uniform pos\n"
 "//{\n"
@@ -36,6 +37,7 @@ std::string SimpleRenderer<_Grid>::vertShader=
 "//   normal=blockNormal;\n"
 "//   texCoords=vec3(blockTexCoord, blockOffset.w);\n"
 "   texCoords=vec3(0.0, 0.0, data);\n"
+"   type=data;\n"
 "   gl_Position=projectionView*vec4(position, 1.0);\n"
 
 "}\n"
@@ -48,6 +50,7 @@ std::string SimpleRenderer<_Grid>::fragmentShader=
 "in vec3 position;\n"
 "//in vec3 normal;\n"
 "in vec3 texCoords;\n"
+"flat in uint type;\n"
 "out vec4 color;\n"
 "\n"
 "uniform vec3 lightPos;\n"
@@ -70,7 +73,17 @@ std::string SimpleRenderer<_Grid>::fragmentShader=
 "   vec3 diffuse=diff * lightColor; \n"
 "//   color=vec4((ambient+diffuse)*vec3(value, value, value), 1.0f);\n"
 "   color=vec4(abs(normal), 1.0f);\n"
-"   "
+"//   color=vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+"//   if(type==1u)\n"
+"//       color=vec4(0.2f, 0.2f, 1.0f, 0.8f);\n"
+"//   else if(type>=2u && type<=3u)\n"
+"//       color=vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+"//   else if(type>3u)\n"
+"//   {\n"
+"//       float level=1.0f-(float(type-3u)/10.f);"
+"//       color=vec4(level, level, level, 1.0f);\n"
+"//   }\n"
+"//   color=vec4(color.rgb*(ambient+diffuse), color.a);\n"
 "//   color=vec4(1.0, 0.0, 0.0, 1.0);\n"
 "}\n"
 "";
@@ -108,13 +121,15 @@ std::string SimpleRenderer<_Grid>::fragmentOutlineShader=
 "in vec3 position;\n"
 "in vec3 normal;\n"
 "in vec3 texCoords;\n"
+"in vec3 vertexColor;\n"
 "out vec4 color;\n"
 "\n"
 "uniform vec3 lightPos;\n"
+"uniform vec3 statusColor;\n"
 "\n"
 "void main()\n"
 "{\n"
-"   float value=1.0f;"
+"//   float value=1.0f;"
 "//   vec3 lightColor=vec3(1.0f, 1.0f, 1.0f);\n"
 "   float ambientStrength=0.5; \n"
 "//   vec3 ambient=ambientStrength * lightColor;\n"
@@ -123,7 +138,7 @@ std::string SimpleRenderer<_Grid>::fragmentOutlineShader=
 "   vec3 lightDir=normalize(lightPos-position); \n"
 "   float diff=max(dot(normal, lightDir), 0.0); \n"
 "//   vec3 diffuse=diff*lightColor; \n"
-"   color=vec4((ambientStrength+diff)*value, 0.0f, 0.0f, 0.1f);\n"
+"   color=vec4(statusColor*(ambientStrength+diff), 0.1f);\n"
 "}\n"
 "";
 
@@ -131,11 +146,13 @@ template<typename _Grid>
 SimpleRenderer<_Grid>::SimpleRenderer(_Grid *grid):
 m_grid(grid),
 m_viewRadius(60.0f),
+m_viewLODDistance(90.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
 m_camera(nullptr),
 m_outlineChunks(true),
-m_queryComplete(true)
+m_queryComplete(true),
+m_updateChunks(false)
 {
     m_projectionMat=glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
                               0.0f, 1.0f, 0.0f, 0.0f,
@@ -146,6 +163,8 @@ m_queryComplete(true)
                         0.0f, 1.0f, 0.0f, 0.0f,
                         0.0f, 0.0f, 1.0f, 0.0f,
                         0.0f, 0.0f, 0.0f, 1.0f);
+
+    m_grid->setChunkUpdateCallback(std::bind(&SimpleRenderer<_Grid>::updateCallback, this, std::placeholders::_1));
 }
 
 template<typename _Grid>
@@ -189,6 +208,7 @@ void SimpleRenderer<_Grid>::build()
     m_uniformOutlintProjectionViewId=m_outlineProgram.getUniformId("projectionView");
     m_outlineLightPositionId=m_outlineProgram.getUniformId("lightPos");
     m_outlineOffsetId=m_outlineProgram.getUniformId("regionOffset");
+    m_outlineStatusColor=m_outlineProgram.getUniformId("statusColor");
 
     const std::vector<float> &outlineVertices=SimpleCube<ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value>::vertCoords;
 
@@ -219,6 +239,7 @@ void SimpleRenderer<_Grid>::destroy()
 //    m_rendererMap.clear();
     m_regionRenderers.clear();
     m_chunkRenderers.clear();
+//    m_chunkRendererMap.clear();
 }
 
 template<typename _Grid>
@@ -249,6 +270,10 @@ void SimpleRenderer<_Grid>::draw()
     if(cameraDirty)
     {
         m_program.uniform(m_uniformProjectionViewId)=m_camera->getProjectionViewMat();
+
+        //camera moved restart queries
+        m_currentQueryRing=0;
+
 //        m_program.uniform(m_lightPositionId)=m_camera->getPosition();
     }
 
@@ -270,13 +295,13 @@ void SimpleRenderer<_Grid>::draw()
 
                 if(chunkIter!=chunkMap.end())
                 {
-                    chunkIter->second->refCount=1; //make sure we hold onto it while it is in the prepThread
                     chunkIter->second->updateOutline();
 
-                    if(chunkIter->second->getChunkHandle()->empty)
+                    if(chunkIter->second->getChunkHandle()->empty())
                         chunkIter->second->setEmpty();
                     else
                     {
+                        chunkIter->second->refCount=1; //make sure we hold onto it while it is in the prepThread
                         m_outstandingChunkPreps++;
                         //give to prep thread to get it ready
                         addPrepQueue(chunkIter->second);
@@ -297,7 +322,11 @@ void SimpleRenderer<_Grid>::draw()
         {
 //            m_chunksUpdated[i]->refCount=0; //done in the prepThread
             m_chunksUpdated[i]->updated();
-            m_chunksUpdated[i]->getChunkHandle();//drop chunk as we have a mesh for it
+//            m_chunksUpdated[i]->getChunkHandle()->release();//drop chunk as we have a mesh for it
+//            m_chunksUpdated[i]->releaseChunkMemory();
+//            SharedChunkHandle chunkHandle=m_chunksUpdated[i]->getChunkHandle();
+//
+//            chunkHandle->release();
         }
 
         m_chunksUpdated.clear();
@@ -335,7 +364,10 @@ void SimpleRenderer<_Grid>::draw()
 //
 //        m_chunksUpdated.erase(m_chunksUpdated.begin(), m_chunksUpdated.begin()+maxUpdates);
 //    }
+#ifdef OCCLUSSION_QUERY
     updateOcclusionQueries();
+#endif //OCCLUSSION_QUERY
+    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
 
     //draw all chunks that are built, using regions
     for(auto &iter:m_regionRenderers)
@@ -343,19 +375,23 @@ void SimpleRenderer<_Grid>::draw()
         RegionRenderer<ChunkRenderType> &renderer=iter.second;
 
 //        m_program.uniform(m_offsetId)=renderer.offset;
+        glm::vec3 regionOffset=renderer.index-playerRegionIndex;
+        
+        renderer.offset=regionOffset*glm::vec3(m_grid->getDescriptors().m_regionCellSize);
 
         for(auto &chunkIter:renderer.chunkRenderers)
         {
             ChunkRenderType *chunkRenderer=chunkIter.second;
             
-            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw, could be copying
-                m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
-
             if(chunkRenderer->getState()==ChunkRenderType::Copy)
             {
                 if(chunkRenderer->incrementCopy())
                     m_outstandingChunkPreps--;
             }
+
+            if(chunkRenderer->getState()==ChunkRenderType::Built) //only set uniform if we are going to draw, could be copying
+                m_program.uniform(m_offsetId)=(renderer.offset+chunkRenderer->getGridOffset());
+
             chunkRenderer->draw();
         }
     }
@@ -363,6 +399,8 @@ void SimpleRenderer<_Grid>::draw()
     //turn off writing color buffer and depth buffer, just checking if it would render
     glColorMask(false, false, false, false);
     glDepthMask(GL_FALSE);
+
+#ifdef OCCLUSSION_QUERY
     //draw all occulution queries, using regions
     for(auto &iter:m_regionRenderers)
     {
@@ -406,6 +444,7 @@ void SimpleRenderer<_Grid>::draw()
                 m_queryComplete=true;
         }
     }
+#endif //OCCLUSSION_QUERY
     //done querying, turn color and depth buffer back on
     glColorMask(true, true, true, true);
     glDepthMask(GL_TRUE);
@@ -433,11 +472,13 @@ void SimpleRenderer<_Grid>::draw()
             {
                 ChunkRenderType *chunkRenderer=chunkIter.second;
                 
-                chunkRenderer->drawOutline();
+                chunkRenderer->drawOutline(&m_outlineProgram, m_outlineStatusColor);
             }
         }
     }
 //#endif //NDEBUG
+
+    rendererUpdateChunks();
 }
 
 template<typename _Grid>
@@ -453,13 +494,17 @@ void SimpleRenderer<_Grid>::setViewRadius(float radius)
 {
     m_viewRadius=radius;
     m_viewRadiusMax=radius*1.5f;
-    m_maxChunkRing=std::ceil(radius/std::max(std::max(ChunkType::sizeX::value, ChunkType::sizeY::value), ChunkType::sizeZ::value));
+//    m_maxChunkRing=std::ceil(radius/std::max(std::max(ChunkType::sizeX::value, ChunkType::sizeY::value), ChunkType::sizeZ::value));
+//
+//    m_chunkIndices.resize(m_maxChunkRing);
+//
+//    for(size_t i=0; i<m_maxChunkRing; ++i)
+//        ringCube<ChunkType>(m_chunkIndices[i], i);
+//    m_chunkIndices=buildRadiusRingMap<ChunkType>(m_viewRadiusMax);
+    m_chunkIndices.resize(1);
+    spiralCube<ChunkType>(m_chunkIndices[0], m_viewRadiusMax);
 
-    m_chunkIndices.resize(m_maxChunkRing);
-
-    for(size_t i=0; i<m_maxChunkRing; ++i)
-        ringCube<ChunkType>(m_chunkIndices[i], i);
-
+    m_maxChunkRing=m_chunkIndices.size();
 //    if(m_chunkIndices.empty()) //always want at least the current chunk
 //        m_chunkIndices.push_back(glm::ivec3(0, 0, 0));
 }
@@ -472,8 +517,372 @@ struct ChunkQueryOffset
     glm::vec3 offset;
 };
 
+//template<typename _Grid>
+//typename SimpleRenderer<_Grid>::ChunkRenderType *SimpleRenderer<_Grid>::createRenderNode(Key key)
+//{
+//    ChunkRenderMap::iterator iter=m_chunkRendererMap.find(key.hash);
+//
+//    if(iter!=m_chunkRendererMap.end())
+//        return iter->second;
+//
+//    ChunkRenderType *renderer=getFreeRenderer();
+//
+//    if(renderer==nullptr)
+//        return nullptr;
+//
+//    SharedChunkHandle chunkHandle=m_grid->getChunk(key.regionHash, key.chunkHash);
+//
+//    //add region if not found
+//    auto regionIter=m_regionRenderers.find(key.regionHash);
+//
+//    if(regionIter==m_regionRenderers.end())
+//    {
+//        glm::ivec3 index=m_grid->getRegionIndex(key.regionHash);
+//
+//        auto interResult=m_regionRenderers.insert(RegionRendererMap::value_type(key.regionHash, RegionRendererType(key.regionHash, index, renderer->getChunkOffset())));
+//        regionIter=interResult.first;
+//    }
+//    regionIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, renderer));
+//
+//    renderer->setChunk(chunkHandle);
+//    m_chunkRendererMap.insert(ChunkRenderMap::value_type(key.hash, renderer));
+//    return renderer;
+//}
+
+#ifndef OLD_SEARCH
+
+//template<typename _Grid>
+//void SimpleRenderer<_Grid>::updateChunks()
+//{
+//    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+//    glm::ivec3 playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
+//
+//    m_searchMap=buildRingSearchMap<_Grid, ChunkRenderType>(m_grid, playerRegionIndex, playerChunkIndex, m_chunkIndices, std::bind(&SimpleRenderer<_Grid>::createRenderNode, this, std::placeholders::_1));
+//
+//    m_currentRegion=playerRegionIndex;
+//    m_currentChunk=playerChunkIndex;
+//
+//    m_currentQueryRing=0;
+//}
+
+template<typename _Grid>
+void SimpleRenderer<_Grid>::rendererUpdateChunks()
+{
+    if(m_addedChunkRenderers.empty()&&m_updatedChunkRenderers.empty()&&m_removedChunkRenderers.empty())
+        return;
+
+    _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
+
+    std::unique_lock<std::mutex> lock(m_prepMutex);
+
+    if(!m_updatedChunkRenderers.empty())
+    {
+        for(auto renderer:m_updatedChunkRenderers)
+        {
+            m_grid->loadChunk(renderer->getChunkHandle(), renderer->getLod());
+        }
+        m_updatedChunkRenderers.clear();
+    }
+
+    if(!m_addedChunkRenderers.empty())
+    {
+        for(auto renderer:m_addedChunkRenderers)
+        {
+            auto regionIter=m_regionRenderers.find(renderer->getRegionHash());
+            
+            if(regionIter==m_regionRenderers.end())
+            {
+                glm::ivec3 index=m_grid->getRegionIndex(renderer->getRegionHash());
+                glm::ivec3 offset=index*descriptors.getRegionCellSize();
+            
+                auto interResult=m_regionRenderers.insert(RegionRendererMap::value_type(renderer->getRegionHash(), RegionRendererType(renderer->getRegionHash(), index, offset)));
+            
+                regionIter=interResult.first;
+            }
+            regionIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(renderer->getChunkHash(), renderer));
+
+            renderer->build(m_instanceVertices);
+            renderer->buildOutline(m_outlineInstanceVertices);
+#ifndef OCCLUSSION_QUERY
+            m_grid->loadChunk(renderer->getChunkHandle(), renderer->getLod());
+#endif//!OCCLUSSION_QUERY
+        }
+        m_addedChunkRenderers.clear();
+    }
+
+    if(!m_removedChunkRenderers.empty())
+    {
+        for(auto renderer:m_removedChunkRenderers)
+        {
+            m_freeChunkRenderers.push_back(renderer);
+
+            auto regionIter=m_regionRenderers.find(renderer->getRegionHash());
+
+            if(regionIter==m_regionRenderers.end())
+                continue;
+
+            RegionRenderer<ChunkRendererType>::ChunkRendererMap &chunkRenderers=regionIter->second.chunkRenderers;
+
+            auto chunkIter=chunkRenderers.find(renderer->getChunkHash());
+
+            if(chunkIter==chunkRenderers.end())
+                continue;
+
+            chunkRenderers.erase(chunkIter);
+        }
+        m_removedChunkRenderers.clear();
+    }
+}
+
+template<typename _Grid>
+void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers)
+{
+    _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
+
+    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+    glm::ivec3 playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
+
+    typedef std::unordered_map<Key::Type, bool> AddMap;
+    AddMap addChunk;
+
+    RegionHash playerRegionHash=descriptors.regionHash(playerRegionIndex);
+    ChunkHash playerChunkHash=descriptors.chunkHash(playerChunkIndex);
+    Key playerChunkKey(playerRegionHash, playerChunkHash);
+
+    //make sure player chunk added
+    addChunk.insert(AddMap::value_type(playerChunkKey.hash, true));
+
+    for(auto chunkIter=m_chunkRendererMap.begin(); chunkIter!=m_chunkRendererMap.end(); )
+    {
+        auto *chunkRenderer=chunkIter->second;
+        Key key(chunkRenderer->getRegionHash(), chunkRenderer->getChunkHash());
+
+        float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, chunkRenderer->getRegionIndex(), chunkRenderer->getChunkIndex());
+        
+        //chunk outside of range so invalidate
+        if(chunkDistance>m_viewRadiusMax)
+        {
+            addChunk[key.hash]=false;
+            removeRenderers.push_back(chunkRenderer);
+            chunkIter=m_chunkRendererMap.erase(chunkIter);
+        }
+        else
+        {
+            size_t lod=floor(chunkDistance/m_viewLODDistance);
+
+            if(chunkRenderer->getLod()!=lod)
+            {
+                chunkRenderer->setLod(lod);
+                updateRenderers.push_back(chunkRenderer);
+            }
+            addChunk[key.hash]=false;
+
+            //add neighbors chunks
+            for(int z=-1; z<=1; ++z)
+            {
+                for(int y=-1; y<=1; ++y)
+                {
+                    for(int x=-1; x<=1; ++x)
+                    {
+                        glm::ivec3 neighborRegion=chunkRenderer->getRegionIndex();
+                        glm::ivec3 neighborChunk=chunkRenderer->getChunkIndex()+glm::ivec3(x, y, z);
+
+                        descriptors.adjustRegion(neighborRegion, neighborChunk);
+                        float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, neighborRegion, neighborChunk);
+
+                        if(chunkDistance<m_viewRadiusMax)
+                        {
+                            RegionHash regionHash=descriptors.regionHash(neighborRegion);
+                            ChunkHash chunkHash=descriptors.chunkHash(neighborChunk);
+                            Key key(regionHash, chunkHash);
+
+                            if(addChunk.find(key.hash)==addChunk.end())
+                                addChunk.insert(AddMap::value_type(key.hash, true));
+                        }
+                    }
+                }
+            }
+            ++chunkIter;
+        }
+    }
+
+    size_t addedRenderers=0;
+    for(auto &iter:addChunk)
+    {
+        if(iter.second)
+        {
+            ChunkRenderType *chunkRenderer=getFreeRenderer();
+
+            if(chunkRenderer==nullptr)
+                continue;
+
+            Key key(iter.first);
+            SharedChunkHandle chunkHandle=m_grid->getChunk(key.regionHash, key.chunkHash);
+
+            chunkRenderer->setChunk(chunkHandle);
+
+            float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, chunkRenderer->getRegionIndex(), chunkRenderer->getChunkIndex());
+            float lod=floor(chunkDistance/m_viewLODDistance);
+
+            chunkRenderer->setLod(lod);
+
+            m_chunkRendererMap.insert(ChunkRenderMap::value_type(key.hash, chunkRenderer));
+            addRenderers.push_back(chunkRenderer);
+            addedRenderers++;
+        }
+    }
+
+    if(addedRenderers > 0)
+        m_updateChunks=true;
+    else
+        m_updateChunks=false;
+}
+
 template<typename _Grid>
 void SimpleRenderer<_Grid>::updateChunks()
+{
+    {
+        std::unique_lock<std::mutex> lock(m_prepMutex);
+
+        m_updateChunks=true;
+    }
+    m_prepEvent.notify_all();
+}
+
+//template<typename _Grid>
+//bool SimpleRenderer<_Grid>::updateChunks()
+//{
+//    _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
+//
+//    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+//    glm::ivec3 playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
+//
+//    typedef std::unordered_map<Key::Type, bool> AddMap;
+//    AddMap addChunk;
+//
+//    RegionHash playerRegionHash=descriptors.regionHash(playerRegionIndex);
+//    ChunkHash playerChunkHash=descriptors.chunkHash(playerRegionIndex);
+//    Key playerChunkKey(playerRegionHash, playerChunkHash);
+//
+//    //make sure player chunk added
+//    addChunk.insert(AddMap::value_type(playerChunkKey.hash, true));
+//
+//    for(auto regionIter=m_regionRenderers.begin(); regionIter!=m_regionRenderers.end(); )
+//    {
+//        RegionRendererType &regionRenderer=regionIter->second;
+//        glm::ivec3 regionOffset=regionRenderer.index-playerRegionIndex;
+//
+//        regionRenderer.offset=regionOffset*m_grid->getDescriptors().m_regionCellSize;
+//
+//        auto &chunkRendererMap=regionRenderer.chunkRenderers;
+//
+//        for(auto chunkIter=chunkRendererMap.begin(); chunkIter!=chunkRendererMap.end(); )
+//        {
+//            auto *chunkRenderer=chunkIter->second;
+//            Key key(chunkRenderer->getRegionHash(), chunkRenderer->getChunkHash());
+//
+//            glm::ivec3 regionIndex=m_grid->getDescriptors().regionIndex(key.regionHash);
+//            glm::ivec3 chunkIndex=m_grid->getDescriptors().chunkIndex(key.chunkHash);
+//            float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, regionIndex, chunkIndex);
+//
+//            //chunk outside of range so invalidate
+//            if(chunkDistance>m_viewRadiusMax)
+//            {
+//                addChunk[key.hash]=false;
+//                if(chunkRenderer->refCount==0) //need to keep if in prepThread
+//                {
+//                    chunkRenderer->invalidate();
+//                    chunkIter=chunkRendererMap.erase(chunkIter);
+//                    m_freeChunkRenderers.push_back(chunkRenderer);
+//                    continue;
+//                }
+//            }
+//            else
+//            {
+//                addChunk[key.hash]=false;
+//
+//                //add neighbors chunks
+//                for(int z=-1; z<=1; ++z)
+//                {
+//                    for(int y=-1; y<=1; ++y)
+//                    {
+//                        for(int x=-1; x<=1; ++x)
+//                        {
+//                            glm::ivec3 neighborRegion=regionIndex;
+//                            glm::ivec3 neighborChunk=chunkIndex+glm::ivec3(x, y, z);
+//
+//                            descriptors.adjustRegion(neighborRegion, neighborChunk);
+//                            float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, neighborRegion, neighborChunk);
+//
+//                            if(chunkDistance<m_viewRadiusMax)
+//                            {
+//                                RegionHash regionHash=descriptors.regionHash(neighborRegion);
+//                                ChunkHash chunkHash=descriptors.chunkHash(neighborChunk);
+//                                Key key(regionHash, chunkHash);
+//
+//                                if(addChunk.find(key.hash)==addChunk.end())
+//                                    addChunk.insert(AddMap::value_type(key.hash, true));
+//                            }
+//                        }
+//                    }
+//                }
+//                ++chunkIter;
+//            }
+//        }
+//
+//        if(chunkRendererMap.empty())
+//            regionIter=m_regionRenderers.erase(regionIter);
+//        else
+//            ++regionIter;
+//    }
+//
+//    size_t addedRenderers=0;
+//    for(auto &iter:addChunk)
+//    {
+//        if(iter.second)
+//        {
+//            ChunkRenderType *chunkRenderer=getFreeRenderer();
+//
+//            if(chunkRenderer==nullptr)
+//                continue;
+//
+//            Key key(iter.first);
+//            SharedChunkHandle chunkHandle=m_grid->getChunk(key.regionHash, key.chunkHash);
+//
+//            chunkRenderer->setChunk(chunkHandle);
+//
+//            auto regionIter=m_regionRenderers.find(key.regionHash);
+//
+//            if(regionIter==m_regionRenderers.end())
+//            {
+//                glm::ivec3 index=m_grid->getRegionIndex(key.regionHash);
+//                glm::ivec3 offset=index*descriptors.getRegionCellSize();
+//
+//                auto interResult=m_regionRenderers.insert(RegionRendererMap::value_type(key.regionHash, RegionRendererType(key.regionHash, index, offset)));
+//
+//                assert(interResult.second);
+//                regionIter=interResult.first;
+//            }
+//            
+//            m_addedChunks.push_back(chunkRenderer);
+//            regionIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
+//#ifndef OCCLUSSION_QUERY
+//            m_grid->loadChunk(chunkRenderer->getChunkHandle(), 0);
+//#endif//!OCCLUSSION_QUERY
+//
+//            addedRenderers++;
+//        }
+//    }
+//
+//    if(addedRenderers > 0)
+//        return true;
+//    return false;
+//}
+
+#else//!OLD_SEARCH
+
+template<typename _Grid>
+bool SimpleRenderer<_Grid>::updateChunks()
 {
     glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
     glm::ivec3 playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
@@ -583,12 +992,16 @@ void SimpleRenderer<_Grid>::updateChunks()
             assert(interResult.second);
             regionIter=interResult.first;
         }
+
         regionIter->second.chunkRenderers.insert(ChunkRendererMap::value_type(key.chunkHash, chunkRenderer));
     }
 
     //we likely altered the chunks, start the occlussion query over
     m_currentQueryRing=0;
+
+    return false;
 }
+#endif//OLD_SEARCH
 
 template<typename _Grid>
 void SimpleRenderer<_Grid>::updateOcclusionQueries()
@@ -604,6 +1017,7 @@ void SimpleRenderer<_Grid>::updateOcclusionQueries()
     
     size_t queriesStarted=0;
 
+#ifdef OLD_SEARCH
     std::vector<ChunkRenderType *> &chunkRenderers=m_chunkQueryOrder[m_currentQueryRing];
 
     for(size_t i=0; i<chunkRenderers.size(); ++i)
@@ -613,11 +1027,24 @@ void SimpleRenderer<_Grid>::updateOcclusionQueries()
         if(chunkRenderer->getState()==ChunkRenderType::Occluded)
         {
             chunkRenderer->startOcculsionQuery();
-            queriesStarted++;
+            queriesStarted++; 
         }
     }
 
     m_currentQueryRing++;
+#else//OLD_SEARCH
+//    std::vector<ChunkRenderType *> &chunkRenderers=m_searchMap[m_currentQueryRing];
+
+    for(ChunkRenderType *chunkRenderer:m_addedChunks)
+    {
+        if(chunkRenderer->getState()==ChunkRenderType::Occluded)
+        {
+            chunkRenderer->startOcculsionQuery();
+            queriesStarted++;
+        }
+    }
+    m_addedChunks.clear();
+#endif//OLD_SEARCH
 
     if(queriesStarted>0)
         m_queryComplete=false;
@@ -652,17 +1079,17 @@ typename SimpleRenderer<_Grid>::ChunkRenderType *SimpleRenderer<_Grid>::getFreeR
                 m_chunkRenderers[i].reset(chunkRenderer);
 
                 chunkRenderer->setParent(this);
-                chunkRenderer->build(m_instanceVertices);
-                chunkRenderer->buildOutline(m_outlineInstanceVertices);
+//                chunkRenderer->build(m_instanceVertices);
+//                chunkRenderer->buildOutline(m_outlineInstanceVertices);
 
                 m_freeChunkRenderers.push_back(chunkRenderer);
             }
         }
+
+        if(m_freeChunkRenderers.empty())
+            return nullptr;
     }
 
-    if(m_freeChunkRenderers.empty())
-        return nullptr;
-    
     ChunkRenderType *renderer=m_freeChunkRenderers.back();
 
     m_freeChunkRenderers.pop_back();
@@ -676,7 +1103,10 @@ void SimpleRenderer<_Grid>::addPrepQueue(ChunkRenderType *chunkRenderer)
     {
         std::unique_lock<std::mutex> lock(m_prepMutex);
 
-        m_prepQueue.push(chunkRenderer);
+//        if(std::find(m_prepQueue.begin(), m_prepQueue.end(), chunkRenderer)!=m_prepQueue.end())
+//            LOG(INFO)<<"duplicate being added";
+
+        m_prepQueue.push_back(chunkRenderer);
     }
     m_prepEvent.notify_all();
 }
@@ -711,29 +1141,103 @@ void SimpleRenderer<_Grid>::prepThread()
     assert(false);
 #endif
 
+    std::vector<ChunkRendererType *> addRenderers;
+    std::vector<ChunkRendererType *> updateRenderers;
+    std::vector<ChunkRendererType *> removeRenderers;
+
     while(m_prepThreadRun)
     {
-        if(m_prepQueue.empty())
+        if(m_prepQueue.empty() && !m_updateChunks)
         {
             m_prepEvent.wait(lock);
             continue;
         }
 
-        ChunkRenderType *chunkRenderer=m_prepQueue.front();
+        if(!m_prepQueue.empty())
+        {
+            ChunkRenderType *chunkRenderer=m_prepQueue.front();
 
-        if(chunkRenderer == nullptr)
-            return;
+            if(chunkRenderer==nullptr)
+                continue;
 
-        m_prepQueue.pop();
+            m_prepQueue.pop_front();
 
-        lock.unlock();//drop lock while working
+            lock.unlock();//drop lock while working
 
-        chunkRenderer->update();
-        
-        lock.lock();
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ChunkHandle ("<<chunkRenderer->getRegionHash()<<", "<<chunkRenderer->getChunkHash()<<") building mesh";
+#endif//LOG_PROCESS_QUEUE
 
-        m_chunksUpdated.push_back(chunkRenderer);
+            bool copyStarted=chunkRenderer->update();
+
+            lock.lock();
+
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ChunkHandle ("<<chunkRenderer->getRegionHash()<<", "<<chunkRenderer->getChunkHash()<<") releaseChunkMemory";
+#endif//LOG_PROCESS_QUEUE
+            chunkRenderer->releaseChunkMemory();
+
+            if(copyStarted)
+                m_chunksUpdated.push_back(chunkRenderer);
+
+            m_prepUpdateEvent.notify_all();
+        }
+        else if(m_updateChunks)
+        {
+            lock.unlock();//drop lock while working
+            
+            addRenderers.clear();
+            removeRenderers.clear();
+
+            prepUpdateChunks(addRenderers, updateRenderers, removeRenderers);
+            
+            lock.lock();
+
+            m_addedChunkRenderers.insert(m_addedChunkRenderers.end(), addRenderers.begin(), addRenderers.end());
+            m_updatedChunkRenderers.insert(m_updatedChunkRenderers.end(), updateRenderers.begin(), updateRenderers.end());
+            m_removedChunkRenderers.insert(m_removedChunkRenderers.end(), removeRenderers.begin(), removeRenderers.end());
+        }
     }
+}
+
+template<typename _Grid>
+bool SimpleRenderer<_Grid>::updateCallback(SharedChunkHandle chunkHandle)
+{
+//    auto regionIter=m_regionRenderers.find(chunkHandle->regionHash());
+//
+//    if(regionIter!=m_regionRenderers.end())
+//    {
+//        ChunkRendererMap &chunkMap=regionIter->second.chunkRenderers;
+//
+//        auto chunkIter=chunkMap.find(chunkHandle->hash());
+//
+//        if(chunkIter!=chunkMap.end())
+//        {
+//            ChunkRenderType *chunkRenderer=chunkIter->second;
+//            
+//            chunkRenderer->updateOutline();
+//            if(chunkRenderer->getChunkHandle()->empty())
+//                chunkRenderer->setEmpty();
+//            else
+//            {
+////                chunkRenderer->update();
+////                chunkRenderer->updated();
+//                chunkRenderer->buildMesh();
+//                chunkRenderer->releaseChunkMemory();
+//            }
+//        }
+//    }
+
+    //make sure we dont have too many builds in flight
+    if(m_prepQueue.size()>10)
+    {
+        std::unique_lock<std::mutex> lock(m_prepMutex);
+
+        while(m_prepQueue.size()>10)
+            m_prepUpdateEvent.wait(lock);
+    }
+
+    return false;
 }
 
 }//namespace voxigen

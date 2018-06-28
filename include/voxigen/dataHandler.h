@@ -70,14 +70,18 @@ typename DataHandler<_HashType, _DataHandle, _Data>::SharedDataHandle DataHandle
     std::unique_lock<std::mutex> lock(m_dataMutex);
 
     auto iter=m_weakDataHandles.find(hash);
+    SharedDataHandle returnHandle;
 
     if(iter!=m_weakDataHandles.end())
     {
         if(!iter->second.expired())
-            return iter->second.lock(); //we already have it and somebody else has it as well
-    }
+        {
+            returnHandle=iter->second.lock();
 
-    SharedDataHandle returnHandle;
+            if(returnHandle)
+                return returnHandle;//we already have it and somebody else has it as well
+        }
+    }
 
     //see if we already know about the data
     auto handleIter=m_dataHandles.find(hash);
@@ -104,6 +108,9 @@ typename DataHandler<_HashType, _DataHandle, _Data>::SharedDataHandle DataHandle
     }
 
     m_weakDataHandles[hash]=returnHandle;
+
+    if(!returnHandle)
+        return returnHandle;
     return returnHandle;
 }
 
@@ -112,7 +119,7 @@ void DataHandler<_HashType, _DataHandle, _Data>::removeHandle(DataHandle *dataHa
 {
     std::unique_lock<std::mutex> lock(m_dataMutex);
 
-    auto iter=m_weakDataHandles.find(dataHandle->hash);
+    auto iter=m_weakDataHandles.find(dataHandle->hash());
 
     if(iter!=m_weakDataHandles.end())
         m_weakDataHandles.erase(iter);

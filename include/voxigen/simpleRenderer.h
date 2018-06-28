@@ -1,18 +1,22 @@
 #ifndef _voxigen_simpleRenderer_h_
 #define _voxigen_simpleRenderer_h_
 
+#include "voxigen/rendererSettings.h"
+
 #include "voxigen/voxigen_export.h"
 #include "voxigen/initGlew.h"
 #include "voxigen/regularGrid.h"
 #include "voxigen/SimpleCamera.h"
 #include "voxigen/SimpleChunkRenderer.h"
 #include "voxigen/simpleShapes.h"
+#include "voxigen/object.h"
 
 #include <string>
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <opengl_util/program.h>
+#include <deque>
 
 #ifdef _WINDOWS
 #include "windows.h"
@@ -27,7 +31,7 @@ struct RegionRenderer
     typedef std::unordered_map<ChunkHash, _ChunkRenderer *> ChunkRendererMap;
 
     RegionRenderer() {}
-    RegionRenderer(RegionHash hash, glm::ivec3 &index, glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
+    RegionRenderer(RegionHash hash, const glm::ivec3 &index, const glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
 //    RegionRenderer(RegionRenderer<_ChunkRenderer> &renderer):hash(renderer.hash), offset(renderer.offset) {}
 
     RegionHash hash;
@@ -47,6 +51,7 @@ public:
     typedef typename GridType::ChunkType ChunkType;
     typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
+    typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRendererType;
     typedef std::unique_ptr<ChunkRenderType> UniqueChunkRenderer;
 
     //    typedef std::unordered_map<ChunkHash, size_t> ChunkRendererMap;
@@ -79,7 +84,13 @@ public:
     void stopPrepThread();
     void prepThread();
 
+    ChunkRenderType *createRenderNode(Key key);
+
+    bool updateCallback(SharedChunkHandle chunkHandle);
+
 private:
+    void rendererUpdateChunks();
+    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers);
     void updateOcclusionQueries();
 
     ChunkRenderType *getFreeRenderer();
@@ -92,23 +103,46 @@ private:
 
     float m_viewRadius;
     float m_viewRadiusMax; //keep renderer till it is outside of this range
+    float m_viewLODDistance;
     int m_maxChunkRing;
     int m_currentQueryRing;
     bool m_queryComplete;
 
     SimpleFpsCamera *m_camera;
+    Object m_playerPos;
     glm::vec3 m_lastUpdatePosition;
+    glm::ivec3 m_currentRegion;
+    glm::ivec3 m_currentChunk;
+
+    typedef std::vector<ChunkRenderType *> SearchRing;
+    typedef std::vector<SearchRing> SearchMap;
+    SearchMap m_searchMap;
+    
+    bool m_updateChunks;
+    std::vector<ChunkRenderType *> m_addedChunkRenderers;
+    std::vector<ChunkRenderType *> m_updatedChunkRenderers;
+    std::vector<ChunkRenderType *> m_removedChunkRenderers;
 
     bool m_outlineChunks;
 
     GridType *m_grid;
 
     std::vector<std::vector<glm::ivec3>> m_chunkIndices;
+#ifdef OLD_SEARCH
     std::vector<std::vector<ChunkRenderType *>> m_chunkQueryOrder;
+#endif//OLD_SEARCH
     int m_outstandingChunkLoads;
     int m_outstandingChunkPreps;
     //    std::vector<ChunkRenderType> m_chunkRenderers;
     std::vector<UniqueChunkRenderer> m_chunkRenderers; //all allocated renderers
+
+//update data structs
+    std::mutex m_chunkRendererMapMutex;
+    typedef std::unordered_map<Key::Type, ChunkRenderType *> ChunkRenderMap;
+    ChunkRenderMap m_chunkRendererMap; //all allocated renderers
+
+    std::vector<ChunkRenderType *> m_addChunkRenderer;
+    std::vector<ChunkRenderType *> m_removeChunkRenderer;
 
     RegionRendererMap m_regionRenderers;
     std::vector<ChunkRenderType *> m_freeChunkRenderers; //renderers available for re-use
@@ -123,6 +157,7 @@ private:
     size_t m_outlineLightPositionId;
     size_t m_offsetId;
     size_t m_outlineOffsetId;
+    size_t m_outlineStatusColor;
 
     size_t m_lightPositionId;
     size_t m_lighColorId;
@@ -144,8 +179,9 @@ private:
 #endif
     std::mutex m_prepMutex;
     std::thread m_prepThread;
-    std::queue<ChunkRenderType *> m_prepQueue;
+    std::deque<ChunkRenderType *> m_prepQueue;
     std::condition_variable m_prepEvent;
+    std::condition_variable m_prepUpdateEvent;
     bool m_prepThreadRun;
 
     //Status updates

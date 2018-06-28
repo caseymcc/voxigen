@@ -13,6 +13,7 @@
 #include "voxigen/dataStore.h"
 #include "voxigen/entity.h"
 
+//#include "octomap/OcTree.h"
 #include <unordered_map>
 #include <memory>
 #include <limits>
@@ -37,7 +38,7 @@ public:
     typedef std::unordered_map<ChunkHash, SharedChunk> SharedChunkMap;
 
 //Class
-    Region(RegionHash hash, GridDescriptors *descriptors);
+    Region(RegionHash hash);// , GridDescriptors *descriptors);
     ~Region();
 
 //    SharedChunkHandle getChunk(const glm::ivec3 &index);
@@ -56,9 +57,9 @@ private:
 };
 
 template<typename _Chunk, size_t _ChunksX, size_t _ChunksY, size_t _ChunksZ>
-Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::Region(RegionHash hash, GridDescriptors *descriptors):
-m_hash(hash),
-m_descriptors(descriptors)
+Region<_Chunk, _ChunksX, _ChunksY, _ChunksZ>::Region(RegionHash hash)://, GridDescriptors *descriptors):
+m_hash(hash)//,
+//m_descriptors(descriptors)
 {
 }
 

@@ -18,7 +18,7 @@ public:
 	JsonSerializer();
 	~JsonSerializer();
 
-	bool open(std::string fileName, bool pretty=true);
+	bool open(const char *fileName, bool pretty=true);
 
 	void startObject();
 	void endObject();
@@ -26,9 +26,9 @@ public:
 	void endArray();
 	void startArray();
 
-	void addKey(const std::string key);
+	void addKey(const char * key);
 	void addBool(const bool &value);
-	void addString(const std::string &value);
+	void addString(const char *value);
 	void addInt(const int &value);
 	void addUInt(const unsigned int &value);
 	void addInt64(const __int64 &value);
@@ -49,13 +49,13 @@ public:
 	JsonUnserializer();
 	virtual ~JsonUnserializer();
 
-	bool open(std::string fileName);
-    bool parse(std::string json);
+	bool open(const char *fileName);
+    bool parse(const char *json);
 
-	bool key(const std::string &key);
+	bool key(const char *key);
 //	Type type();
 
-	std::string name();
+    const char *name();
 
 	bool openObject();
 	void closeObject();
@@ -66,7 +66,7 @@ public:
     bool advance();
 
 	bool getBool();
-	std::string getString();
+    const char *getString();
 	int getInt();
 	unsigned int getUInt();
 	__int64 getInt64();

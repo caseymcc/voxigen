@@ -1,6 +1,8 @@
 #ifndef _voxigen_simpleChunkRenderer_h_
 #define _voxigen_simpleChunkRenderer_h_
 
+#include "voxigen/rendererSettings.h"
+
 #include "voxigen/voxigen_export.h"
 #include "voxigen/chunk.h"
 #include "voxigen/chunkHandle.h"
@@ -15,6 +17,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
+#include <opengl_util/program.h>
 
 namespace voxigen
 {
@@ -53,6 +57,7 @@ public:
     };
 
     State getState() { return m_state; }
+    Key getKey(){return Key(m_chunkHandle->regionHash, m_chunkHandle->hash);}
 
     void setParent(RenderType *parent);
 //    void setRegionHash(RegionHash hash);
@@ -64,11 +69,14 @@ public:
     void build(unsigned int instanceData);
     void buildOutline(unsigned int instanceData);
 
-    void update();
+    void buildMesh();
+    bool update();
     void updated();
 
     void updateOutline();
     void invalidate();
+
+    void releaseChunkMemory();
 
     bool incrementCopy();
     void draw();
@@ -78,17 +86,24 @@ public:
     bool checkOcculsionQuery(unsigned int &samples);
 
 //#ifndef NDEBUG
-        void drawOutline();
+    void drawOutline(opengl_util::Program *program, size_t colorId);
 //#endif //NDEBUG
 
-    const RegionHash getRegionHash() { return m_chunkHandle->regionHash; }
-    const ChunkHash getChunkHash() { return m_chunkHandle->hash; }
+    const RegionHash getRegionHash() { return m_chunkHandle->regionHash(); }
+    const glm::ivec3 getRegionIndex() { return m_chunkHandle->regionIndex(); }
+    const ChunkHash getChunkHash() { return m_chunkHandle->hash(); }
+    const glm::ivec3 getChunkIndex() { return m_chunkHandle->chunkIndex(); }
     SharedChunkHandle getChunkHandle() { return m_chunkHandle; }
-    const glm::ivec3 &getPosition() { return m_chunkHandle->chunk->getPosition(); }
-    glm::vec3 getGridOffset() const { return m_chunkHandle->regionOffset;/* m_chunkHandle->chunk->getGridOffset();*/ }
+    const glm::ivec3 &getPosition() { return m_chunkHandle->chunk()->getPosition(); }
+    glm::vec3 getGridOffset() const { return m_chunkHandle->regionOffset();/* m_chunkHandle->chunk->getGridOffset();*/ }
     
+    size_t getLod() { return m_lod; }
+    void setLod(size_t lod);
+
     unsigned int refCount;
 private:
+    void calculateMemoryUsed();
+
     RenderType *m_parent;
 
     State m_state;
@@ -112,6 +127,10 @@ private:
     unsigned int m_offsetVBO;
     std::vector<glm::vec4> m_ChunkInfoOffset;
 
+    bool m_lodUpdated;
+    size_t m_lod;
+
+    size_t m_memoryUsed;
 //    MeshType m_mesh;
     ChunkMesh m_mesh;
 

@@ -7,9 +7,10 @@ template<typename _Parent, typename _Chunk>
 SimpleChunkRenderer<_Parent, _Chunk>::SimpleChunkRenderer():
 m_state(Init), 
 m_chunkOffset(0.0f, 0.0f, 0.0f), 
-refCount(0)
+refCount(0),
+m_lodUpdated(false),
 //#ifndef NDEBUG
-,m_outlineBuilt(false)
+m_outlineBuilt(false)
 //#endif //NDEBUG
 {}
 
@@ -35,7 +36,13 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setChunk(SharedChunkHandle chunk)
     m_chunkHandle=chunk;
 
     if(m_state!=Init)
+    {
+#ifdef OCCLUSSION_QUERY
         m_state=Occluded;
+#else//OCCLUSSION_QUERY
+        m_state=Dirty;
+#endif//OCCLUSSION_QUERY
+    }
     m_delayedFrames=0;
 }
 
@@ -113,7 +120,11 @@ void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
     glGenQueries(1, &m_queryId);
 
     if(m_chunkHandle)
+#ifdef OCCLUSSION_QUERY
         m_state=Occluded; //assumed, as it will force a check
+#else//OCCLUSSION_QUERY
+        m_state=Dirty;
+#endif//OCCLUSSION_QUERY
     else
         m_state=Invalid;
 
@@ -147,20 +158,47 @@ void SimpleChunkRenderer<_Parent, _Chunk>::buildOutline(unsigned int instanceDat
 }
 
 template<typename _Parent, typename _Chunk>
-void SimpleChunkRenderer<_Parent, _Chunk>::update()
+void SimpleChunkRenderer<_Parent, _Chunk>::buildMesh()
 {
     if(m_state!=Dirty)
         return;
 
-    if(m_chunkHandle->status!=ChunkHandleType::Memory) //not loaded yet need to wait
+    if(m_chunkHandle->status()!=ChunkHandleType::Memory) //not loaded yet need to wait
     {
         return;
     }
 
-    if(m_chunkHandle->empty)
+    if(m_chunkHandle->empty())
     {
         m_state=Empty;
         return;
+    }
+
+    buildCubicMesh(m_mesh, m_chunkHandle->chunk());
+
+    //we have mesh lets drop the data
+//    m_chunkHandle->release();
+
+    calculateMemoryUsed();
+}
+
+template<typename _Parent, typename _Chunk>
+bool SimpleChunkRenderer<_Parent, _Chunk>::update()
+{
+    bool copyStarted=false;
+
+    if(m_state!=Dirty)
+        return copyStarted;
+
+//    if(m_chunkHandle->status()!=ChunkHandleType::Memory) //not loaded yet need to wait
+//    {
+//        return copyStarted;
+//    }
+
+    if(m_chunkHandle->empty())
+    {
+        m_state=Empty;
+        return copyStarted;
     }
 
 //    ChunkType *chunk=m_chunkHandle->chunk.get();
@@ -232,29 +270,40 @@ void SimpleChunkRenderer<_Parent, _Chunk>::update()
 //    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh.getNoOfIndices()*sizeof(typename MeshType::IndexType), m_mesh.getRawIndexData(), GL_STATIC_DRAW);
 //    assert(glGetError()==GL_NO_ERROR);
 
-    buildCubicMesh(m_mesh, m_chunkHandle->chunk.get());
+    //chunk is invalid
+    if(!m_chunkHandle->chunk())
+        return copyStarted;
+
+    buildCubicMesh(m_mesh, m_chunkHandle->chunk());
 
     std::vector<ChunkMeshVertex> &verticies=m_mesh.getVerticies();
     std::vector<int> &indices=m_mesh.getIndices();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, verticies.size()*sizeof(ChunkMeshVertex), verticies.data(), GL_STATIC_DRAW);
-    assert(glGetError()==GL_NO_ERROR);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-    assert(glGetError()==GL_NO_ERROR);
+    if(!indices.empty())
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+        glBufferData(GL_ARRAY_BUFFER, verticies.size()*sizeof(ChunkMeshVertex), verticies.data(), GL_STATIC_DRAW);
+        assert(glGetError()==GL_NO_ERROR);
 
-    m_vertexBufferSync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+        assert(glGetError()==GL_NO_ERROR);
+
+        m_vertexBufferSync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        copyStarted=true;
+    }
+    else
+        copyStarted=false;
     //m_validBlocks=m_mesh.getNoOfIndices();
     m_validBlocks=indices.size();
 
 
-    //we have mesh lets drop the data
-    m_chunkHandle->release();
+//    //we have mesh lets drop the data
+//    m_chunkHandle->release();
 
     //m_state=Built;
 //    m_state=Copy;
+    return copyStarted;
 }
 
 template<typename _Parent, typename _Chunk>
@@ -270,7 +319,7 @@ void SimpleChunkRenderer<_Parent, _Chunk>::updateOutline()
 //#ifndef NDEBUG
     //chunk is not going to be valid till loaded, so going to hack together the offset from
     //the hash info
-    glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)/*+m_chunkOffset*/, 1.0f);
+    glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash())/*+m_chunkOffset*/, 1.0f);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(position), GL_STATIC_DRAW);
@@ -292,6 +341,13 @@ void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 }
 
 template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::releaseChunkMemory()
+{
+    m_chunkHandle->release();
+    calculateMemoryUsed();
+}
+
+template<typename _Parent, typename _Chunk>
 bool SimpleChunkRenderer<_Parent, _Chunk>::incrementCopy()
 {
     if(m_delayedFrames==0)
@@ -309,7 +365,7 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::incrementCopy()
     }
     else
     {
-        //now delay a few frames, sync on says copy was started
+        //now delay a few frames, sync only says copy was started
         m_delayedFrames++;
         if(m_delayedFrames>3)
         {
@@ -383,21 +439,79 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::checkOcculsionQuery(unsigned int &sam
 
 //#ifndef NDEBUG
 template<typename _Parent, typename _Chunk>
-void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline()
+void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline(opengl_util::Program *program, size_t colorId)
 {
+    glm::vec3 color(1.0f, 1.0f, 1.0f);
+
     if(!m_outlineBuilt)
-        return;
-    if(m_state==Invalid)
-        return;
+        updateOutline();
+
     if(m_state==Built)
         return;
     if(m_state==Empty)
         return;
 
+//    if(m_state==Empty)
+//    {
+//        if(m_chunkHandle->memoryUsed()>0)
+//            color=glm::vec3(1.0f, 1.0f, 0.0f);
+//        else
+//            return;
+//    }
+//
+//    if(m_chunkHandle->memoryUsed()>0)
+//        color=glm::vec3(1.0f, 0.0f, 0.0f);
+//    else
+//        color=glm::vec3(0.0f, 1.0f, 0.0f);
+
+    ChunkHandleType::Status status=m_chunkHandle->status();
+    
+    if(status==ChunkHandleType::Unknown)
+        color=glm::vec3(1.0f, 0.0f, 0.0f);
+    else if(status==ChunkHandleType::Loading)
+        color=glm::vec3(1.0f, 0.0f, 1.0f);
+    else if(status==ChunkHandleType::Generating)
+        color=glm::vec3(0.0f, 0.0f, 1.0f);
+    else if(status==ChunkHandleType::Memory)
+    {
+//        if(refCount>0)
+//            color=glm::vec3(0.0f, 1.0f, 1.0f);
+//        else
+//            color=glm::vec3(1.0f, 1.0f, 0.0f);
+//        if(m_chunkHandle->memoryUsed>0)
+//            color=glm::vec3(1.0f, 1.0f, 0.0f);
+//        else
+            color=glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    else
+        color=glm::vec3(1.0f, 0.0f, 0.5f);
+
+    program->uniform(colorId)=color;
  //   glm::vec3 position=m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)+m_chunkOffset;
 
     glBindVertexArray(m_outlineVertexArray);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setLod(size_t lod)
+{
+    m_lod=lod;
+//    if(m_lod==lod)
+//        return;
+//
+//    m_lodUpdated=true;
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::calculateMemoryUsed()
+{
+    m_memoryUsed=0;
+
+    if(m_chunkHandle)
+        m_memoryUsed+=m_chunkHandle->memoryUsed();
+
+    m_memoryUsed+=m_mesh.memoryUsed();
 }
 //#endif //NDEBUG
 

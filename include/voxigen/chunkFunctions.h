@@ -94,13 +94,24 @@ void spiralCube(std::vector<glm::ivec3> &positions, float radius)
         }
     }
 }
+int ringSize(int radius)
+{
+    if(radius<=0)
+        return 1;
+
+    int r=2*radius+1;
+
+    return (6*r*r)-(12*r)+8;
+}
 
 template<typename _Chunk>
 void ringCube(std::vector<glm::ivec3> &positions, int radius)
 {
     glm::ivec3 position(0, 0, 0);
     int z=0;
+    int index=0;
 
+    positions.resize(ringSize(radius));
     position.z=-radius;
     for(int y=-radius; y<=radius; ++y)
     {
@@ -108,7 +119,7 @@ void ringCube(std::vector<glm::ivec3> &positions, int radius)
         for(int x=-radius; x<=radius; ++x)
         {
             position.x=x;
-            positions.push_back(position);
+            positions[index++]=position;
         }
     }
 
@@ -120,28 +131,28 @@ void ringCube(std::vector<glm::ivec3> &positions, int radius)
         for(int x=-radius; x<radius; ++x)
         {
             position.x=x;
-            positions.push_back(position);
+            positions[index++]=position;
         }
 
         position.x=radius;
         for(int y=-radius; y<radius; ++y)
         {
             position.y=y;
-            positions.push_back(position);
+            positions[index++]=position;
         }
 
         position.y=radius;
         for(int x=radius; x>-radius; --x)
         {
             position.x=x;
-            positions.push_back(position);
+            positions[index++]=position;
         }
 
         position.x=-radius;
         for(int y=radius; y>-radius; --y)
         {
             position.y=y;
-            positions.push_back(position);
+            positions[index++]=position;
         }
         
     }
@@ -155,11 +166,100 @@ void ringCube(std::vector<glm::ivec3> &positions, int radius)
             for(int x=-radius; x<=radius; ++x)
             {
                 position.x=x;
-                positions.push_back(position);
+                positions[index++]=position;
             }
         }
     }
 }
+
+template<typename _ChunkType>
+std::vector<std::vector<glm::ivec3>> buildRadiusRingMap(float radius)
+{
+    std::vector<std::vector<glm::ivec3>> radiusMap;
+
+    int maxRing=std::ceil(radius/std::max(std::max(_ChunkType::sizeX::value, _ChunkType::sizeY::value), _ChunkType::sizeZ::value));
+
+    radiusMap.resize(maxRing);
+    for(size_t i=0; i<maxRing; ++i)
+        ringCube<_ChunkType>(radiusMap[i], i);
+
+    return radiusMap;
+}
+
+
+template<typename _Grid, typename _Node>
+std::vector<std::vector<_Node *>> buildRingSearchMap(_Grid *grid, const glm::ivec3 &region, const glm::ivec3 &chunk, std::vector<std::vector<glm::ivec3>> &radiusRingMap, std::function<_Node *(Key)> createNode)
+{
+    std::vector<std::vector<_Node *>> searchMap;
+    int chunkIndicesSize=radiusRingMap.size();
+
+    glm::ivec3 index;
+    glm::ivec3 currentRegionIndex;
+
+    searchMap.resize(radiusRingMap.size());
+    for(size_t i=0; i<radiusRingMap.size(); ++i)
+    {
+        std::vector<glm::ivec3> &chunkIndices=radiusRingMap[i];
+        searchMap[i].resize(chunkIndices.size());
+
+        for(size_t j=0; j<chunkIndices.size(); ++j)
+        {
+            index=chunk+chunkIndices[j];
+            currentRegionIndex=region;
+
+            glm::vec3 regionOffset=grid->getDescriptors().adjustRegion(currentRegionIndex, index);
+            Key key=grid->getHashes(currentRegionIndex, index);
+
+            searchMap[i][j]=createNode(key);
+        }
+    }
+
+    return searchMap;
+}
+
+//template<typename _Grid, typename _Node>
+//void moveSearchMap_posX(std::vector<std::vector<_Node *>> &searchMap, glm::ivec3 direction, std::vector<_Node *> &removedNodes, std::function<_Node *(Key)> createNode)
+//{
+//    for(size_t i=radiusRingMap.size()-1; i>=0; --i)
+//    {
+//        int radius=i;
+//
+//        //move bottom
+//        index.z=searchMap[0].index.z;
+//        for(int y=-radius; y<radius; ++y)
+//        {
+//            for(int x=-radius; x<radius-1; ++x)
+//            {
+//                searchMap[index]=searchMap[index+1];
+//                index++;
+//            }
+//            searchMap[index]=createNode(key);
+//            index++;
+//        }
+//
+//        //move top
+//        index.z=searchMap[0].index.z+radius;
+//        for(int y=-radius; y<radius; ++y)
+//        {
+//            for(int x=-radius; x<radius-1; ++x)
+//            {
+//                searchMap[index]=searchMap[index+1];
+//                index++;
+//            }
+//            searchMap[index]=createNode(key);
+//            index++;
+//        }
+//    }
+//}
+//
+//template<typename _Grid, typename _Node>
+//void moveSearchMap(std::vector<std::vector<_Node *>> &searchMap, glm::ivec3 direction, std::vector<_Node *> &removedNodes, std::function<_Node *(Key)> createNode)
+//{
+//    glm::ivec3 index;
+//
+//    if(direction.x>0)
+//        moveSearchMap_posX(searchMap, direction, removedNodes, createNode);
+//}
 
 }//namespace voxigen
 
