@@ -60,19 +60,21 @@ using SharedProcessRequest=std::shared_ptr<ProcessRequest<_Chunk>>;
 template<typename _Chunk>
 struct GenerateRequest:public ProcessRequest<_Chunk>
 {
-    GenerateRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Generate, 500, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
-    GenerateRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Generate, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
+    GenerateRequest(SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Generate, 500, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod){}
+    GenerateRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Type::Generate, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) lod(lod) {}
 
     WeakChunkHandleType chunkHandle;
+    size_t lod;
 };
 
 template<typename _Chunk>
 struct ReadRequest:public ProcessRequest<_Chunk>
 {
-    ReadRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Read, 500, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
-    ReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Read, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
+    ReadRequest(SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Read, 500, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
+    ReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Type::Read, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
 
     WeakChunkHandleType chunkHandle;
+    size_t lod;
 };
 
 template<typename _Chunk>
@@ -185,15 +187,15 @@ public:
     ProcessQueue(DescriptorType *descriptor):m_descriptor(descriptor) { ProcessCompare<ChunkType>::descriptor=descriptor; }
 
     void updatePosition(const glm::ivec3 &region, const glm::ivec3 &chunk);
-    void addGenerate(SharedChunkHandle chunkHandle);
-    void addRead(SharedChunkHandle chunkHandle);
+    void addGenerate(SharedChunkHandle chunkHandle, size_t lod);
+    void addRead(SharedChunkHandle chunkHandle, size_t lod);
     void addWrite(SharedChunkHandle chunkHandle);
     void addUpdate(SharedChunkHandle chunkHandle);
 
     bool empty() { return m_queue.empty(); }
     std::unique_lock<std::mutex> getLock();
     void wait(std::unique_lock<std::mutex> &lock);
-    SharedChunkHandle getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type);
+    SharedChunkHandle getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type, size_t &data);
 
     void updatePriority();
 private:

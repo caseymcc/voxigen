@@ -18,9 +18,9 @@ void ProcessQueue<_Grid>::updatePosition(const glm::ivec3 &region, const glm::iv
 }
 
 template<typename _Grid>
-void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle)
+void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle, size_t lod)
 {
-    std::shared_ptr<GenerateRequestType> request=std::make_shared<GenerateRequestType>(chunkHandle);
+    std::shared_ptr<GenerateRequestType> request=std::make_shared<GenerateRequestType>(chunkHandle, lod);
 
     {
 #ifdef LOG_PROCESS_QUEUE
@@ -43,9 +43,9 @@ void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle)
 }
 
 template<typename _Grid>
-void ProcessQueue<_Grid>::addRead(SharedChunkHandle chunkHandle)
+void ProcessQueue<_Grid>::addRead(SharedChunkHandle chunkHandle, size_t lod)
 {
-    std::shared_ptr<ReadRequestType> request=std::make_shared<ReadRequestType>(chunkHandle);
+    std::shared_ptr<ReadRequestType> request=std::make_shared<ReadRequestType>(chunkHandle, lod);
 
     {
         std::unique_lock<std::mutex> lock(m_mutex);
@@ -102,7 +102,7 @@ void ProcessQueue<_Grid>::wait(std::unique_lock<std::mutex> &lock)
 }
 
 template<typename _Grid>
-typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type)
+typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type, size_t &data)
 {
     SharedProcessRequest<ChunkType> request;
     SharedChunkHandle chunkHandle;
@@ -123,6 +123,7 @@ typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProc
                 GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
 
                 chunkHandle=generateRequest->chunkHandle.lock();
+                data=generateRequest->lod;
             }
             break;
         case Process::Type::Read:
@@ -130,6 +131,7 @@ typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProc
                 ReadRequest<ChunkType> *readRequest=(ReadRequest<ChunkType> *)request.get();
 
                 chunkHandle=readRequest->chunkHandle.lock();
+                data=readRequest->lod;
             }
             break;
         case Process::Type::Write:

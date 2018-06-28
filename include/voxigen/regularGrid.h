@@ -197,7 +197,8 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
     while(m_processThreadRunning)
     {
         Process::Type type;
-        SharedChunkHandle chunkHandle=m_processQueue.getNextProcessRequest(lock, type);
+        size_t lod;
+        SharedChunkHandle chunkHandle=m_processQueue.getNextProcessRequest(lock, type, lod);
 
         if(!chunkHandle)
         {
@@ -214,7 +215,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
         switch(type)
         {
         case Process::Generate:
-            chunkHandle->generate(&m_descriptors, m_generator.get());
+            chunkHandle->generate(&m_descriptors, m_generator.get(), lod);
             addChunk=true;
             break;
         case Process::Read:

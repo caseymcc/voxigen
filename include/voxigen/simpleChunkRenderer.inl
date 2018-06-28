@@ -7,9 +7,10 @@ template<typename _Parent, typename _Chunk>
 SimpleChunkRenderer<_Parent, _Chunk>::SimpleChunkRenderer():
 m_state(Init), 
 m_chunkOffset(0.0f, 0.0f, 0.0f), 
-refCount(0)
+refCount(0),
+m_lodUpdated(false),
 //#ifndef NDEBUG
-,m_outlineBuilt(false)
+m_outlineBuilt(false)
 //#endif //NDEBUG
 {}
 
@@ -490,6 +491,16 @@ void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline(opengl_util::Program *pro
 
     glBindVertexArray(m_outlineVertexArray);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::setLod(size_t lod)
+{
+    m_lod=lod;
+//    if(m_lod==lod)
+//        return;
+//
+//    m_lodUpdated=true;
 }
 
 template<typename _Parent, typename _Chunk>

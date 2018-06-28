@@ -316,9 +316,9 @@ void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
             //we dont have it in memory so we need to load or generate it
             if(!chunkHandle->cachedOnDisk()) 
 //                m_generatorQueue->add(chunkHandle);
-                m_dataStore->generate(chunkHandle);
+                m_dataStore->generate(chunkHandle, lod);
             else
-                m_dataStore->read(chunkHandle);
+                m_dataStore->read(chunkHandle, lod);
         }
     }
 }

@@ -95,7 +95,7 @@ int main(int argc, char ** argv)
         bfs::path worldPath(worldDirectory);
         
         bfs::create_directory(worldPath);
-        world.create(worldDirectory, "TestApWorld", glm::ivec3(2048, 2048, 1024), "EquiRectWorldGenerator");
+        world.create(worldDirectory, "TestApWorld", glm::ivec3(32768, 32768, 1024), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());

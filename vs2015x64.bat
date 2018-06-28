@@ -6,6 +6,7 @@ set POLYVOX_DIR=D:/projects/voxel/polyvox
 set LIBNOISE_DIR=D:/projects/voxel/libnoise
 
 set cmake_call=cmake -H. -B_buildx64 -G "Visual Studio 14 2015 Win64"^
+ -DUSE_OCTOMAP=OFF^
  -DVOXIGEN_OUTPUT_DIRECTORY_DEBUG="E:/projects/lumberyard_git/dev/Bin64vc140.Debug"^
  -DVOXIGEN_OUTPUT_DIRECTORY_RELEASE="E:/projects/lumberyard_git/dev/Bin64vc140"
 

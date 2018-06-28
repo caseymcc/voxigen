@@ -245,26 +245,40 @@ struct Mesh
 };
 
 template<typename _Chunk>
-size_t vertexToIndex(const glm::ivec3 &pos)
+size_t vertexToIndex(const glm::ivec3 &pos, size_t stride)
 {
-    return (pos.z*(_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1))+(pos.y*(_Chunk::sizeX::value+1))+pos.x;
+    glm::ivec3 size(_Chunk::sizeX::value/stride+1, _Chunk::sizeY::value/stride+1, _Chunk::sizeZ::value/stride+1);
+
+    return (pos.z*size.x*size.y)+(pos.y*size.x)+pos.x;
+    //return (pos.z*(_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1))+(pos.y*(_Chunk::sizeX::value+1))+pos.x;
 }
 
 template<typename _Chunk>
-Vertex indexToVertex(size_t index)
+Vertex indexToVertex(size_t index, size_t stride)
 {
     Vertex pos;
 
-    pos.z=index/((_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1));
-    index-=pos.z*((_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1));
-    pos.y=index/(_Chunk::sizeX::value+1);
-    pos.x=index-(pos.y*(_Chunk::sizeX::value+1));
+    glm::ivec3 size(_Chunk::sizeX::value/stride+1, _Chunk::sizeY::value/stride+1, _Chunk::sizeZ::value/stride+1);
+
+    pos.z=index/(size.x*size.y);
+    index-=pos.z*(size.x*size.y);
+    pos.y=index/(size.x);
+    pos.x=index-(pos.y*(size.x));
+    
+    pos.x*=stride;
+    pos.y*=stride;
+    pos.z*=stride;
+
+//    pos.z=index/((_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1));
+//    index-=pos.z*((_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1));
+//    pos.y=index/(_Chunk::sizeX::value+1);
+//    pos.x=index-(pos.y*(_Chunk::sizeX::value+1));
 
     return pos;
 }
 
 template<typename _Chunk>
-void addFace(Mesh &mesh, const std::vector<glm::ivec3> &face, const glm::ivec3 &position, unsigned int cellType)
+void addFace(Mesh &mesh, const std::vector<glm::ivec3> &face, const glm::ivec3 &position, unsigned int cellType, size_t stride)
 {
     glm::ivec3 pos;
     unsigned int vertIndex[4];
@@ -272,7 +286,7 @@ void addFace(Mesh &mesh, const std::vector<glm::ivec3> &face, const glm::ivec3 &
     for(size_t i=0; i<4; ++i)
     {
         pos=face[i]+position;
-        vertIndex[i]=vertexToIndex<_Chunk>(pos);
+        vertIndex[i]=vertexToIndex<_Chunk>(pos, stride);
     }
 
     unsigned int *indices=&mesh.indices[mesh.indicesSize];
@@ -288,7 +302,7 @@ void addFace(Mesh &mesh, const std::vector<glm::ivec3> &face, const glm::ivec3 &
 }
 
 template<typename _Chunk, bool _XNegFace=true, bool _XPosFace=true, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
-void checkCell(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position)
+void checkCell(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride)
 {
     _Chunk::CellType &cell=cells[index];
 
@@ -302,101 +316,101 @@ void checkCell(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::iv
         size_t adjIndex=index-1;
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::xNeg, position, cellType);
+            addFace<_Chunk>(mesh, Face::xNeg, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::xNeg, position, cellType);
+        addFace<_Chunk>(mesh, Face::xNeg, position, cellType, stride);
 
     if(_XPosFace)
     {
         size_t adjIndex=index+1;
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::xPos, position, cellType);
+            addFace<_Chunk>(mesh, Face::xPos, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::xPos, position, cellType);
+        addFace<_Chunk>(mesh, Face::xPos, position, cellType, stride);
 
     if(_YNegFace)
     {
-        size_t adjIndex=index-_Chunk::sizeX::value;
+        size_t adjIndex=index-(_Chunk::sizeX::value/stride);
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::yNeg, position, cellType);
+            addFace<_Chunk>(mesh, Face::yNeg, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::yNeg, position, cellType);
+        addFace<_Chunk>(mesh, Face::yNeg, position, cellType, stride);
 
     if(_YPosFace)
     {
-        size_t adjIndex=index+_Chunk::sizeX::value;
+        size_t adjIndex=index+(_Chunk::sizeX::value/stride);
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::yPos, position, cellType);
+            addFace<_Chunk>(mesh, Face::yPos, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::yPos, position, cellType);
+        addFace<_Chunk>(mesh, Face::yPos, position, cellType, stride);
 
     if(_ZNegFace)
     {
-        size_t adjIndex=index-(_Chunk::sizeX::value*_Chunk::sizeY::value);
+        size_t adjIndex=index-(_Chunk::sizeX::value*_Chunk::sizeY::value/(stride*stride));
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::zNeg, position, cellType);
+            addFace<_Chunk>(mesh, Face::zNeg, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::zNeg, position, cellType);
+        addFace<_Chunk>(mesh, Face::zNeg, position, cellType, stride);
 
 
     if(_ZPosFace)
     {
-        size_t adjIndex=index+(_Chunk::sizeX::value*_Chunk::sizeY::value);
+        size_t adjIndex=index+(_Chunk::sizeX::value*_Chunk::sizeY::value/(stride*stride));
 
         if(empty(cells[adjIndex]))
-            addFace<_Chunk>(mesh, Face::zPos, position, cellType);
+            addFace<_Chunk>(mesh, Face::zPos, position, cellType, stride);
     }
     else
-        addFace<_Chunk>(mesh, Face::zPos, position, cellType);
+        addFace<_Chunk>(mesh, Face::zPos, position, cellType, stride);
 
 }
 
 template<typename _Chunk, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
-void checkX(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position)
+void checkX(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride)
 {
     position.x=0;
 
-    checkCell<_Chunk, false, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
+    checkCell<_Chunk, false, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
     index++;
-    position.x+=1;
+    position.x++;
 
-    for(size_t x=1; x<_Chunk::sizeX::value-1; x++)
+    for(size_t x=stride; x<_Chunk::sizeX::value-stride; x+=stride)
     {
-        checkCell<_Chunk, true, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
+        checkCell<_Chunk, true, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
         index++;
-        position.x+=1;
+        position.x++;
     }
 
-    checkCell<_Chunk, true, false, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
+    checkCell<_Chunk, true, false, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
     index++;
 }
 
 template<typename _Chunk, bool _ZNegFace=true, bool _ZPosFace=true>
-void checkY(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position)
+void checkY(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride)
 {
     position.y=0;
 
-    checkX<_Chunk, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
-    position.y+=1;
+    checkX<_Chunk, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
+    position.y++;
 
-    for(size_t y=1; y<_Chunk::sizeY::value-1; y++)
+    for(size_t y=stride; y<_Chunk::sizeY::value-stride; y+=stride)
     {
         position.x=0;
 
-        checkX<_Chunk, true, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
-        position.y+=1;
+        checkX<_Chunk, true, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
+        position.y++;
     }
 
-    checkX<_Chunk, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position);
+    checkX<_Chunk, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
 }
 
 
@@ -404,8 +418,11 @@ void checkY(Mesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3
 template<typename _Chunk>
 void buildCubicMesh(Mesh &mesh, _Chunk *chunk)
 {
-    const int requiredScratchSize=(_Chunk::sizeX::value+1)*(_Chunk::sizeY::value+1)*(_Chunk::sizeZ::value+1);
-    const int requiredIndices=(_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value)*6*4;
+    size_t stride=glm::pow(2, chunk->getLod());
+    glm::ivec3 size(_Chunk::sizeX::value/stride, _Chunk::sizeY::value/stride, _Chunk::sizeZ::value/stride);
+
+    const int requiredScratchSize=(size.x+1)*(size.y+1)*(size.z+1);
+    const int requiredIndices=(size.x*size.y*size.z)*6*4;
     const int requiredVertices=requiredScratchSize;
 
     mesh.indicesSize=0;
@@ -429,16 +446,16 @@ void buildCubicMesh(Mesh &mesh, _Chunk *chunk)
 
     size_t index=0;
 
-    checkY<_Chunk, false, true>(mesh, cells, index, position);
-    position.z+=1;
+    checkY<_Chunk, false, true>(mesh, cells, index, position, stride);
+    position.z++;
 
-    for(size_t z=1; z<_Chunk::sizeZ::value-1; z++)
+    for(size_t z=stride; z<_Chunk::sizeZ::value-stride; z+=stride)
     {
-        checkY<_Chunk, true, true>(mesh, cells, index, position);
-        position.z+=1;
+        checkY<_Chunk, true, true>(mesh, cells, index, position, stride);
+        position.z++;
     }
 
-    checkY<_Chunk, true, false>(mesh, cells, index, position);
+    checkY<_Chunk, true, false>(mesh, cells, index, position, stride);
 
     unsigned int *scratch=mesh.scratch;
     size_t scratchIndex=0;
@@ -471,7 +488,7 @@ void buildCubicMesh(Mesh &mesh, _Chunk *chunk)
         if(scratch[index]==requiredScratchSize)
         {
             scratch[index]=verticesIndex;
-            mesh.vertices[verticesIndex]=indexToVertex<_Chunk>(index);
+            mesh.vertices[verticesIndex]=indexToVertex<_Chunk>(index, stride);
             verticesIndex++;
         }
 

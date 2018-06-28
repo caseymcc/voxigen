@@ -32,9 +32,9 @@ public:
 
     ChunkHandle(RegionHash regionHash, const glm::ivec3 &regionIndex, ChunkHash chunkHash, const glm::ivec3 &chunkIndex):m_regionHash(regionHash), m_regionIndex(regionIndex), m_hash(chunkHash), m_chunkIndex(chunkIndex), m_status(Unknown), m_cachedOnDisk(false), m_empty(false), m_memoryUsed(0){}
 
-    void generate(IGridDescriptors *descriptors, Generator *generator);
-    void read(IGridDescriptors *descriptors, const std::string &fileName);
-    void write(IGridDescriptors *descriptors, const std::string &fileName);
+    void generate(IGridDescriptors *descriptors, Generator *generator, size_t lod=0);
+    void read(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0);
+    void write(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0);
 
     void release();
     glm::ivec3 size() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
@@ -74,21 +74,21 @@ private:
 };
 
 template<typename _Chunk>
-void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *generator)
+void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *generator, size_t lod)
 {
     glm::ivec3 chunkIndex=descriptors->getChunkIndex(m_hash);
     glm::vec3 startPos=descriptors->getRegionOffset(m_regionHash);
     glm::vec3 chunkOffset=descriptors->getChunkOffset(m_hash);
 
     startPos+=chunkOffset;
-    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, chunkOffset);
+    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, chunkOffset, lod);
 
     if(!m_chunk)
         return;
 
     ChunkType::Cells &cells=m_chunk->getCells();
 
-    unsigned int validCells=generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType));
+    unsigned int validCells=generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType), lod);
 
     m_chunk->setValidCellCount(validCells);
     m_status=Memory;
@@ -126,12 +126,12 @@ void ChunkHandle<_Chunk>::release()
 }
 
 template<typename _Chunk>
-void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string &fileName)
+void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0)
 {
     glm::ivec3 chunkIndex=descriptors->getChunkIndex(m_hash);
     glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
 
-    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, offset);
+    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, offset, lod);
 
     auto &cells=m_chunk->getCells();
     std::ifstream file;
@@ -150,7 +150,7 @@ void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string 
 }
 
 template<typename _Chunk>
-void ChunkHandle<_Chunk>::write(IGridDescriptors *descriptors, const std::string &fileName)
+void ChunkHandle<_Chunk>::write(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0)
 {
     auto &cells=m_chunk->getCells();
     std::ofstream file;

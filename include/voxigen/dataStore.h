@@ -104,8 +104,8 @@ public:
     void addUpdated(Key hash);
     std::vector<Key> getUpdated();
 
-    void generate(SharedChunkHandle chunkHandle);
-    void read(SharedChunkHandle chunkHandle);
+    void generate(SharedChunkHandle chunkHandle, size_t lod);
+    void read(SharedChunkHandle chunkHandle, size_t lod);
     void write(SharedChunkHandle chunkHandle);
     void empty(SharedChunkHandle chunkHandle);
 
@@ -587,15 +587,15 @@ void DataStore<_Grid>::writeChunk(SharedChunkHandle chunkHandle)
 
 
 template<typename _Grid>
-void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle)
+void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle, size_t lod)
 {
-    m_processQueue->addGenerate(chunkHandle);
+    m_processQueue->addGenerate(chunkHandle, lod);
 }
 
 template<typename _Grid>
-void DataStore<_Grid>::read(SharedChunkHandle chunkHandle)
+void DataStore<_Grid>::read(SharedChunkHandle chunkHandle, size_t lod)
 {
-    m_processQueue->addRead(chunkHandle);
+    m_processQueue->addRead(chunkHandle, lod);
 //    {
 //        std::unique_lock<std::mutex> lock(m_ioMutex);
 //

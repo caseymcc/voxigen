@@ -90,7 +90,7 @@ public:
 
 private:
     void rendererUpdateChunks();
-    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &removeRenderers);
+    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers);
     void updateOcclusionQueries();
 
     ChunkRenderType *getFreeRenderer();
@@ -103,6 +103,7 @@ private:
 
     float m_viewRadius;
     float m_viewRadiusMax; //keep renderer till it is outside of this range
+    float m_viewLODDistance;
     int m_maxChunkRing;
     int m_currentQueryRing;
     bool m_queryComplete;
@@ -119,6 +120,7 @@ private:
     
     bool m_updateChunks;
     std::vector<ChunkRenderType *> m_addedChunkRenderers;
+    std::vector<ChunkRenderType *> m_updatedChunkRenderers;
     std::vector<ChunkRenderType *> m_removedChunkRenderers;
 
     bool m_outlineChunks;

@@ -16,6 +16,7 @@ std::string SimpleRenderer<_Grid>::vertShader=
 "out vec3 position;\n"
 "//out vec3 normal;\n"
 "out vec3 texCoords;\n"
+"flat out uint type;\n"
 "\n"
 "//layout (std140) uniform pos\n"
 "//{\n"
@@ -36,6 +37,7 @@ std::string SimpleRenderer<_Grid>::vertShader=
 "//   normal=blockNormal;\n"
 "//   texCoords=vec3(blockTexCoord, blockOffset.w);\n"
 "   texCoords=vec3(0.0, 0.0, data);\n"
+"   type=data;\n"
 "   gl_Position=projectionView*vec4(position, 1.0);\n"
 
 "}\n"
@@ -48,6 +50,7 @@ std::string SimpleRenderer<_Grid>::fragmentShader=
 "in vec3 position;\n"
 "//in vec3 normal;\n"
 "in vec3 texCoords;\n"
+"flat in uint type;\n"
 "out vec4 color;\n"
 "\n"
 "uniform vec3 lightPos;\n"
@@ -70,7 +73,17 @@ std::string SimpleRenderer<_Grid>::fragmentShader=
 "   vec3 diffuse=diff * lightColor; \n"
 "//   color=vec4((ambient+diffuse)*vec3(value, value, value), 1.0f);\n"
 "   color=vec4(abs(normal), 1.0f);\n"
-"   "
+"//   color=vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+"//   if(type==1u)\n"
+"//       color=vec4(0.2f, 0.2f, 1.0f, 0.8f);\n"
+"//   else if(type>=2u && type<=3u)\n"
+"//       color=vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+"//   else if(type>3u)\n"
+"//   {\n"
+"//       float level=1.0f-(float(type-3u)/10.f);"
+"//       color=vec4(level, level, level, 1.0f);\n"
+"//   }\n"
+"//   color=vec4(color.rgb*(ambient+diffuse), color.a);\n"
 "//   color=vec4(1.0, 0.0, 0.0, 1.0);\n"
 "}\n"
 "";
@@ -133,6 +146,7 @@ template<typename _Grid>
 SimpleRenderer<_Grid>::SimpleRenderer(_Grid *grid):
 m_grid(grid),
 m_viewRadius(60.0f),
+m_viewLODDistance(90.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
 m_camera(nullptr),
@@ -554,12 +568,21 @@ struct ChunkQueryOffset
 template<typename _Grid>
 void SimpleRenderer<_Grid>::rendererUpdateChunks()
 {
-    if(m_addedChunkRenderers.empty()&&m_removedChunkRenderers.empty())
+    if(m_addedChunkRenderers.empty()&&m_updatedChunkRenderers.empty()&&m_removedChunkRenderers.empty())
         return;
 
     _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
 
     std::unique_lock<std::mutex> lock(m_prepMutex);
+
+    if(!m_updatedChunkRenderers.empty())
+    {
+        for(auto renderer:m_updatedChunkRenderers)
+        {
+            m_grid->loadChunk(renderer->getChunkHandle(), renderer->getLod());
+        }
+        m_updatedChunkRenderers.clear();
+    }
 
     if(!m_addedChunkRenderers.empty())
     {
@@ -581,7 +604,7 @@ void SimpleRenderer<_Grid>::rendererUpdateChunks()
             renderer->build(m_instanceVertices);
             renderer->buildOutline(m_outlineInstanceVertices);
 #ifndef OCCLUSSION_QUERY
-            m_grid->loadChunk(renderer->getChunkHandle(), 0);
+            m_grid->loadChunk(renderer->getChunkHandle(), renderer->getLod());
 #endif//!OCCLUSSION_QUERY
         }
         m_addedChunkRenderers.clear();
@@ -612,7 +635,7 @@ void SimpleRenderer<_Grid>::rendererUpdateChunks()
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &removeRenderers)
+void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers)
 {
     _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
 
@@ -635,7 +658,7 @@ void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &a
         Key key(chunkRenderer->getRegionHash(), chunkRenderer->getChunkHash());
 
         float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, chunkRenderer->getRegionIndex(), chunkRenderer->getChunkIndex());
-
+        
         //chunk outside of range so invalidate
         if(chunkDistance>m_viewRadiusMax)
         {
@@ -645,6 +668,13 @@ void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &a
         }
         else
         {
+            size_t lod=floor(chunkDistance/m_viewLODDistance);
+
+            if(chunkRenderer->getLod()!=lod)
+            {
+                chunkRenderer->setLod(lod);
+                updateRenderers.push_back(chunkRenderer);
+            }
             addChunk[key.hash]=false;
 
             //add neighbors chunks
@@ -690,6 +720,11 @@ void SimpleRenderer<_Grid>::prepUpdateChunks(std::vector<ChunkRendererType *> &a
             SharedChunkHandle chunkHandle=m_grid->getChunk(key.regionHash, key.chunkHash);
 
             chunkRenderer->setChunk(chunkHandle);
+
+            float chunkDistance=m_grid->getDescriptors().distance(playerRegionIndex, playerChunkIndex, chunkRenderer->getRegionIndex(), chunkRenderer->getChunkIndex());
+            float lod=floor(chunkDistance/m_viewLODDistance);
+
+            chunkRenderer->setLod(lod);
 
             m_chunkRendererMap.insert(ChunkRenderMap::value_type(key.hash, chunkRenderer));
             addRenderers.push_back(chunkRenderer);
@@ -1107,6 +1142,7 @@ void SimpleRenderer<_Grid>::prepThread()
 #endif
 
     std::vector<ChunkRendererType *> addRenderers;
+    std::vector<ChunkRendererType *> updateRenderers;
     std::vector<ChunkRendererType *> removeRenderers;
 
     while(m_prepThreadRun)
@@ -1153,11 +1189,12 @@ void SimpleRenderer<_Grid>::prepThread()
             addRenderers.clear();
             removeRenderers.clear();
 
-            prepUpdateChunks(addRenderers, removeRenderers);
+            prepUpdateChunks(addRenderers, updateRenderers, removeRenderers);
             
             lock.lock();
 
             m_addedChunkRenderers.insert(m_addedChunkRenderers.end(), addRenderers.begin(), addRenderers.end());
+            m_updatedChunkRenderers.insert(m_updatedChunkRenderers.end(), updateRenderers.begin(), updateRenderers.end());
             m_removedChunkRenderers.insert(m_removedChunkRenderers.end(), removeRenderers.begin(), removeRenderers.end());
         }
     }

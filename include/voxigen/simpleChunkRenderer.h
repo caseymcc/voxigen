@@ -97,6 +97,9 @@ public:
     const glm::ivec3 &getPosition() { return m_chunkHandle->chunk()->getPosition(); }
     glm::vec3 getGridOffset() const { return m_chunkHandle->regionOffset();/* m_chunkHandle->chunk->getGridOffset();*/ }
     
+    size_t getLod() { return m_lod; }
+    void setLod(size_t lod);
+
     unsigned int refCount;
 private:
     void calculateMemoryUsed();
@@ -123,6 +126,9 @@ private:
     unsigned int m_vertexArray;
     unsigned int m_offsetVBO;
     std::vector<glm::vec4> m_ChunkInfoOffset;
+
+    bool m_lodUpdated;
+    size_t m_lod;
 
     size_t m_memoryUsed;
 //    MeshType m_mesh;

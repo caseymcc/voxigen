@@ -25,7 +25,7 @@ public:
 //    virtual void terminate()=0;
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
-    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize)=0;
+    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod)=0;
 };
 typedef std::shared_ptr<Generator> SharedGenerator;
 
@@ -43,7 +43,7 @@ public:
 //    virtual void terminate() { m_generator->terminate(); }
 
 //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
-    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize); };
+    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
 
 private:
     std::unique_ptr<_Generator> m_generator;

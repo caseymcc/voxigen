@@ -18,7 +18,7 @@ template<typename _Cell, size_t _x, size_t _y, size_t _z>
 class Chunk//:public BoundingBox
 {
 public:
-    Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset);
+    Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset, size_t lod);
     ~Chunk()
     {
 #ifdef DEBUG_ALLOCATION
@@ -40,6 +40,7 @@ public:
     
     const glm::ivec3 &getIndex() const{ return m_index; }
     const glm::vec3 &getGridOffset() const { return m_gridOffset; }
+    size_t getLod() { return m_lod; }
 
     _Cell &getCell(const glm::vec3 &position);
 
@@ -50,6 +51,7 @@ private:
     Cells m_cells; //block info
     glm::ivec3 m_index; //grid index
     glm::vec3 m_gridOffset; //offset in grid coords
+    size_t m_lod;
     unsigned int m_validCells;
     
 };
@@ -59,26 +61,32 @@ using UniqueChunk=std::unique_ptr<Chunk<_Cell, _x, _y, _z>>;
 
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
-Chunk<_Cell, _x, _y, _z>::Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset):
+Chunk<_Cell, _x, _y, _z>::Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset, size_t lod):
 //BoundingBox(dimensions, transform),
 m_hash(hash),
 m_revision(revision),
 m_index(index),
 m_gridOffset(gridOffset),
-m_validCells(0)
+m_validCells(0),
+m_lod(lod)
 {
-    m_cells.resize(_x*_y*_z);
+    size_t size=(_x*_y*_z)/(lod+1);
+    m_cells.resize(size);
     
 #ifdef DEBUG_ALLOCATION
-    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data"<<std::hex<<m_cells.data()<<std::dec<<"\n";
+    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data"<<std::hex<<m_cells.data()<<std::dec<<" size"<<size<<"\n";
 #endif
 }
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
 _Cell &Chunk<_Cell, _x, _y, _z>::getCell(const glm::vec3 &position)
 {
-    glm::ivec3 cellPos=glm::floor(position);
-    unsigned int index=(_x*_y)*cellPos.z+_x*cellPos.y+cellPos.x;
+    size_t lod=m_lod+1;
+    size_t x=_x/lod;
+    size_t y=_y/lod;
+
+    glm::ivec3 cellPos=glm::floor(position)/glm::ivec3(lod);
+    unsigned int index=(x*y)*cellPos.z+x*cellPos.y+cellPos.x;
 
     assert(index>=0);
     assert(index<m_cells.size());
