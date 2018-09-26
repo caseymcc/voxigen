@@ -1,0 +1,4 @@
+#cmakedefine CVLIB_USE_BOOST_VARIANT
+
+#cmakedefine CVLIB_USE_OPENCV
+#cmakedefine CVLIB_USE_OPENCL

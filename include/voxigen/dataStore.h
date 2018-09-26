@@ -98,7 +98,7 @@ public:
     SharedRegionHandle getRegion(RegionHash regionHash);
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
 
-    void loadChunk(SharedChunkHandle handle, size_t lod);
+    void loadChunk(SharedChunkHandle handle, size_t lod, bool force=false);
 //    void removeHandle(ChunkHandleType *chunkHandle);
 
     void addUpdated(Key hash);
@@ -427,9 +427,9 @@ typename DataStore<_Grid>::SharedChunkHandle DataStore<_Grid>::getChunk(RegionHa
 }
 
 template<typename _Grid>
-void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod)
+void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod, bool force)
 {
-    return getRegion(handle->regionHash())->loadChunk(handle, lod);
+    return getRegion(handle->regionHash())->loadChunk(handle, lod, force);
 }
 
 template<typename _Grid>
@@ -589,41 +589,39 @@ void DataStore<_Grid>::writeChunk(SharedChunkHandle chunkHandle)
 template<typename _Grid>
 void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle, size_t lod)
 {
+#ifdef LOG_PROCESS_QUEUE
+    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generating";
+#endif//LOG_PROCESS_QUEUE
+
+    chunkHandle->setAction(ChunkAction::Generating);
     m_processQueue->addGenerate(chunkHandle, lod);
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::read(SharedChunkHandle chunkHandle, size_t lod)
 {
+#ifdef LOG_PROCESS_QUEUE
+    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") reading";
+#endif//LOG_PROCESS_QUEUE
+    chunkHandle->setAction(ChunkAction::Reading);
     m_processQueue->addRead(chunkHandle, lod);
-//    {
-//        std::unique_lock<std::mutex> lock(m_ioMutex);
-//
-//        std::shared_ptr<IOReadRequestType> request=std::make_shared<IOReadRequestType>(IORequestType::Read, chunkHandle);
-//
-//        m_ioQueue.push(request);
-//    }
-//    m_ioEvent.notify_all();
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::write(SharedChunkHandle chunkHandle)
 {
+#ifdef LOG_PROCESS_QUEUE
+    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") writing";
+#endif//LOG_PROCESS_QUEUE
+    chunkHandle->setAction(ChunkAction::Writing);
     m_processQueue->addWrite(chunkHandle);
-//    {
-//        std::unique_lock<std::mutex> lock(m_ioMutex);
-//
-//        std::shared_ptr<IOWriteRequestType> request=std::make_shared<IOWriteRequestType>(IORequestType::Write, chunkHandle);
-//
-//        m_ioQueue.push(request);
-//    }
-//    m_ioEvent.notify_all();
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::empty(SharedChunkHandle chunkHandle)
 {
-    m_processQueue->addUpdate(chunkHandle);
+//    chunkHandle->setAction(ChunkAction::Updating);
+//    m_processQueue->addUpdate(chunkHandle);
 }
 
 

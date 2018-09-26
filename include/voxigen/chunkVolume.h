@@ -1,8 +1,6 @@
 #ifndef _voxigen_chunkVolume_h_
 #define _voxigen_chunkVolume_h_
 
-#include "PolyVox/Vector.h"
-
 namespace voxigen
 {
 
@@ -19,7 +17,6 @@ public:
 
     inline VoxelType getVoxel(void) const;
 
-    void setPosition(const PolyVox::Vector3DInt32& v3dNewPos);
     void setPosition(int32_t xPos, int32_t yPos, int32_t zPos);
     inline bool setVoxel(VoxelType tValue);
 

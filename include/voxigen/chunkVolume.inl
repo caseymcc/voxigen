@@ -29,14 +29,6 @@ typename ChunkSampler<_ChunkVolume>::VoxelType ChunkSampler<_ChunkVolume>::getVo
 }
 
 template<typename _ChunkVolume>
-void ChunkSampler<_ChunkVolume>::setPosition(const PolyVox::Vector3DInt32& v3dNewPos)
-{
-    m_position.x=v3dNewPos[0];
-    m_position.y=v3dNewPos[1];
-    m_position.z=v3dNewPos[2];
-}
-    
-template<typename _ChunkVolume>
 void ChunkSampler<_ChunkVolume>::setPosition(int32_t xPos, int32_t yPos, int32_t zPos)
 {
     m_position.x=xPos;

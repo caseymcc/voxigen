@@ -1,0 +1,2890 @@
+{
+    "version": 1,
+    "blocks": [
+        {
+            "name": "amatol",
+            "texture": {
+                "base": "amatol"
+            }
+        },
+        {
+            "name": "anfo",
+            "texture": {
+                "base": "anfo"
+            }
+        },
+        {
+            "name": "alienplant_ammonia",
+            "texture": {
+                "base": "ammoniaplant"
+            }
+        },
+        {
+            "name": "alienplant_cave_cap",
+            "texture": {
+                "base": "caveplant_cap"
+            }
+        },
+        {
+            "name": "alienplant_cave_stem",
+            "texture": {
+                "base": "caveplant_stem_side"
+            },
+            "textureOpY": {
+                "base": "caveplant_stem_top"
+            }
+        },
+        {
+            "name": "alienplant_crop_bud",
+            "texture": {
+                "base": "aliencrop_side"
+            },
+            "textureTop": {
+                "base": "aliencrop_top"
+            }
+        },
+        {
+            "name": "alienplant_crop_stem",
+            "texture": {
+                "base": "aliencrop_side"
+            },
+            "textureOpY": {
+                "base": "aliencrop_bottom"
+            }
+        },
+        {
+            "name": "alienplant_desert_chalice",
+            "texture": {
+                "base": "desert_chalice"
+            }
+        },
+        {
+            "name": "alienplant_salpeter_light",
+            "texture": {
+                "base": "salpeterplant_light"
+            }
+        },
+        {
+            "name": "alienplant_salpeter_trap",
+            "texture": {
+                "base": "salpeterplant_trap"
+            }
+        },
+        {
+            "name": "aluminium",
+            "texture": {
+                "base": "aluminium",
+                "overlay": "aluminium_overlay"
+            }
+        },
+        {
+            "name": "aluminium_plating",
+            "texture": {
+                "base": "plating_aluminium",
+                "overlay": "plating_aluminium_overlay"
+            }
+        },
+        {
+            "name": "ash_volcanic",
+            "texture": {
+                "base": "ash_volcanic"
+            }
+        },
+        {
+            "name": "bags_sand",
+            "texture": {
+                "base": "sandbags_side"
+            },
+            "textureOpY": {
+                "base": "sandbags_top"
+            }
+        },
+        {
+            "name": "bags_sand_black",
+            "texture": {
+                "base": "sandbags_side"
+            },
+            "textureOpY": {
+                "base": "sandbags_top"
+            }
+        },
+        {
+            "name": "bags_sand_red",
+            "texture": {
+                "base": "sandbags_side"
+            },
+            "textureOpY": {
+                "base": "sandbags_top"
+            }
+        },
+        {
+            "name": "bags_sand_white",
+            "texture": {
+                "base": "sandbags_side"
+            },
+            "textureOpY": {
+                "base": "sandbags_top"
+            }
+        },
+        {
+            "name": "basalt",
+            "texture": {
+                "base": "basalt",
+                "overlay": "basalt_overlay"
+            }
+        },
+        {
+            "name": "basalt_lava",
+            "texture": {
+                "base": "basalt_lava",
+                "overlay": "basalt_overlay"
+            }
+        },
+        {
+            "name": "basalt_semisolid",
+            "texture": {
+                "base": "basalt_semisolid",
+                "overlay": "basalt_overlay"
+            }
+        },
+        {
+            "name": "bargonite_blue",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_blue",
+                "overlay": "bargonite_blue_overlay"
+            }
+        },
+        {
+            "name": "bargonite_cyan",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_cyan",
+                "overlay": "bargonite_cyan_overlay"
+            }
+        },
+        {
+            "name": "bargonite_green",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_green",
+                "overlay": "bargonite_green_overlay"
+            }
+        },
+        {
+            "name": "bargonite_magenta",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_magenta",
+                "overlay": "bargonite_magenta_overlay"
+            }
+        },
+        {
+            "name": "bargonite_orange",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_orange",
+                "overlay": "bargonite_orange_overlay"
+            }
+        },
+        {
+            "name": "bargonite_red",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_red",
+                "overlay": "bargonite_red_overlay"
+            }
+        },
+        {
+            "name": "bargonite_white",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_white",
+                "overlay": "bargonite_white_overlay"
+            }
+        },
+        {
+            "name": "bargonite_yellow",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "bargonite_yellow",
+                "overlay": "bargonite_yellow_overlay"
+            }
+        },
+        {
+            "name": "bauxite",
+            "texture": {
+                "base": "bauxite",
+                "overlay": "bauxite_overlay"
+            }
+        },
+        {
+            "name": "blackpowder",
+            "texture": {
+                "base": "black_powder"
+            }
+        },
+        {
+            "name": "blackpowder_box_100g",
+            "texture": {
+                "base": "black_powder_100g"
+            }
+        },
+        {
+            "name": "blackpowder_box_1kg",
+            "texture": {
+                "base": "black_powder_1kg"
+            }
+        },
+        {
+            "name": "blackpowder_crate_10kg",
+            "texture": {
+                "base": "black_powder_10kg"
+            }
+        },
+        {
+            "name": "blackpowder_crate_20kg",
+            "texture": {
+                "base": "black_powder_20kg"
+            }
+        },
+        {
+            "name": "bomb_fire",
+            "texture": {
+                "base": "firebomb"
+            }
+        },
+        {
+            "name": "bomb_shrapnel",
+            "texture": {
+                "base": "shrapnel_bomb"
+            }
+        },
+        {
+            "name": "bone",
+            "texture": {
+                "base": "bone",
+                "overlay": "bone_overlay"
+            }
+        },
+        {
+            "name": "brass",
+            "texture": {
+                "base": "brass",
+                "overlay": "brass_overlay"
+            }
+        },
+        {
+            "name": "brass_patinated",
+            "texture": {
+                "base": "brass_patinated",
+                "overlay": "brass_patinated_overlay"
+            }
+        },
+        {
+            "name": "bricks",
+            "texture": {
+                "base": "bricks_side"
+            },
+            "textureOpY": {
+                "base": "bricks_top"
+            }
+        },
+        {
+            "name": "bricks_lightweight",
+            "texture": {
+                "base": "bricks_light_side",
+                "overlay": "bricks_light_side_overlay"
+            },
+            "textureOpY": {
+                "base": "bricks_light_top",
+                "overlay": "bricks_light_top_overlay"
+            }
+        },
+        {
+            "name": "bricks_loam",
+            "texture": {
+                "base": "bricks_loam_side"
+            },
+            "textureOpY": {
+                "base": "bricks_loam_top"
+            }
+        },
+        {
+            "name": "bronze",
+            "texture": {
+                "base": "bronze",
+                "overlay": "bronze_overlay"
+            }
+        },
+        {
+            "name": "bronze_patinated",
+            "texture": {
+                "base": "bronze_patinated",
+                "overlay": "bronze_patinated_overlay"
+            }
+        },
+        {
+            "name": "cactus_death",
+            "texture": {
+                "base": "cactus_death"
+            }
+        },
+        {
+            "name": "cactus_death_fruit",
+            "texture": {
+                "base": "cactus_fruit"
+            }
+        },
+        {
+            "name": "cactus_death_mutated",
+            "texture": {
+                "base": "cactus_mutated"
+            }
+        },
+        {
+            "name": "cactus_death_poison",
+            "texture": {
+                "base": "cactus_poison"
+            }
+        },
+        {
+            "name": "cactus_death_starch",
+            "texture": {
+                "base": "cactus_starch"
+            }
+        },
+        {
+            "name": "cactus_small_green_bud",
+            "texture": {
+                "base": "cactus_small_green_side"
+            },
+            "textureTop": {
+                "base": "cactus_small_green_top"
+            }
+        },
+        {
+            "name": "cactus_small_green_stem",
+            "texture": {
+                "base": "cactus_small_green_side"
+            },
+            "textureOpY": {
+                "base": "cactus_small_green_bottom"
+            }
+        },
+        {
+            "name": "cactus_small_red_bud",
+            "texture": {
+                "base": "cactus_small_red_side"
+            },
+            "textureTop": {
+                "base": "cactus_small_red_top"
+            }
+        },
+        {
+            "name": "cactus_small_red_stem",
+            "texture": {
+                "base": "cactus_small_red_side"
+            },
+            "textureOpY": {
+                "base": "cactus_small_red_bottom"
+            }
+        },
+        {
+            "name": "cactus_small_yellow_bud",
+            "texture": {
+                "base": "cactus_small_yellow_side"
+            },
+            "textureTop": {
+                "base": "cactus_small_yellow_top"
+            }
+        },
+        {
+            "name": "cactus_small_yellow_stem",
+            "texture": {
+                "base": "cactus_small_yellow_side"
+            },
+            "textureOpY": {
+                "base": "cactus_small_yellow_bottom"
+            }
+        },
+        {
+            "name": "carbonate_lithium",
+            "texture": {
+                "base": "soda_lithium"
+            }
+        },
+        {
+            "name": "carbonate_sodium",
+            "texture": {
+                "base": "soda"
+            }
+        },
+        {
+            "name": "cassiterite",
+            "texture": {
+                "base": "cassiterite"
+            }
+        },
+        {
+            "name": "ceramic",
+            "texture": {
+                "base": "ceramic_alumina"
+            }
+        },
+        {
+            "name": "ceramic_plating",
+            "texture": {
+                "base": "plating_ceramic",
+                "overlay": "plating_ceramic_overlay"
+            }
+        },
+        {
+            "name": "ceramic_tiling",
+            "texture": {
+                "base": "tiling"
+            }
+        },
+        {
+            "name": "clay",
+            "texture": {
+                "base": "clay",
+                "overlay": "clay_overlay"
+            }
+        },
+        {
+            "name": "cloth_black",
+            "texture": {
+                "base": "cloth_black",
+                "overlay": "cloth_black_overlay"
+            }
+        },
+        {
+            "name": "cloth_blue",
+            "texture": {
+                "base": "cloth_blue",
+                "overlay": "cloth_blue_overlay"
+            }
+        },
+        {
+            "name": "cloth_blue_dark",
+            "texture": {
+                "base": "cloth_blue_dark",
+                "overlay": "cloth_blue_dark_overlay"
+            }
+        },
+        {
+            "name": "cloth_blue_light",
+            "texture": {
+                "base": "cloth_blue_light",
+                "overlay": "cloth_blue_light_overlay"
+            }
+        },
+        {
+            "name": "cloth_brown",
+            "texture": {
+                "base": "cloth_brown",
+                "overlay": "cloth_brown_overlay"
+            }
+        },
+        {
+            "name": "cloth_cyan",
+            "texture": {
+                "base": "cloth_cyan",
+                "overlay": "cloth_cyan_overlay"
+            }
+        },
+        {
+            "name": "cloth_green",
+            "texture": {
+                "base": "cloth_green",
+                "overlay": "cloth_green_overlay"
+            }
+        },
+        {
+            "name": "cloth_green_dark",
+            "texture": {
+                "base": "cloth_green_dark",
+                "overlay": "cloth_green_dark_overlay"
+            }
+        },
+        {
+            "name": "cloth_grey",
+            "texture": {
+                "base": "cloth_grey",
+                "overlay": "cloth_grey_overlay"
+            }
+        },
+        {
+            "name": "cloth_lime",
+            "texture": {
+                "base": "cloth_lime",
+                "overlay": "cloth_lime_overlay"
+            }
+        },
+        {
+            "name": "cloth_magenta",
+            "texture": {
+                "base": "cloth_magenta",
+                "overlay": "cloth_magenta_overlay"
+            }
+        },
+        {
+            "name": "cloth_orange",
+            "texture": {
+                "base": "cloth_orange",
+                "overlay": "cloth_orange_overlay"
+            }
+        },
+        {
+            "name": "cloth_pink",
+            "texture": {
+                "base": "cloth_pink",
+                "overlay": "cloth_pink_overlay"
+            }
+        },
+        {
+            "name": "cloth_purple",
+            "texture": {
+                "base": "cloth_purple",
+                "overlay": "cloth_purple_overlay"
+            }
+        },
+        {
+            "name": "cloth_purple_dark",
+            "texture": {
+                "base": "cloth_purple_dark",
+                "overlay": "cloth_purple_dark_overlay"
+            }
+        },
+        {
+            "name": "cloth_red",
+            "texture": {
+                "base": "cloth_red",
+                "overlay": "cloth_red_overlay"
+            }
+        },
+        {
+            "name": "cloth_red_dark",
+            "texture": {
+                "base": "cloth_red_dark",
+                "overlay": "cloth_red_dark_overlay"
+            }
+        },
+        {
+            "name": "cloth_white",
+            "texture": {
+                "base": "cloth_white",
+                "overlay": "cloth_white_overlay"
+            }
+        },
+        {
+            "name": "cloth_yellow",
+            "texture": {
+                "base": "cloth_yellow",
+                "overlay": "cloth_yellow_overlay"
+            }
+        },
+        {
+            "name": "cloth_yellow_light",
+            "texture": {
+                "base": "cloth_yellow_light",
+                "overlay": "cloth_yellow_light_overlay"
+            }
+        },
+        {
+            "name": "coal",
+            "texture": {
+                "blendMode": "subtract",
+                "base": "coal",
+                "overlay": "sub_overlay"
+            }
+        },
+        {
+            "name": "cobblestone",
+            "texture": {
+                "base": "cobblestone",
+                "overlay": "cobblestone_overlay"
+            }
+        },
+        {
+            "name": "cobblestone_mossy",
+            "texture": {
+                "base": "cobblestone_mossy",
+                "overlay": "cobblestone_overlay"
+            }
+        },
+        {
+            "name": "coke",
+            "texture": {
+                "base": "coke"
+            }
+        },
+        {
+            "name": "concrete",
+            "texture": {
+                "blendMode": "subtract",
+                "base": "concrete_side",
+                "overlay": "concrete_side_overlay"
+            },
+            "textureOpY": {
+                "blendMode": "subtract",
+                "base": "concrete_top"
+            }
+        },
+        {
+            "name": "copper",
+            "texture": {
+                "base": "copper",
+                "overlay": "copper_overlay"
+            }
+        },
+        {
+            "name": "copper_patinated",
+            "texture": {
+                "base": "copper_patinated",
+                "overlay": "copper_patinated_overlay"
+            }
+        },
+        {
+            "name": "diamond",
+            "texture": {
+                "base": "diamond"
+            }
+        },
+        {
+            "name": "diatomite",
+            "texture": {
+                "base": "diatomite",
+                "overlay": "diatomite_overlay"
+            }
+        },
+        {
+            "name": "dirt",
+            "texture": {
+                "base": "dirt"
+            }
+        },
+        {
+            "name": "dolomite",
+            "texture": {
+                "base": "dolomite",
+                "overlay": "dolomite_overlay"
+            }
+        },
+        {
+            "name": "dynamite",
+            "texture": {
+                "base": "dynamite_side"
+            },
+            "textureTop": {
+                "base": "dynamite_top"
+            }
+        },
+        {
+            "name": "emerald",
+            "texture": {
+                "base": "emerald"
+            }
+        },
+        {
+            "name": "flower_fringed_pink",
+            "texture": {
+                "base": "flower_fringed_pink",
+                "overlay": "flower_fringed_pink_overlay"
+            }
+        },
+        {
+            "name": "flower_fringed_red",
+            "texture": {
+                "base": "flower_fringed_red",
+                "overlay": "flower_fringed_red_overlay"
+            }
+        },
+        {
+            "name": "flower_fringed_tiny",
+            "texture": {
+                "base": "flower_fringed_tiny",
+                "overlay": "flower_fringed_tiny_overlay"
+            }
+        },
+        {
+            "name": "flower_fringed_white",
+            "texture": {
+                "base": "flower_fringed_white",
+                "overlay": "flower_fringed_white_overlay"
+            }
+        },
+        {
+            "name": "flower_fringed_yellow",
+            "texture": {
+                "base": "flower_fringed_yellow",
+                "overlay": "flower_fringed_yellow_overlay"
+            }
+        },
+        {
+            "name": "flower_purple_large",
+            "texture": {
+                "base": "flower_purple_large",
+                "overlay": "flower_purple_large_overlay"
+            }
+        },
+        {
+            "name": "flower_red_jungle",
+            "texture": {
+                "base": "flower_red_jungle",
+                "overlay": "flower_red_jungle_overlay"
+            }
+        },
+        {
+            "name": "flower_red_large",
+            "texture": {
+                "base": "flower_red_large",
+                "overlay": "flower_red_large_overlay"
+            }
+        },
+        {
+            "name": "flower_skeleton",
+            "texture": {
+                "base": "flower_skeleton"
+            }
+        },
+        {
+            "name": "flower_white",
+            "texture": {
+                "base": "flower_white",
+                "overlay": "flower_white_overlay"
+            }
+        },
+        {
+            "name": "flower_yellow_large",
+            "texture": {
+                "base": "flower_yellow_large",
+                "overlay": "flower_yellow_large_overlay"
+            }
+        },
+        {
+            "name": "flower_yellow_small",
+            "texture": {
+                "base": "flower_yellow_small",
+                "overlay": "flower_yellow_small_overlay"
+            }
+        },
+        {
+            "name": "fungus_icecaps",
+            "texture": {
+                "base": "fungus_icecaps"
+            }
+        },
+        {
+            "name": "fungus_sacs_sanguine",
+            "texture": {
+                "base": "fungus_sacs_sanguine"
+            }
+        },
+        {
+            "name": "fungus_sacs_triton",
+            "texture": {
+                "base": "fungus_sacs_triton"
+            }
+        },
+        {
+            "name": "fungus_sorrowthorn",
+            "texture": {
+                "base": "fungus_sorrowthorn"
+            }
+        },
+        {
+            "name": "fungus_terrorlichen",
+            "texture": {
+                "base": "fungus_terrorlichen"
+            }
+        },
+        {
+            "name": "galena",
+            "texture": {
+                "base": "galena"
+            }
+        },
+        {
+            "name": "gelignite",
+            "texture": {
+                "base": "gelignite_side"
+            },
+            "textureOpY": {
+                "base": "gelignite_top"
+            }
+        },
+        {
+            "name": "glass",
+            "transparency": true,
+            "texture": {
+                "base": "glass",
+                "overlay": "glass_overlay_white"
+            }
+        },
+        {
+            "name": "glass_bargonite_blue",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_blue",
+                "overlay": "glass_overlay_blue"
+            }
+        },
+        {
+            "name": "glass_bargonite_cyan",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_cyan",
+                "overlay": "glass_overlay_cyan"
+            }
+        },
+        {
+            "name": "glass_bargonite_green",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_green",
+                "overlay": "glass_overlay_green"
+            }
+        },
+        {
+            "name": "glass_bargonite_magenta",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_magenta",
+                "overlay": "glass_overlay_magenta"
+            }
+        },
+        {
+            "name": "glass_bargonite_orange",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_orange",
+                "overlay": "glass_overlay_orange"
+            }
+        },
+        {
+            "name": "glass_bargonite_red",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_red",
+                "overlay": "glass_overlay_red"
+            }
+        },
+        {
+            "name": "glass_bargonite_white",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_white",
+                "overlay": "glass_overlay_white"
+            }
+        },
+        {
+            "name": "glass_bargonite_yellow",
+            "transparency": true,
+            "texture": {
+                "base": "glass_bargonite_yellow",
+                "overlay": "glass_overlay_yellow"
+            }
+        },
+        {
+            "name": "glass_metal_frame",
+            "transparency": true,
+            "texture": {
+                "base": "glass",
+                "overlay": "glass_metal_frame"
+            },
+            "textureTop": {
+                "base": "glass",
+                "overlay": "glass_metal_frame_top"
+            }
+        },
+        {
+            "name": "glass_thornmite",
+            "transparency": true,
+            "texture": {
+                "base": "glass_thornmite",
+                "overlay": "glass_thornmite_overlay"
+            }
+        },
+        {
+            "name": "gneiss",
+            "texture": {
+                "base": "gneiss_side",
+                "overlay": "gneiss_overlay"
+            },
+            "textureOpY": {
+                "base": "gneiss_top",
+                "overlay": "gneiss_overlay"
+            }
+        },
+        {
+            "name": "gold",
+            "texture": {
+                "base": "gold",
+                "overlay": "gold_overlay"
+            }
+        },
+        {
+            "name": "granite",
+            "texture": {
+                "base": "granite",
+                "overlay": "granite_overlay"
+            }
+        },
+        {
+            "name": "granite_bricks",
+            "texture": {
+                "base": "stone_bricks_granite"
+            }
+        },
+        {
+            "name": "granite_cut",
+            "texture": {
+                "base": "stone_cut_granite"
+            }
+        },
+        {
+            "name": "grass",
+            "texture": {
+                "base": "dirt",
+                "overlay": "grass_side"
+            },
+            "textureTop": {
+                "base": "grass_top"
+            }
+        },
+        {
+            "name": "grass_charred",
+            "texture": {
+                "base": "dirt",
+                "overlay": "grass_charred_side"
+            },
+            "textureTop": {
+                "base": "grass_charred_top"
+            }
+        },
+        {
+            "name": "gravel",
+            "texture": {
+                "base": "gravel"
+            }
+        },
+        {
+            "name": "gypsum",
+            "texture": {
+                "base": "gypsum"
+            }
+        },
+        {
+            "name": "gypsum_black",
+            "texture": {
+                "base": "gypsum_black"
+            }
+        },
+        {
+            "name": "gypsum_blue",
+            "texture": {
+                "base": "gypsum_blue"
+            }
+        },
+        {
+            "name": "gypsum_blue_dark",
+            "texture": {
+                "base": "gypsum_blue_dark"
+            }
+        },
+        {
+            "name": "gypsum_blue_light",
+            "texture": {
+                "base": "gypsum_blue_light"
+            }
+        },
+        {
+            "name": "gypsum_brown",
+            "texture": {
+                "base": "gypsum_brown"
+            }
+        },
+        {
+            "name": "gypsum_cyan",
+            "texture": {
+                "base": "gypsum_cyan"
+            }
+        },
+        {
+            "name": "gypsum_green",
+            "texture": {
+                "base": "gypsum_green"
+            }
+        },
+        {
+            "name": "gypsum_green_dark",
+            "texture": {
+                "base": "gypsum_green_dark"
+            }
+        },
+        {
+            "name": "gypsum_grey",
+            "texture": {
+                "base": "gypsum_grey"
+            }
+        },
+        {
+            "name": "gypsum_lime",
+            "texture": {
+                "base": "gypsum_lime"
+            }
+        },
+        {
+            "name": "gypsum_magenta",
+            "texture": {
+                "base": "gypsum_magenta"
+            }
+        },
+        {
+            "name": "gypsum_orange",
+            "texture": {
+                "base": "gypsum_orange"
+            }
+        },
+        {
+            "name": "gypsum_pink",
+            "texture": {
+                "base": "gypsum_pink"
+            }
+        },
+        {
+            "name": "gypsum_purple",
+            "texture": {
+                "base": "gypsum_purple"
+            }
+        },
+        {
+            "name": "gypsum_purple_dark",
+            "texture": {
+                "base": "gypsum_purple_dark"
+            }
+        },
+        {
+            "name": "gypsum_red",
+            "texture": {
+                "base": "gypsum_red"
+            }
+        },
+        {
+            "name": "gypsum_red_dark",
+            "texture": {
+                "base": "gypsum_red_dark"
+            }
+        },
+        {
+            "name": "gypsum_yellow",
+            "texture": {
+                "base": "gypsum_yellow"
+            }
+        },
+        {
+            "name": "gypsum_yellow_light",
+            "texture": {
+                "base": "gypsum_yellow_light"
+            }
+        },
+        {
+            "name": "hematite",
+            "texture": {
+                "base": "hematite"
+            }
+        },
+        {
+            "name": "ice",
+            "transparency": true,
+            "texture": {
+                "blendMode": "add",
+                "base": "ice",
+                "overlay": "add_overlay"
+            }
+        },
+        {
+            "name": "ice_dry",
+            "texture": {
+                "blendMode": "add",
+                "base": "ice_dry",
+                "overlay": "add_overlay_soft"
+            }
+        },
+        {
+            "name": "ice_methane",
+            "texture": {
+                "blendMode": "add",
+                "base": "ice_methane",
+                "overlay": "add_overlay_soft"
+            }
+        },
+        {
+            "name": "ice_methane_hydrate",
+            "texture": {
+                "blendMode": "add",
+                "base": "ice_methane_hydrate",
+                "overlay": "add_overlay_soft"
+            }
+        },
+        {
+            "name": "ice_nitrogen",
+            "texture": {
+                "blendMode": "add",
+                "base": "ice_nitrogen",
+                "overlay": "add_overlay_soft"
+            }
+        },
+        {
+            "name": "iron",
+            "texture": {
+                "base": "iron",
+                "overlay": "iron_overlay"
+            }
+        },
+        {
+            "name": "iron_rusty",
+            "texture": {
+                "base": "iron_rusty",
+                "overlay": "iron_rusty_overlay"
+            }
+        },
+        {
+            "name": "lamp_blue_off",
+            "texture": {
+                "base": "lamp_colored_blue_off"
+            }
+        },
+        {
+            "name": "lamp_blue_on",
+            "texture": {
+                "base": "lamp_colored_blue_on"
+            }
+        },
+        {
+            "name": "lamp_cyan_off",
+            "texture": {
+                "base": "lamp_colored_cyan_off"
+            }
+        },
+        {
+            "name": "lamp_cyan_on",
+            "texture": {
+                "base": "lamp_colored_cyan_on"
+            }
+        },
+        {
+            "name": "lamp_green_off",
+            "texture": {
+                "base": "lamp_colored_green_off"
+            }
+        },
+        {
+            "name": "lamp_green_on",
+            "texture": {
+                "base": "lamp_colored_green_on"
+            }
+        },
+        {
+            "name": "lamp_led_off",
+            "texture": {
+                "base": "lamp_LED_off"
+            }
+        },
+        {
+            "name": "lamp_led_on",
+            "texture": {
+                "base": "lamp_LED_on"
+            }
+        },
+        {
+            "name": "lamp_magenta_off",
+            "texture": {
+                "base": "lamp_colored_magenta_off"
+            }
+        },
+        {
+            "name": "lamp_magenta_on",
+            "texture": {
+                "base": "lamp_colored_magenta_on"
+            }
+        },
+        {
+            "name": "lamp_off",
+            "texture": {
+                "base": "lamp_off"
+            }
+        },
+        {
+            "name": "lamp_on",
+            "texture": {
+                "base": "lamp_on"
+            }
+        },
+        {
+            "name": "lamp_orange_off",
+            "texture": {
+                "base": "lamp_colored_orange_off"
+            }
+        },
+        {
+            "name": "lamp_orange_on",
+            "texture": {
+                "base": "lamp_colored_orange_on"
+            }
+        },
+        {
+            "name": "lamp_red_off",
+            "texture": {
+                "base": "lamp_colored_red_off"
+            }
+        },
+        {
+            "name": "lamp_red_on",
+            "texture": {
+                "base": "lamp_colored_red_on"
+            }
+        },
+        {
+            "name": "lamp_white_off",
+            "texture": {
+                "base": "lamp_colored_white_off"
+            }
+        },
+        {
+            "name": "lamp_white_on",
+            "texture": {
+                "base": "lamp_colored_white_on"
+            }
+        },
+        {
+            "name": "lamp_xenon_off",
+            "texture": {
+                "base": "lamp_xenon_off"
+            }
+        },
+        {
+            "name": "lamp_xenon_on",
+            "texture": {
+                "base": "lamp_xenon_on"
+            }
+        },
+        {
+            "name": "lamp_yellow_off",
+            "texture": {
+                "base": "lamp_colored_off"
+            }
+        },
+        {
+            "name": "lamp_yellow_on",
+            "texture": {
+                "base": "lamp_colored_on"
+            }
+        },
+        {
+            "name": "lapis_lazuli",
+            "texture": {
+                "base": "lapis_lazuli"
+            }
+        },
+        {
+            "name": "lead",
+            "texture": {
+                "base": "lead",
+                "overlay": "lead_overlay"
+            }
+        },
+        {
+            "name": "leaves_coniferous",
+            "texture": {
+                "base": "leaves_opaque_coniferous"
+            }
+        },
+        {
+            "name": "leaves_deciduous",
+            "texture": {
+                "base": "leaves_opaque_deciduous"
+            }
+        },
+        {
+            "name": "leaves_fruit",
+            "texture": {
+                "base": "leaves_opaque_fruit"
+            }
+        },
+        {
+            "name": "leaves_fruit_blossom",
+            "texture": {
+                "base": "leaves_opaque_blossom"
+            }
+        },
+        {
+            "name": "leaves_jungle",
+            "texture": {
+                "base": "leaves_opaque_jungle"
+            }
+        },
+        {
+            "name": "leaves_mangrove",
+            "texture": {
+                "base": "leaves_opaque_mangrove"
+            }
+        },
+        {
+            "name": "leaves_palm",
+            "texture": {
+                "base": "leaves_opaque_palm"
+            }
+        },
+        {
+            "name": "leaves_rubber",
+            "texture": {
+                "base": "leaves_opaque_rubber"
+            }
+        },
+        {
+            "name": "leaves_savanna",
+            "texture": {
+                "base": "leaves_opaque_savanna"
+            }
+        },
+        {
+            "name": "leaves_sugar",
+            "texture": {
+                "base": "leaves_opaque_sugar"
+            }
+        },
+        {
+            "name": "leaves_swamp",
+            "texture": {
+                "base": "leaves_opaque_swamp"
+            }
+        },
+        {
+            "name": "light_metal",
+            "texture": {
+                "base": "aluminium_lithium",
+                "overlay": "aluminium_lithium_overlay"
+            }
+        },
+        {
+            "name": "light_metal_plating",
+            "texture": {
+                "base": "plating_lightmetal",
+                "overlay": "plating_lightmetal_overlay"
+            }
+        },
+        {
+            "name": "limestone",
+            "texture": {
+                "base": "limestone",
+                "overlay": "limestone_overlay"
+            }
+        },
+        {
+            "name": "limestone_bricks",
+            "texture": {
+                "base": "stone_bricks_lime"
+            }
+        },
+        {
+            "name": "limestone_cut",
+            "texture": {
+                "base": "stone_cut_lime"
+            }
+        },
+        {
+            "name": "lithium",
+            "texture": {
+                "base": "lithium",
+                "overlay": "lithium_overlay"
+            }
+        },
+        {
+            "name": "magnetite",
+            "texture": {
+                "base": "magnetite"
+            }
+        },
+        {
+            "name": "malachite",
+            "texture": {
+                "base": "malachite",
+                "overlay": "malachite_overlay"
+            }
+        },
+        {
+            "name": "marble",
+            "texture": {
+                "base": "marble",
+                "overlay": "marble_overlay"
+            }
+        },
+        {
+            "name": "marble_bricks",
+            "texture": {
+                "base": "stone_bricks_marble",
+                "overlay": "stone_bricks_marble_overlay"
+            }
+        },
+        {
+            "name": "marble_chiseled",
+            "texture": {
+                "base": "stone_chiseled_marble_side"
+            },
+            "textureTop": {
+                "base": "stone_chiseled_marble_top"
+            }
+        },
+        {
+            "name": "marble_chiseled_ornament",
+            "texture": {
+                "base": "stone_chiseled_marble_ornament_side"
+            }
+        },
+        {
+            "name": "marble_column",
+            "texture": {
+                "base": "stone_column_marble"
+            }
+        },
+        {
+            "name": "marble_column_twisted",
+            "texture": {
+                "base": "stone_column_marble_twisted_side"
+            },
+            "textureTop": {
+                "base": "stone_column_marble_twisted_side"
+            }
+        },
+        {
+            "name": "marble_cut",
+            "texture": {
+                "base": "stone_cut_marble"
+            }
+        },
+        {
+            "name": "mine_plantoid",
+            "texture": {
+                "base": "mine_plantoid_side",
+                "overlay": "mine_plantoid_side_overlay"
+            },
+            "textureTop": {
+                "base": "mine_plantoid_top",
+                "overlay": "mine_plantoid_top_overlay"
+            }
+        },
+        {
+            "name": "mud",
+            "texture": {
+                "base": "mud"
+            }
+        },
+        {
+            "name": "mud_dry",
+            "texture": {
+                "base": "mud_dry"
+            }
+        },
+        {
+            "name": "mud_dry_half",
+            "texture": {
+                "base": "mud_dry_half"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_brown",
+            "texture": {
+                "base": "mushroom_cap_brown"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_blue",
+            "texture": {
+                "base": "mushroom_cap_blue"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_blue_dark",
+            "texture": {
+                "base": "mushroom_cap_blue_dark"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_cyan",
+            "texture": {
+                "base": "mushroom_cap_cyan"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_green",
+            "texture": {
+                "base": "mushroom_cap_green"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_green_dark",
+            "texture": {
+                "base": "mushroom_cap_green_dark"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_grey",
+            "texture": {
+                "base": "mushroom_cap_grey"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_pink",
+            "texture": {
+                "base": "mushroom_cap_pink"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_purple",
+            "texture": {
+                "base": "mushroom_cap_purple"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_purple_dark",
+            "texture": {
+                "base": "mushroom_cap_purple_dark"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_red",
+            "texture": {
+                "base": "mushroom_cap_red"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_red_dark",
+            "texture": {
+                "base": "mushroom_cap_red_dark"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_smooth_charred",
+            "texture": {
+                "base": "mushroom_cap_smooth_charred"
+            }
+        },
+        {
+            "name": "mushroom_giant_cap_spotted_charred",
+            "texture": {
+                "base": "mushroom_cap_spotted_charred"
+            }
+        },
+        {
+            "name": "mushroom_giant_lamella",
+            "texture": {
+                "blendMode": "subtract",
+                "base": "mushroom_lamella",
+                "overlay": "sub_overlay"
+            }
+        },
+        {
+            "name": "mushroom_giant_lamella_charred",
+            "texture": {
+                "blendMode": "subtract",
+                "base": "mushroom_lamella_charred",
+                "overlay": "sub_overlay"
+            }
+        },
+        {
+            "name": "mushroom_giant_stem",
+            "texture": {
+                "base": "mushroom_stem"
+            }
+        },
+        {
+            "name": "mushroom_giant_stem_charred",
+            "texture": {
+                "base": "mushroom_stem_charred"
+            }
+        },
+        {
+            "name": "mushroom_small_blue",
+            "texture": {
+                "base": "mushroom_small_blue"
+            }
+        },
+        {
+            "name": "mushroom_small_blue_dark",
+            "texture": {
+                "base": "mushroom_small_blue_dark"
+            }
+        },
+        {
+            "name": "mushroom_small_brown",
+            "texture": {
+                "base": "mushroom_small_brown"
+            }
+        },
+        {
+            "name": "mushroom_small_cyan",
+            "texture": {
+                "base": "mushroom_small_cyan"
+            }
+        },
+        {
+            "name": "mushroom_small_green",
+            "texture": {
+                "base": "mushroom_small_green"
+            }
+        },
+        {
+            "name": "mushroom_small_green_dark",
+            "texture": {
+                "base": "mushroom_small_green_dark"
+            }
+        },
+        {
+            "name": "mushroom_small_grey",
+            "texture": {
+                "base": "mushroom_small_grey"
+            }
+        },
+        {
+            "name": "mushroom_small_pink",
+            "texture": {
+                "base": "mushroom_small_pink"
+            }
+        },
+        {
+            "name": "mushroom_small_purple",
+            "texture": {
+                "base": "mushroom_small_purple"
+            }
+        },
+        {
+            "name": "mushroom_small_purple_dark",
+            "texture": {
+                "base": "mushroom_small_purple_dark"
+            }
+        },
+        {
+            "name": "mushroom_small_red",
+            "texture": {
+                "base": "mushroom_small_red"
+            }
+        },
+        {
+            "name": "mushroom_small_red_dark",
+            "texture": {
+                "base": "mushroom_small_red_dark"
+            }
+        },
+        {
+            "name": "mycelium",
+            "texture": {
+                "base": "dirt",
+                "overlay": "mycelium_side"
+            },
+            "textureTop": {
+                "base": "dirt",
+                "overlay": "mycelium_side"
+            }
+        },
+        {
+            "name": "nitrate_ammonium",
+            "texture": {
+                "base": "ammon_nitrate"
+            }
+        },
+        {
+            "name": "nitrocellulose",
+            "texture": {
+                "base": "nitrocellulose"
+            }
+        },
+        {
+            "name": "nitroglycerin",
+            "texture": {
+                "base": "nitro_side"
+            },
+            "textureTop": {
+                "base": "nitro_top"
+            }
+        },
+        {
+            "name": "nuke_mark1",
+            "texture": {
+                "base": "nuke_mark1_side"
+            },
+            "textureTop": {
+                "base": "nuke_mark1_top"
+            }
+        },
+        {
+            "name": "nuke_mark2",
+            "texture": {
+                "base": "nuke_mark2_side"
+            },
+            "textureTop": {
+                "base": "nuke_mark2_top"
+            }
+        },
+        {
+            "name": "nuke_mark3",
+            "texture": {
+                "base": "nuke_mark3_side"
+            },
+            "textureTop": {
+                "base": "nuke_mark3_top"
+            }
+        },
+        {
+            "name": "onc",
+            "texture": {
+                "base": "onc_side"
+            },
+            "textureTop": {
+                "base": "onc_top"
+            }
+        },
+        {
+            "name": "pitch",
+            "texture": {
+                "base": "pitch"
+            }
+        },
+        {
+            "name": "pitchblende",
+            "texture": {
+                "base": "pitchblende"
+            }
+        },
+        {
+            "name": "plant_bush_red",
+            "texture": {
+                "base": "plant_red_bush"
+            }
+        },
+        {
+            "name": "plant_dreamweed",
+            "texture": {
+                "base": "plant_dreamweed"
+            }
+        },
+        {
+            "name": "plant_dreamweed_blue_light",
+            "texture": {
+                "base": "plant_dreamweed_blue_light"
+            }
+        },
+        {
+            "name": "plant_dreamweed_sticky",
+            "texture": {
+                "base": "plant_dreamweed_sticky"
+            }
+        },
+        {
+            "name": "plant_dreamweed_striped",
+            "texture": {
+                "base": "plant_dreamweed_striped"
+            }
+        },
+        {
+            "name": "plant_fern",
+            "texture": {
+                "base": "plant_fern"
+            }
+        },
+        {
+            "name": "plant_fern_small",
+            "texture": {
+                "base": "plant_fern_small"
+            }
+        },
+        {
+            "name": "plant_fern_tall",
+            "texture": {
+                "base": "plant_fern_tall"
+            }
+        },
+        {
+            "name": "plant_grass_dryland",
+            "texture": {
+                "base": "grass_dry"
+            }
+        },
+        {
+            "name": "plant_grass_redflower",
+            "texture": {
+                "base": "grass_red_flower",
+                "overlay": "grass_red_flower_overlay"
+            }
+        },
+        {
+            "name": "plant_grass_tall",
+            "texture": {
+                "base": "grass_tall"
+            }
+        },
+        {
+            "name": "plant_grass_tall_dark",
+            "texture": {
+                "base": "grass_tall_dark"
+            }
+        },
+        {
+            "name": "plant_grass_tall_light",
+            "texture": {
+                "base": "grass_tall_light"
+            }
+        },
+        {
+            "name": "plant_grass_yellow",
+            "texture": {
+                "base": "grass_yellow"
+            }
+        },
+        {
+            "name": "plant_jungle1",
+            "texture": {
+                "base": "plant_jungle1"
+            }
+        },
+        {
+            "name": "plant_jungle2",
+            "texture": {
+                "base": "plant_jungle2"
+            }
+        },
+        {
+            "name": "plant_jungle3",
+            "texture": {
+                "base": "plant_jungle3"
+            }
+        },
+        {
+            "name": "plant_jungle4",
+            "texture": {
+                "base": "plant_jungle4"
+            }
+        },
+        {
+            "name": "plant_jungle5",
+            "texture": {
+                "base": "plant_jungle5"
+            }
+        },
+        {
+            "name": "plant_jungle6",
+            "texture": {
+                "base": "plant_jungle6"
+            }
+        },
+        {
+            "name": "plant_jungle7",
+            "texture": {
+                "base": "plant_jungle7"
+            }
+        },
+        {
+            "name": "plant_methane_ball",
+            "texture": {
+                "base": "plant_methane_ball"
+            }
+        },
+        {
+            "name": "platinum",
+            "texture": {
+                "base": "platinum",
+                "overlay": "silver_platinum_overlay"
+            }
+        },
+        {
+            "name": "plutonium",
+            "texture": {
+                "blendMode": "add",
+                "base": "plutonium",
+                "overlay": "plutonium_overlay"
+            }
+        },
+        {
+            "name": "quartz",
+            "texture": {
+                "blendMode": "add",
+                "base": "quartz",
+                "overlay": "add_overlay_soft"
+            }
+        },
+        {
+            "name": "rubber",
+            "texture": {
+                "base": "rubber"
+            }
+        },
+        {
+            "name": "rubber_charred",
+            "texture": {
+                "base": "rubber_charred"
+            }
+        },
+        {
+            "name": "ruby",
+            "texture": {
+                "base": "ruby"
+            }
+        },
+        {
+            "name": "rutile",
+            "texture": {
+                "base": "rutile"
+            }
+        },
+        {
+            "name": "salpeter",
+            "texture": {
+                "base": "salpeter"
+            }
+        },
+        {
+            "name": "sand",
+            "texture": {
+                "base": "sand"
+            }
+        },
+        {
+            "name": "sand_black",
+            "texture": {
+                "base": "sand_black"
+            }
+        },
+        {
+            "name": "sand_red",
+            "texture": {
+                "base": "sand_red"
+            }
+        },
+        {
+            "name": "sand_white",
+            "texture": {
+                "base": "sand_white"
+            }
+        },
+        {
+            "name": "sandstone",
+            "texture": {
+                "base": "sandstone",
+                "overlay": "sandstone_overlay"
+            }
+        },
+        {
+            "name": "sandstone_bricks",
+            "texture": {
+                "base": "stone_bricks_sand",
+                "overlay": "stone_bricks_sand_overlay"
+            }
+        },
+        {
+            "name": "sandstone_chiseled",
+            "texture": {
+                "base": "stone_chiseled_sand_side"
+            },
+            "textureOpY": {
+                "base": "stone_chiseled_sand_top"
+            }
+        },
+        {
+            "name": "sandstone_chiseled_ornament",
+            "texture": {
+                "base": "stone_chiseled_sand_ornament_side"
+            },
+            "textureOpY": {
+                "base": "stone_chiseled_sand_ornament_top"
+            }
+        },
+        {
+            "name": "sandstone_cut",
+            "texture": {
+                "base": "stone_cut_sand"
+            }
+        },
+        {
+            "name": "sandstone_red",
+            "texture": {
+                "base": "sandstone_red",
+                "overlay": "sandstone_red_overlay"
+            }
+        },
+        {
+            "name": "sandstone_red_bricks",
+            "texture": {
+                "base": "stone_bricks_sand_red",
+                "overlay": "stone_bricks_sand_red_overlay"
+            }
+        },
+        {
+            "name": "sandstone_red_chiseled",
+            "texture": {
+                "base": "stone_chiseled_sand_red_side"
+            },
+            "textureOpY": {
+                "base": "stone_chiseled_sand_red_top"
+            }
+        },
+        {
+            "name": "sandstone_red_chiseled_ornament",
+            "texture": {
+                "base": "stone_chiseled_sand_red_ornament_side"
+            },
+            "textureOpY": {
+                "base": "stone_chiseled_sand_red_ornament_top"
+            }
+        },
+        {
+            "name": "sandstone_red_cut",
+            "texture": {
+                "base": "stone_cut_sand_red"
+            }
+        },
+        {
+            "name": "sapling_coniferous",
+            "texture": {
+                "base": "sapling_coniferous"
+            }
+        },
+        {
+            "name": "sapling_dead",
+            "texture": {
+                "base": "sapling_dead"
+            }
+        },
+        {
+            "name": "sapling_deciduous",
+            "texture": {
+                "base": "sapling_deciduous"
+            }
+        },
+        {
+            "name": "sapling_fruit",
+            "texture": {
+                "base": "sapling_fruit"
+            }
+        },
+        {
+            "name": "sapling_jungle",
+            "texture": {
+                "base": "sapling_jungle"
+            }
+        },
+        {
+            "name": "sapling_mangrove",
+            "texture": {
+                "base": "sapling_mangrove"
+            }
+        },
+        {
+            "name": "sapling_palm",
+            "texture": {
+                "base": "sapling_palm"
+            }
+        },
+        {
+            "name": "sapling_rubber",
+            "texture": {
+                "base": "sapling_rubber"
+            }
+        },
+        {
+            "name": "sapling_savanna",
+            "texture": {
+                "base": "sapling_savanna"
+            }
+        },
+        {
+            "name": "sapling_sugar",
+            "texture": {
+                "base": "sapling_sugar"
+            }
+        },
+        {
+            "name": "sapling_swamp",
+            "texture": {
+                "base": "sapling_swamp"
+            }
+        },
+        {
+            "name": "sapphire",
+            "texture": {
+                "base": "sapphire"
+            }
+        },
+        {
+            "name": "scheelite",
+            "texture": {
+                "base": "scheelite"
+            }
+        },
+        {
+            "name": "seamorphite",
+            "texture": {
+                "base": "seamorphite",
+                "overlay": "seamorphite_overlay"
+            }
+        },
+        {
+            "name": "silicon",
+            "texture": {
+                "base": "silicon"
+            }
+        },
+        {
+            "name": "silver",
+            "texture": {
+                "base": "silver",
+                "overlay": "silver_platinum_overlay"
+            }
+        },
+        {
+            "name": "sink_gravel",
+            "texture": {
+                "base": "gravel"
+            }
+        },
+        {
+            "name": "sink_mud",
+            "texture": {
+                "base": "mud"
+            }
+        },
+        {
+            "name": "sink_sand",
+            "texture": {
+                "base": "sand"
+            }
+        },
+        {
+            "name": "sink_sand_black",
+            "texture": {
+                "base": "sand_black"
+            }
+        },
+        {
+            "name": "sink_sand_red",
+            "texture": {
+                "base": "sand_red"
+            }
+        },
+        {
+            "name": "sink_sand_white",
+            "texture": {
+                "base": "sand_white"
+            }
+        },
+        {
+            "name": "sink_snow",
+            "texture": {
+                "base": "snow"
+            }
+        },
+        {
+            "name": "slate",
+            "texture": {
+                "base": "slate_side",
+                "overlay": "slate_overlay"
+            }
+        },
+        {
+            "name": "snow",
+            "texture": {
+                "base": "snow"
+            }
+        },
+        {
+            "name": "spawner_gravel",
+            "texture": {
+                "base": "gravel"
+            }
+        },
+        {
+            "name": "spawner_mud",
+            "texture": {
+                "base": "mud"
+            }
+        },
+        {
+            "name": "spawner_sand",
+            "texture": {
+                "base": "sand"
+            }
+        },
+        {
+            "name": "spawner_sand_red",
+            "texture": {
+                "base": "sand_red"
+            }
+        },
+        {
+            "name": "spawner_snow",
+            "texture": {
+                "base": "snow"
+            }
+        },
+        {
+            "name": "steel",
+            "texture": {
+                "base": "steel",
+                "overlay": "steel_overlay"
+            }
+        },
+        {
+            "name": "steel_plating",
+            "texture": {
+                "base": "steel",
+                "overlay": "plating_steel"
+            }
+        },
+        {
+            "name": "steel_plating_rusty",
+            "texture": {
+                "base": "steel_rusty",
+                "overlay": "plating_steel_rusty"
+            }
+        },
+        {
+            "name": "steel_rusty",
+            "texture": {
+                "base": "steel_rusty",
+                "overlay": "steel_rusty_overlay"
+            }
+        },
+        {
+            "name": "steel_tungsten",
+            "texture": {
+                "base": "steel_tungsten",
+                "overlay": "steel_tungsten_overlay"
+            }
+        },
+        {
+            "name": "steel_tungsten_plating",
+            "texture": {
+                "base": "plating_steel_tungsten",
+                "overlay": "plating_steel_tungsten_overlay"
+            }
+        },
+        {
+            "name": "stone",
+            "texture": {
+                "base": "stone"
+            }
+        },
+        {
+            "name": "stone_bricks",
+            "texture": {
+                "base": "stone_bricks"
+            }
+        },
+        {
+            "name": "stone_cut",
+            "texture": {
+                "base": "stone_cut"
+            }
+        },
+        {
+            "name": "stone_mossy",
+            "texture": {
+                "base": "stone_mossy",
+                "overlay": "stone_overlay"
+            }
+        },
+        {
+            "name": "stone_mycelia_icecaps",
+            "texture": {
+                "base": "stone",
+                "overlay": "stone_mycelia_icecaps_side"
+            },
+            "textureTop": {
+                "base": "stone",
+                "overlay": "stone_mycelia_icecaps_top"
+            }
+        },
+        {
+            "name": "submarium",
+            "texture": {
+                "base": "submarium",
+                "overlay": "submarium_overlay"
+            }
+        },
+        {
+            "name": "succulent_blue_bud",
+            "texture": {
+                "base": "succulent_blue_side"
+            },
+            "textureTop": {
+                "base": "succulent_blue_top"
+            }
+        },
+        {
+            "name": "succulent_blue_stem",
+            "texture": {
+                "base": "succulent_blue_side"
+            },
+            "textureOpY": {
+                "base": "succulent_blue_bottom"
+            }
+        },
+        {
+            "name": "succulent_purple_bud",
+            "texture": {
+                "base": "succulent_purple_side"
+            },
+            "textureTop": {
+                "base": "succulent_purple_top"
+            }
+        },
+        {
+            "name": "succulent_purple_stem",
+            "texture": {
+                "base": "succulent_purple_side"
+            },
+            "textureOpY": {
+                "base": "succulent_purple_bottom"
+            }
+        },
+        {
+            "name": "succulent_stone_bud",
+            "texture": {
+                "base": "succulent_stone_side"
+            },
+            "textureTop": {
+                "base": "succulent_stone_top"
+            }
+        },
+        {
+            "name": "succulent_stone_stem",
+            "texture": {
+                "base": "succulent_stone_side"
+            },
+            "textureOpY": {
+                "base": "succulent_stone_bottom"
+            }
+        },
+        {
+            "name": "sulfur",
+            "texture": {
+                "base": "sulfur",
+                "overlay": "sulfur_overlay"
+            }
+        },
+        {
+            "name": "tarmac",
+            "texture": {
+                "base": "tarmac"
+            }
+        },
+        {
+            "name": "tarmac_semisolid",
+            "texture": {
+                "base": "tarmac_semisolid"
+            }
+        },
+        {
+            "name": "tholin",
+            "texture": {
+                "base": "tholin"
+            }
+        },
+        {
+            "name": "thornmite",
+            "texture": {
+                "base": "thornmite",
+                "overlay": "thornmite_overlay"
+            }
+        },
+        {
+            "name": "thornmite_plating",
+            "texture": {
+                "base": "plating_thornmite",
+                "overlay": "plating_thornmite_overlay"
+            }
+        },
+        {
+            "name": "tin",
+            "texture": {
+                "base": "tin",
+                "overlay": "tin_overlay"
+            }
+        },
+        {
+            "name": "titanium",
+            "texture": {
+                "base": "titanium",
+                "overlay": "titanium_overlay"
+            }
+        },
+        {
+            "name": "titanium_plating",
+            "texture": {
+                "base": "plating_titanium",
+                "overlay": "plating_titanium_overlay"
+            }
+        },
+        {
+            "name": "tnt",
+            "texture": {
+                "base": "tnt_side"
+            },
+            "textureTop": {
+                "base": "tnt_top"
+            }
+        },
+        {
+            "name": "tungsten",
+            "texture": {
+                "base": "tungsten",
+                "overlay": "tungsten_overlay"
+            }
+        },
+        {
+            "name": "tungsten_carbide",
+            "texture": {
+                "base": "ceramic_tungsten_carbide"
+            }
+        },
+        {
+            "name": "uranium",
+            "texture": {
+                "blendMode": "add",
+                "base": "uranium",
+                "overlay": "uranium_overlay"
+            }
+        },
+        {
+            "name": "vine_garas",
+            "texture": {
+                "base": "vine_garas"
+            }
+        },
+        {
+            "name": "wambronium",
+            "texture": {
+                "base": "wambronium",
+                "overlay": "wambronium_overlay"
+            }
+        },
+        {
+            "name": "wood_coniferous_bark",
+            "texture": {
+                "base": "wood_coniferous_bark"
+            }
+        },
+        {
+            "name": "wood_coniferous_bark_charred",
+            "texture": {
+                "base": "wood_coniferous_bark_charred"
+            }
+        },
+        {
+            "name": "wood_coniferous_log",
+            "texture": {
+                "base": "wood_coniferous"
+            }
+        },
+        {
+            "name": "wood_coniferous_log_charred",
+            "texture": {
+                "base": "wood_coniferous_charred"
+            }
+        },
+        {
+            "name": "wood_coniferous_planks",
+            "texture": {
+                "base": "wooden_planks_coniferous_side"
+            },
+            "textureOpY": {
+                "base": "wooden_planks_coniferous_top"
+            }
+        },
+        {
+            "name": "wood_coniferous_planks_charred",
+            "texture": {
+                "base": "wooden_planks_coniferous_side_charred"
+            },
+            "textureOpY": {
+                "base": "wooden_planks_coniferous_top_charred"
+            }
+        },
+        {
+            "name": "wood_dead_log",
+            "texture": {
+                "base": "wood_dead"
+            }
+        },
+        {
+            "name": "wood_dead_log_charred",
+            "texture": {
+                "base": "wood_dead_charred"
+            }
+        },
+        {
+            "name": "wood_dead_planks",
+            "texture": {
+                "base": "wooden_planks_dead"
+            }
+        },
+        {
+            "name": "wood_dead_planks_charred",
+            "texture": {
+                "base": "wooden_planks_dead_charred"
+            }
+        },
+        {
+            "name": "wood_deciduous_bark",
+            "texture": {
+                "base": "wood_deciduous_bark"
+            }
+        },
+        {
+            "name": "wood_deciduous_bark_charred",
+            "texture": {
+                "base": "wood_deciduous_bark_charred"
+            }
+        },
+        {
+            "name": "wood_deciduous_log",
+            "texture": {
+                "base": "wood_deciduous"
+            }
+        },
+        {
+            "name": "wood_deciduous_log_charred",
+            "texture": {
+                "base": "wood_deciduous_charred"
+            }
+        },
+        {
+            "name": "wood_deciduous_planks",
+            "texture": {
+                "base": "wooden_planks_deciduous"
+            }
+        },
+        {
+            "name": "wood_deciduous_planks_charred",
+            "texture": {
+                "base": "wooden_planks_deciduous_charred"
+            }
+        },
+        {
+            "name": "wood_fruit_bark",
+            "texture": {
+                "base": "wood_fruit_bark"
+            }
+        },
+        {
+            "name": "wood_fruit_bark_charred",
+            "texture": {
+                "base": "wood_fruit_bark_charred"
+            }
+        },
+        {
+            "name": "wood_fruit_log",
+            "texture": {
+                "base": "wood_fruit"
+            }
+        },
+        {
+            "name": "wood_fruit_log_charred",
+            "texture": {
+                "base": "wood_fruit_charred"
+            }
+        },
+        {
+            "name": "wood_fruit_planks",
+            "texture": {
+                "base": "wooden_planks_fruit"
+            }
+        },
+        {
+            "name": "wood_fruit_planks_charred",
+            "texture": {
+                "base": "wooden_planks_fruit_charred"
+            }
+        },
+        {
+            "name": "wood_jungle_bark",
+            "texture": {
+                "base": "wood_jungle_bark"
+            }
+        },
+        {
+            "name": "wood_jungle_bark_charred",
+            "texture": {
+                "base": "wood_jungle_bark_charred"
+            }
+        },
+        {
+            "name": "wood_jungle_log",
+            "texture": {
+                "base": "wood_jungle"
+            }
+        },
+        {
+            "name": "wood_jungle_log_charred",
+            "texture": {
+                "base": "wood_jungle_charred"
+            }
+        },
+        {
+            "name": "wood_jungle_planks",
+            "texture": {
+                "base": "wooden_planks_jungle"
+            }
+        },
+        {
+            "name": "wood_jungle_planks_charred",
+            "texture": {
+                "base": "wooden_planks_jungle_charred"
+            }
+        },
+        {
+            "name": "wood_mangrove_bark",
+            "texture": {
+                "base": "wood_mangrove_bark"
+            }
+        },
+        {
+            "name": "wood_mangrove_bark_charred",
+            "texture": {
+                "base": "wood_mangrove_bark_charred"
+            }
+        },
+        {
+            "name": "wood_mangrove_log",
+            "texture": {
+                "base": "wood_mangrove"
+            }
+        },
+        {
+            "name": "wood_mangrove_log_charred",
+            "texture": {
+                "base": "wood_mangrove_charred"
+            }
+        },
+        {
+            "name": "wood_mangrove_planks",
+            "texture": {
+                "base": "wooden_planks_mangrove"
+            }
+        },
+        {
+            "name": "wood_mangrove_planks_charred",
+            "texture": {
+                "base": "wooden_planks_mangrove_charred"
+            }
+        },
+        {
+            "name": "wood_palm_bark",
+            "texture": {
+                "base": "wood_palm_bark"
+            }
+        },
+        {
+            "name": "wood_palm_bark_charred",
+            "texture": {
+                "base": "wood_palm_bark_charred"
+            }
+        },
+        {
+            "name": "wood_palm_log",
+            "texture": {
+                "base": "wood_palm"
+            }
+        },
+        {
+            "name": "wood_palm_log_charred",
+            "texture": {
+                "base": "wood_palm_charred"
+            }
+        },
+        {
+            "name": "wood_palm_planks",
+            "texture": {
+                "base": "wooden_planks_palm_side"
+            },
+            "textureOpY": {
+                "base": "wooden_planks_palm_top"
+            }
+        },
+        {
+            "name": "wood_palm_planks_charred",
+            "texture": {
+                "base": "wooden_planks_palm_side_charred"
+            },
+            "textureOpY": {
+                "base": "wooden_planks_palm_top_charred"
+            }
+        },
+        {
+            "name": "wood_rubber_bark",
+            "texture": {
+                "base": "wood_rubber_bark"
+            }
+        },
+        {
+            "name": "wood_rubber_bark_charred",
+            "texture": {
+                "base": "wood_rubber_bark_charred"
+            }
+        },
+        {
+            "name": "wood_rubber_log",
+            "texture": {
+                "base": "wood_rubber"
+            }
+        },
+        {
+            "name": "wood_rubber_log_charred",
+            "texture": {
+                "base": "wood_rubber_charred"
+            }
+        },
+        {
+            "name": "wood_rubber_planks",
+            "texture": {
+                "base": "wooden_planks_rubber"
+            }
+        },
+        {
+            "name": "wood_rubber_planks_charred",
+            "texture": {
+                "base": "wooden_planks_rubber_charred"
+            }
+        },
+        {
+            "name": "wood_savanna_bark",
+            "texture": {
+                "base": "wood_savanna_bark"
+            }
+        },
+        {
+            "name": "wood_savanna_bark_charred",
+            "texture": {
+                "base": "wood_savanna_bark_charred"
+            }
+        },
+        {
+            "name": "wood_savanna_log",
+            "texture": {
+                "base": "wood_savanna"
+            }
+        },
+        {
+            "name": "wood_savanna_log_charred",
+            "texture": {
+                "base": "wood_savanna_charred"
+            }
+        },
+        {
+            "name": "wood_savanna_planks",
+            "texture": {
+                "base": "wooden_planks_savanna"
+            }
+        },
+        {
+            "name": "wood_savanna_planks_charred",
+            "texture": {
+                "base": "wooden_planks_savanna_charred"
+            }
+        },
+        {
+            "name": "wood_sugar_bark",
+            "texture": {
+                "base": "wood_sugar_bark"
+            }
+        },
+        {
+            "name": "wood_sugar_bark_charred",
+            "texture": {
+                "base": "wood_sugar_bark_charred"
+            }
+        },
+        {
+            "name": "wood_sugar_log",
+            "texture": {
+                "base": "wood_sugar"
+            }
+        },
+        {
+            "name": "wood_sugar_log_charred",
+            "texture": {
+                "base": "wood_sugar_charred"
+            }
+        },
+        {
+            "name": "wood_sugar_planks",
+            "texture": {
+                "base": "wooden_planks_sugar"
+            }
+        },
+        {
+            "name": "wood_sugar_planks_charred",
+            "texture": {
+                "base": "wooden_planks_sugar_charred"
+            }
+        },
+        {
+            "name": "wood_swamp_bark",
+            "texture": {
+                "base": "wood_swamp_bark"
+            }
+        },
+        {
+            "name": "wood_swamp_bark_charred",
+            "texture": {
+                "base": "wood_swamp_bark_charred"
+            }
+        },
+        {
+            "name": "wood_swamp_log",
+            "texture": {
+                "base": "wood_swamp"
+            }
+        },
+        {
+            "name": "wood_swamp_log_charred",
+            "texture": {
+                "base": "wood_swamp_charred"
+            }
+        },
+        {
+            "name": "wood_swamp_planks",
+            "texture": {
+                "base": "wooden_planks_swamp"
+            }
+        },
+        {
+            "name": "wood_swamp_planks_charred",
+            "texture": {
+                "base": "wooden_planks_swamp_charred"
+            }
+        },
+        {
+            "name": "zinc",
+            "texture": {
+                "base": "zinc",
+                "overlay": "zinc_overlay"
+            }
+        },
+        {
+            "name": "zincblende",
+            "texture": {
+                "base": "zincblende"
+            }
+        }
+    ]
+}

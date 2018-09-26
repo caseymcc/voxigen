@@ -1,20 +1,48 @@
+#ifdef LOG_PROCESS_QUEUE
 #include <glog/logging.h>
+#endif//LOG_PROCESS_QUEUE
 
 namespace voxigen
 {
 
 template<typename _Grid>
+void ProcessQueue<_Grid>::checkInputThread()
+{
+#ifndef NDEBUG
+    //lets make sure only one thread is changing the input queue
+    if(!m_inputThreadIdSet)
+    {
+        m_inputThreadId=std::this_thread::get_id();
+        m_inputThreadIdSet=true;
+    }
+
+    assert(std::this_thread::get_id()==m_inputThreadId);
+#endif
+}
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::checkOutputThread()
+{
+#ifndef NDEBUG
+    //lets make sure only one thread is changing the input queue
+    if(!m_outputThreadIdSet)
+    {
+        m_outputThreadId=std::this_thread::get_id();
+        m_outputThreadIdSet=true;
+    }
+
+    assert(std::this_thread::get_id()==m_outputThreadId);
+#endif
+}
+
+template<typename _Grid>
 void ProcessQueue<_Grid>::updatePosition(const glm::ivec3 &region, const glm::ivec3 &chunk)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
+    std::shared_ptr<UpdateQueueRequestType> request=std::make_shared<UpdateQueueRequestType>(region, chunk);
 
-    ProcessCompare<ChunkType>::currentRegion=region;
-    ProcessCompare<ChunkType>::currentChunk=chunk;
-
-#ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"Setting chunk pos ("<<region.x<<", "<<region.y<<", "<<region.z<<"  "<<chunk.x<<", "<<chunk.y<<", "<<chunk.z<<")";
-#endif//LOG_PROCESS_QUEUE
-    std::make_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
+    m_cacheQueue.push_back(request);
+    
+    updateQueue();
 }
 
 template<typename _Grid>
@@ -22,24 +50,17 @@ void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle, size_t lod)
 {
     std::shared_ptr<GenerateRequestType> request=std::make_shared<GenerateRequestType>(chunkHandle, lod);
 
-    {
 #ifdef LOG_PROCESS_QUEUE
-        if(chunkHandle)
-        {
-            glm::ivec3 regionIndex=chunkHandle->regionIndex();
-            glm::ivec3 chunkIndex=chunkHandle->chunkIndex();
+    if(chunkHandle)
+    {
+        glm::ivec3 regionIndex=chunkHandle->regionIndex();
+        glm::ivec3 chunkIndex=chunkHandle->chunkIndex();
 
-            LOG(INFO)<<"Adding generate chunk ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<"  "<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<")";
-        }
-#endif
-
-        std::unique_lock<std::mutex> lock(m_mutex);
-
-//        m_queue.push(request);
-        m_queue.push_back(request);
-        std::push_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
+        LOG(INFO)<<"Adding generate chunk ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<"  "<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<")";
     }
-    m_event.notify_all();
+#endif
+    checkInputThread();
+    m_cacheQueue.push_back(request);
 }
 
 template<typename _Grid>
@@ -47,14 +68,8 @@ void ProcessQueue<_Grid>::addRead(SharedChunkHandle chunkHandle, size_t lod)
 {
     std::shared_ptr<ReadRequestType> request=std::make_shared<ReadRequestType>(chunkHandle, lod);
 
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-
-//        m_queue.push(request);
-        m_queue.push_back(request);
-        std::push_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
-    }
-    m_event.notify_all();
+    checkInputThread();
+    m_cacheQueue.push_back(request);
 }
 
 template<typename _Grid>
@@ -62,62 +77,114 @@ void ProcessQueue<_Grid>::addWrite(SharedChunkHandle chunkHandle)
 {
     std::shared_ptr<WriteRequestType> request=std::make_shared<WriteRequestType>(chunkHandle);
 
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-
-//        m_queue.push(request);
-        m_queue.push_back(request);
-        std::push_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
-    }
-    m_event.notify_all();
+    checkInputThread();
+    m_cacheQueue.push_back(request);
 }
 
 template<typename _Grid>
 void ProcessQueue<_Grid>::addUpdate(SharedChunkHandle chunkHandle)
 {
+    chunkHandle->setUpdating();
     std::shared_ptr<UpdateRequestType> request=std::make_shared<UpdateRequestType>(chunkHandle);
 
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
+    checkInputThread();
+    m_cacheQueue.push_back(request);
+}
 
-//        m_queue.push(request);
-        m_queue.push_back(request);
-        std::push_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
+template<typename _Grid>
+void ProcessQueue<_Grid>::addRelease(SharedChunkHandle chunkHandle)
+{
+    chunkHandle->setReleasing();
+    std::shared_ptr<ReleaseRequestType> request=std::make_shared<ReleaseRequestType>(chunkHandle);
+
+    checkInputThread();
+    m_cacheQueue.push_back(request);
+}
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::updateQueue()
+{
+    if(!m_cacheQueue.empty())
+    {
+        {//hold lock only as long as required
+            std::unique_lock<std::mutex> lock(m_queueMutex);
+
+            m_queue.insert(m_queue.end(), m_cacheQueue.begin(), m_cacheQueue.end());
+        }
+        m_cacheQueue.resize(0);
     }
-    m_event.notify_all();
+    m_queueEvent.notify_all();
+}
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::updatePriorityQueue()
+{
+    RequestQueue localQueue;
+
+    {//hold lock only as long as required
+        std::unique_lock<std::mutex> lock(m_queueMutex);
+
+        localQueue.insert(localQueue.end(), m_queue.begin(), m_queue.end());
+        m_queue.resize(0);
+    }
+
+    for(SharedRequest &request:localQueue)
+    {
+        m_priorityQueue.push_back(request);
+        std::push_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
+    }
 }
 
 template<typename _Grid>
 std::unique_lock<std::mutex> ProcessQueue<_Grid>::getLock()
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
+    std::unique_lock<std::mutex> lock(m_queueMutex);
 
     return lock;
 }
 
 template<typename _Grid>
-void ProcessQueue<_Grid>::wait(std::unique_lock<std::mutex> &lock)
+void ProcessQueue<_Grid>::trigger(std::unique_lock<std::mutex> &lock)
 {
-    m_event.wait(lock);
+    m_queueEvent.notify_all();
 }
 
 template<typename _Grid>
-typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type, size_t &data)
+void ProcessQueue<_Grid>::wait(std::unique_lock<std::mutex> &lock)
 {
-    SharedProcessRequest<ChunkType> request;
-    SharedChunkHandle chunkHandle;
+    m_queueEvent.wait(lock);
+}
 
-    if(!m_queue.empty())
+template<typename _Grid>
+//typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type, size_t &data)
+typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessRequest(SharedChunkHandle &chunkHandle, size_t &data)
+{
+    SharedRequest request;
+///    SharedChunkHandle chunkHandle;
+
+    if(!m_priorityQueue.empty())
     {
 //        request=m_queue.top();
 //        m_queue.pop_back();
-        std::pop_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
-        request=m_queue.back();
-        m_queue.pop_back();
+        std::pop_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
+        request=m_priorityQueue.back();
+        m_priorityQueue.pop_back();
 
-        type=request->type;
         switch(request->type)
         {
+        case Process::Type::UpdateQueue:
+            {
+                //position changed so update queue priority
+                ProcessCompare<ChunkType>::currentRegion=request->regionIndex;
+                ProcessCompare<ChunkType>::currentChunk=request->chunkIndex;
+
+#ifdef LOG_PROCESS_QUEUE
+                LOG(INFO)<<"Updating queue pos ("<<request->regionIndex.x<<", "<<request->regionIndex.y<<", "<<request->regionIndex.z<<"  "<<request->chunkIndex.x<<", "<<request->chunkIndex.y<<", "<<request->chunkIndex.z<<")";
+//                LOG(INFO)<<"Setting chunk pos ("<<request->regionIndex.x<<", "<<request->regionIndex.y<<", "<<request->regionIndex.z<<"  "<<request->chunkIndex.x<<", "<<request->chunkIndex.y<<", "<<request->chunkIndex.z<<")";
+#endif//LOG_PROCESS_QUEUE
+                std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
+            }
+            break;
         case Process::Type::Generate:
             {
                 GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
@@ -148,6 +215,13 @@ typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProc
                 chunkHandle=updateRequest->chunkHandle.lock();
             }
             break;
+        case Process::Type::Release:
+            {
+                ReleaseRequestType *releaseRequest=(ReleaseRequestType *)request.get();
+
+                chunkHandle=releaseRequest->chunkHandle.lock();
+            }
+            break;
         }
     }
 
@@ -161,16 +235,119 @@ typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProc
     }
 #endif
 
-    return chunkHandle;
+//    return chunkHandle;
+    return request;
 }
 
 template<typename _Grid>
-void ProcessQueue<_Grid>::updatePriority()
+void ProcessQueue<_Grid>::removeRequests(SharedChunkHandle &chunkHandle)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
+    size_t removed=0;
 
-    std::make_heap(m_queue.begin(), m_queue.end(), ProcessCompare<ChunkType>());
+    for(auto iter=m_priorityQueue.begin(); iter!=m_priorityQueue.end();)
+    {
+        SharedChunkHandle requestChunkHandle;
+
+        switch(request->type)
+        {
+        case Process::Type::UpdateQueue:
+            break;
+        case Process::Type::Generate:
+            {
+                GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
+
+                requestChunkHandle=generateRequest->chunkHandle.lock();
+            }
+            break;
+        case Process::Type::Read:
+            {
+                ReadRequest<ChunkType> *readRequest=(ReadRequest<ChunkType> *)request.get();
+
+                requestChunkHandle=readRequest->chunkHandle.lock();
+            }
+            break;
+        case Process::Type::Update:
+            {
+                UpdateRequestType *updateRequest=(UpdateRequestType *)request.get();
+
+                requestChunkHandle=updateRequest->chunkHandle.lock();
+            }
+            break;
+        case Process::Type::Release:
+            {
+                ReleaseRequestType *releaseRequest=(ReleaseRequestType *)request.get();
+
+                requestChunkHandle=releaseRequest->chunkHandle.lock();
+            }
+            break;
+        }
+
+        if(requestChunkHandle==chunkHandle)
+        {
+            iter=m_priorityQueue.erase(iter);
+            removed++;
+        }
+        else
+            ++iter;
+
+    }
+
+    if(removed)
+        std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
 }
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::addCompletedRequest(SharedRequest request)
+{
+    m_completedQueueCache.push_back(request);
+}
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::updateCompletedQueue()
+{
+    {
+        std::unique_lock<std::mutex> lock(m_completedMutex);
+
+        m_completedQueue.insert(m_completedQueue.end(), m_completedQueueCache.begin(), m_completedQueueCache.end());
+    }
+    m_completedQueueCache.resize(0);
+}
+
+template<typename _Grid>
+void ProcessQueue<_Grid>::getCompletedQueue(RequestQueue &completedQueue)
+{
+    size_t startIndex=completedQueue.size();
+    {
+        std::unique_lock<std::mutex> lock(m_completedMutex);
+
+        completedQueue.insert(completedQueue.end(), m_completedQueue.begin(), m_completedQueue.end());
+        m_completedQueue.resize(0);
+    }
+
+//    //lets clear chunk action
+//    for(size_t index=startIndex; index<completedQueue.size(); ++index)
+//    {
+//        SharedRequest &request=completedQueue[index];
+//        auto chunkHandle=request->getChunkHandle();
+//
+////        if(chunkHandle)
+////            chunkHandle->setIdle();
+//    }
+}
+
+template<typename _Grid>
+bool ProcessQueue<_Grid>::isCompletedQueueEmpty()
+{
+    return m_completedQueue.empty();
+}
+
+//template<typename _Grid>
+//void ProcessQueue<_Grid>::updatePriority()
+//{
+//    std::unique_lock<std::mutex> lock(m_queueMutex);
+//
+//    std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
+//}
 
 }//namespace voxigen
 

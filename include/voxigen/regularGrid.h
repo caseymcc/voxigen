@@ -25,6 +25,19 @@ namespace voxigen
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ>
 using UniqueChunkMap=std::unordered_map<ChunkHash, UniqueChunk<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ>>;
 
+//inheritable class the carries typedef
+template<typename _Grid, bool grid=false>
+class RegularGridTypes
+{
+public:
+    typedef _Grid GridType;
+    typedef GridDescriptors<GridType> DescriptorType;
+
+    typedef typename GridType::ChunkType ChunkType;
+    typedef ChunkHandle<ChunkType> ChunkHandleType;
+    typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
+};
+
 template<typename _Cell, size_t _ChunkSizeX=64, size_t _ChunkSizeY=64, size_t _ChunkSizeZ=64, size_t _RegionSizeX=16, size_t _RegionSizeY=16, size_t _RegionSizeZ=16, bool _Thread=true>
 class RegularGrid
 {
@@ -78,7 +91,9 @@ public:
 
     SharedChunkHandle getChunk(const glm::ivec3 &index);
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
-    void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
+    SharedChunkHandle getChunk(Key &key);
+    void loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force=false);
+    void releaseChunk(SharedChunkHandle chunkHandle);
     std::vector<Key> getUpdatedChunks();
 
     RegionHash getRegionHash(const glm::ivec3 &index);
@@ -109,6 +124,7 @@ public:
 
     glm::mat4 &getTransform() { return m_transform; }
 
+    void updateProcessQueue() { m_processQueue.updateQueue(); }
     void processThread();
 
 private:
@@ -133,6 +149,7 @@ private:
     std::mutex m_processMutex;
     std::condition_variable m_processEvent;
     ProcessQueueType m_processQueue;
+    std::vector<SharedProcessRequest<ChunkType>> m_completeQueue;
 };
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
@@ -154,9 +171,20 @@ m_processQueue(&m_descriptors)
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::~RegularGrid()
 {
-    m_processThreadRunning=false;
     m_dataStore.terminate();
     m_generatorQueue.terminate();
+
+    if(_Thread)
+    {
+        //shutdown processing thread
+        {
+            std::unique_lock<std::mutex> &lock=m_processQueue.getLock();
+
+            m_processThreadRunning=false;
+            m_processQueue.trigger(lock);//force update
+        }
+        m_processThread.join();
+    }
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
@@ -191,56 +219,90 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::processThread()
 {
-//    std::unique_lock<std::mutex> lock(m_processMutex);
-    std::unique_lock<std::mutex> &lock=m_processQueue.getLock();
+    std::unique_lock<std::mutex> lock(m_processMutex);
+//    std::unique_lock<std::mutex> &lock=m_processQueue.getLock();
 
     while(m_processThreadRunning)
     {
         Process::Type type;
         size_t lod;
-        SharedChunkHandle chunkHandle=m_processQueue.getNextProcessRequest(lock, type, lod);
+//        SharedChunkHandle chunkHandle=m_processQueue.getNextProcessRequest(lock, type, lod);
+        SharedChunkHandle chunkHandle;
 
+        SharedProcessRequest<ChunkType> request=m_processQueue.getNextProcessRequest(chunkHandle, lod);
+        
         if(!chunkHandle)
         {
 //            m_processEvent.wait(lock);
             if(m_processQueue.empty())
-                m_processQueue.wait(lock);
+            {
+                //check for more items, this has a lock
+                m_processQueue.updatePriorityQueue();
+                
+                if(m_processQueue.empty())
+                    m_processQueue.wait(lock);
+            }
             continue;
         }
 
-        lock.unlock();
+//        lock.unlock();
 
         bool addChunk=false;
 
-        switch(type)
+        switch(request->type)
         {
         case Process::Generate:
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ProcessThread - Chunk ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generate";
+#endif//LOG_PROCESS_QUEUE
             chunkHandle->generate(&m_descriptors, m_generator.get(), lod);
             addChunk=true;
             break;
         case Process::Read:
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ProcessThread - Chunk ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") read";
+#endif//LOG_PROCESS_QUEUE
             m_dataStore.readChunk(chunkHandle);
             addChunk=true;
             break;
         case Process::Write:
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ProcessThread - Chunk ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") write";
+#endif//LOG_PROCESS_QUEUE
             m_dataStore.writeChunk(chunkHandle);
             break;
         case Process::Update:
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ProcessThread - Chunk ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") update";
+#endif//LOG_PROCESS_QUEUE
             addChunk=true;
+            break;
+        case Process::Release:
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"ProcessThread - Chunk ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") release";
+#endif//LOG_PROCESS_QUEUE
+            chunkHandle->release();
             break;
         }
 
-        if(addChunk)
-            addChunk=!chunkUpdateCallback(chunkHandle);
-
-        lock.lock();
-
-        if(addChunk)
+        m_processQueue.addCompletedRequest(request);
+        
+        if(m_processQueue.isCompletedQueueEmpty())
         {
-            Key key(chunkHandle->regionHash(), chunkHandle->hash());
-            
-            m_updateQueue.add(key);
+            m_processQueue.updateCompletedQueue();
         }
+
+//        if(addChunk)
+//            addChunk=!chunkUpdateCallback(chunkHandle);
+//
+////        lock.lock();
+//
+//        if(addChunk)
+//        {
+//            Key key(chunkHandle->regionHash(), chunkHandle->hash());
+//            
+//            m_updateQueue.add(key);
+//        }
     }
 }
 
@@ -334,23 +396,85 @@ typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX,
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
+typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunk(Key &key)
+{
+    return m_dataStore.getChunk(key.regionHash, key.chunkHash);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunk(RegionHash regionHash, ChunkHash chunkHash)
 {
     return m_dataStore.getChunk(regionHash, chunkHash);
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
-void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force)
 {
-    m_dataStore.loadChunk(chunkHandle, lod);
+    m_dataStore.loadChunk(chunkHandle, lod, force);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::releaseChunk(SharedChunkHandle chunkHandle)
+{
+    //send to thread to release as it could be processing it as well
+    m_processQueue.addRelease(chunkHandle);
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getUpdatedChunks()
 {
+//    std::vector<Key> updatedChunks;
+//
+//    updatedChunks=m_updateQueue.get();
+//    return updatedChunks;
+
     std::vector<Key> updatedChunks;
 
-    updatedChunks=m_updateQueue.get();
+//    if(m_processQueue.isCompletedQueueEmpty())
+//        m_processQueue.updateCompletedQueue();
+
+    ProcessQueueType::RequestQueue completedQueue;
+
+    m_processQueue.getCompletedQueue(completedQueue);
+    for(auto &request:completedQueue)
+    {
+        ProcessQueueType::SharedChunkHandle chunkHandle=request->getChunkHandle();
+
+        if(!chunkHandle)
+            continue;
+
+        if(request->type==Process::Generate)
+        {
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generate complete";
+#endif//LOG_PROCESS_QUEUE
+            chunkHandle->setState(ChunkState::Memory);
+            chunkHandle->setAction(ChunkAction::Idle);
+            updatedChunks.push_back(chunkHandle->key());
+        }
+        else if(request->type==Process::Read)
+        {
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") read complete";
+#endif//LOG_PROCESS_QUEUE
+
+            chunkHandle->setState(ChunkState::Memory);
+            chunkHandle->setAction(ChunkAction::Idle);
+            updatedChunks.push_back(chunkHandle->key());
+        }
+        else if(request->type==Process::Update)
+        {
+#ifdef LOG_PROCESS_QUEUE
+            LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") update complete";
+#endif//LOG_PROCESS_QUEUE
+
+            chunkHandle->setState(ChunkState::Memory);
+            chunkHandle->setAction(ChunkAction::Idle);
+            updatedChunks.push_back(chunkHandle->key());
+        }
+    }
+    completedQueue.clear();
+
     return updatedChunks;
 }
 

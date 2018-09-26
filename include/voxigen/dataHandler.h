@@ -124,9 +124,9 @@ void DataHandler<_HashType, _DataHandle, _Data>::removeHandle(DataHandle *dataHa
     if(iter!=m_weakDataHandles.end())
         m_weakDataHandles.erase(iter);
 
-    //we are not releasing the handle here as we hold it in a different map
-    //but we want to release any data attached to it as no one is using it
-    dataHandle->release();
+//    //we are not releasing the handle here as we hold it in a different map
+//    //but we want to release any data attached to it as no one is using it
+//    dataHandle->release();
 }
 
 } //namespace voxigen

@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <assert.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 #include <GL/glew.h>
 

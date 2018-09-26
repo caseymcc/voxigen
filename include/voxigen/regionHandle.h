@@ -51,7 +51,7 @@ public:
     RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue);
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
-    void loadChunk(SharedChunkHandle chunkHandle, size_t lod);
+    void loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force=false);
 
     Status getStatus() { return m_status; }
 
@@ -300,22 +300,22 @@ typename RegionHandle<_Grid>::SharedChunkHandle RegionHandle<_Grid>::getChunk(Ch
 }
 
 template<typename _Grid>
-void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod)
+void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force)
 {
-    if(chunkHandle->status()!=ChunkHandleType::Memory)
+    if(force || (chunkHandle->state() != ChunkState::Memory))
     {
+        //an action is in process lets not start something else as well
+        if(chunkHandle->action()!=ChunkAction::Idle)
+            return;
+
         if(chunkHandle->empty()) //empty is already loaded
         {
-//            chunkHandle->m_memoryUsed=0;
-//            chunkHandle->status=ChunkHandleType::Memory;
-//            m_updateQueue->add(Key(chunkHandle->regionHash(), chunkHandle->hash()));
-            m_dataStore->empty(chunkHandle);
+//            m_dataStore->empty(chunkHandle);
         }
         else
         {
             //we dont have it in memory so we need to load or generate it
             if(!chunkHandle->cachedOnDisk()) 
-//                m_generatorQueue->add(chunkHandle);
                 m_dataStore->generate(chunkHandle, lod);
             else
                 m_dataStore->read(chunkHandle, lod);
