@@ -177,7 +177,12 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 template<bool stride>
 int getBlockType(int z, size_t columnHeight, size_t stride)
 {
-    int blockType=(columnHeight-z)/13+2;
+    int blockType=1;// =(columnHeight-z)/8+2;
+
+    if(columnHeight>10)
+        blockType=3;
+    if(columnHeight>2)
+        blockType=2;
 
     return blockType;
 }
@@ -185,7 +190,7 @@ int getBlockType(int z, size_t columnHeight, size_t stride)
 template<>
 int getBlockType<true>(int z, size_t columnHeight, size_t stride)
 {
-    int blockType;
+    int blockType=1;
 
 //    for(int z=0; z<stride; ++z)
 //    {
@@ -197,8 +202,10 @@ int getBlockType<true>(int z, size_t columnHeight, size_t stride)
 //            }
 //        }
 //    }
-
-    blockType=(columnHeight-z)/13+2;
+    if(columnHeight>10)
+        blockType=3;
+    if(columnHeight>2)
+        blockType=2;
 
     return blockType;
 }
@@ -294,9 +301,9 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
                 else
                 {
                     if(stride == 1)
-                        blockType=getBlockType<false>(blockZ, blockHeight, stride);
+                        blockType=getBlockType<false>(blockZ, blockHeight-blockZ, stride);
                     else
-                        blockType=getBlockType<true>(blockZ, blockHeight, stride);
+                        blockType=getBlockType<true>(blockZ, blockHeight-blockZ, stride);
 
 //                    if(blockZ<seaLevel)
 //                        blockType=1;

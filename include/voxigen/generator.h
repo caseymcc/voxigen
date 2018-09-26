@@ -167,7 +167,7 @@ void GeneratorQueue<_Grid>::add(SharedChunkHandle chunkHandle)
 {
     std::unique_lock<std::mutex> lock(m_generatorMutex);
 
-    chunkHandle->setStatus(ChunkHandleType::Generating);
+//    chunkHandle->setStatus(ChunkHandleType::Generating);
     m_generatorQueue.push(chunkHandle);
     m_generatorEvent.notify_all();
 }

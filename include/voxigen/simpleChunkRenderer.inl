@@ -5,11 +5,14 @@ namespace voxigen
 
 template<typename _Parent, typename _Chunk>
 SimpleChunkRenderer<_Parent, _Chunk>::SimpleChunkRenderer():
-m_state(Init), 
+m_state(Init),
+m_action(RenderAction::Idle),
 m_chunkOffset(0.0f, 0.0f, 0.0f), 
 refCount(0),
 m_lodUpdated(false),
+m_vertexArrayGen(false),
 //#ifndef NDEBUG
+m_outlineGen(false),
 m_outlineBuilt(false)
 //#endif //NDEBUG
 {}
@@ -62,77 +65,57 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setEmpty()
 //}
 
 template<typename _Parent, typename _Chunk>
-void SimpleChunkRenderer<_Parent, _Chunk>::build(unsigned int instanceData)
+void SimpleChunkRenderer<_Parent, _Chunk>::build()//unsigned int instanceData)
 {
-    if(m_state != Init)
+//    if(m_state != Init)
+//        return;
+//
+    if(m_vertexArrayGen)
         return;
 
-//    glGenVertexArrays(1, &m_vertexArray);
+    glGenVertexArrays(1, &m_vertexArray);
+    m_vertexArrayGen=true;
+//    glGenBuffers(1, &vertexBuffer);
+//    glGenBuffers(1, &indexBuffer);
+//    assert(glGetError()==GL_NO_ERROR);
 //
-//    glGenBuffers(1, &m_offsetVBO);
-//    update();
+//    glBindVertexArray(vertexArray);
 //
-//    glBindVertexArray(m_vertexArray);
+//    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 //
-//    glEnableVertexAttribArray(0);
-//    glBindBuffer(GL_ARRAY_BUFFER, instanceData);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)0);
-//
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
-//
-//    glEnableVertexAttribArray(2);
-//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
-//
-//    glEnableVertexAttribArray(3);
-//    glBindBuffer(GL_ARRAY_BUFFER, m_offsetVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*_Chunk::sizeX::value*_Chunk::sizeY::value*_Chunk::sizeZ::value, nullptr, GL_STATIC_DRAW);
-//    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-//    glVertexAttribDivisor(3, 1);
+//    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
+//    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, x)));
+//    glEnableVertexAttribArray(1); // Attrib '1' is the vertex texCoord.
+//    glVertexAttribIPointer(1, 2, GL_SHORT, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, tx)));
+//    glEnableVertexAttribArray(2); // Attrib '2' is the vertex data.
+//    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, data)));
 //    
 //    glBindVertexArray(0);
-
-    glGenVertexArrays(1, &m_vertexArray);
-    glGenBuffers(1, &m_vertexBuffer);
-    glGenBuffers(1, &m_indexBuffer);
-    assert(glGetError()==GL_NO_ERROR);
-
-    glBindVertexArray(m_vertexArray);
-
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-
-//    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
-//    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, encodedPosition)));
-//    glEnableVertexAttribArray(1); // Attrib '1' is the vertex normals.
-//    glVertexAttribPointer(1, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(CubicVertex), (GLvoid*)(offsetof(CubicVertex, data)));
-
-    glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
-    glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(ChunkMeshVertex), (GLvoid*)(offsetof(ChunkMeshVertex, x)));
-    glEnableVertexAttribArray(1); // Attrib '1' is the vertex normals.
-    glVertexAttribPointer(1, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(ChunkMeshVertex), (GLvoid*)(offsetof(ChunkMeshVertex, data)));
-    
-    glBindVertexArray(0);
-
-//    m_indexType=sizeof(typename MeshType::IndexType)==2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    m_indexType=GL_UNSIGNED_INT;
-
-    glGenQueries(1, &m_queryId);
-
-    if(m_chunkHandle)
-#ifdef OCCLUSSION_QUERY
-        m_state=Occluded; //assumed, as it will force a check
-#else//OCCLUSSION_QUERY
-        m_state=Dirty;
-#endif//OCCLUSSION_QUERY
-    else
-        m_state=Invalid;
-
+//
+////    m_indexType=sizeof(typename MeshType::IndexType)==2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+//    m_indexType=GL_UNSIGNED_INT;
+//
+//    glGenQueries(1, &m_queryId);
+//
+//    if(m_chunkHandle)
+//#ifdef OCCLUSSION_QUERY
+//        m_state=Occluded; //assumed, as it will force a check
+//#else//OCCLUSSION_QUERY
+//        m_state=Dirty;
+//#endif//OCCLUSSION_QUERY
+//    else
+//        m_state=Invalid;
+//
 }
 
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::buildOutline(unsigned int instanceData)
 {
+    if(m_outlineGen)
+        return;
+
+    m_outlineGen=true;
     glGenVertexArrays(1, &m_outlineVertexArray);
     glGenBuffers(1, &m_outlineOffsetVBO);
 
@@ -180,6 +163,40 @@ void SimpleChunkRenderer<_Parent, _Chunk>::buildMesh()
 //    m_chunkHandle->release();
 
     calculateMemoryUsed();
+}
+
+template<typename _Parent, typename _Chunk>
+MeshBuffer SimpleChunkRenderer<_Parent, _Chunk>::setMesh(MeshBuffer &mesh)
+{
+    MeshBuffer previousMesh;
+
+    //release old mesh
+    if(m_meshBuffer.valid)
+    {
+        previousMesh=m_meshBuffer;
+    }
+
+    m_meshBuffer=mesh;
+
+    if(mesh.valid)
+    {
+        //need to update VAO
+        glBindVertexArray(m_vertexArray);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshBuffer.vertexBuffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshBuffer.indexBuffer);
+
+        glEnableVertexAttribArray(0); // Attrib '0' is the vertex positions
+        glVertexAttribIPointer(0, 3, GL_UNSIGNED_BYTE, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, x)));
+        glEnableVertexAttribArray(1); // Attrib '1' is the vertex texCoord.
+        glVertexAttribIPointer(1, 2, GL_SHORT, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, tx)));
+        glEnableVertexAttribArray(2); // Attrib '2' is the vertex data.
+        glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(ChunkTextureMesh::Vertex), (GLvoid*)(offsetof(ChunkTextureMesh::Vertex, data)));
+
+        glBindVertexArray(0);
+    }
+
+    return previousMesh;
 }
 
 template<typename _Parent, typename _Chunk>
@@ -274,9 +291,10 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::update()
     if(!m_chunkHandle->chunk())
         return copyStarted;
 
+    m_mesh.setTextureAtlas(m_textureAtlas);
     buildCubicMesh(m_mesh, m_chunkHandle->chunk());
 
-    std::vector<ChunkMeshVertex> &verticies=m_mesh.getVerticies();
+    auto &verticies=m_mesh.getVerticies();
     std::vector<int> &indices=m_mesh.getIndices();
 
     if(!indices.empty())
@@ -309,7 +327,7 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::update()
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::updated()
 {
-    refCount=0;
+//    refCount=0;
     m_state=Copy;
 }
 
@@ -319,7 +337,8 @@ void SimpleChunkRenderer<_Parent, _Chunk>::updateOutline()
 //#ifndef NDEBUG
     //chunk is not going to be valid till loaded, so going to hack together the offset from
     //the hash info
-    glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash())/*+m_chunkOffset*/, 1.0f);
+//    glm::vec4 position=glm::vec4(m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash())/*+m_chunkOffset*/, 1.0f);
+    glm::vec4 position=glm::vec4(m_chunkHandle->regionOffset(), 1.0f);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_outlineOffsetVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(position), GL_STATIC_DRAW);
@@ -343,8 +362,9 @@ void SimpleChunkRenderer<_Parent, _Chunk>::invalidate()
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::releaseChunkMemory()
 {
-    m_chunkHandle->release();
-    calculateMemoryUsed();
+    m_parent->getGrid()->releaseChunk(m_chunkHandle);
+//    m_chunkHandle->release();
+//    calculateMemoryUsed();
 }
 
 template<typename _Parent, typename _Chunk>
@@ -380,15 +400,29 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::incrementCopy()
 template<typename _Parent, typename _Chunk>
 void SimpleChunkRenderer<_Parent, _Chunk>::draw()
 {
-    if(m_state==Built)
+//    if(m_state==Built)
+    if(m_meshBuffer.valid)
     {
-        glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+        if(!m_meshBuffer.ready)
+        {
+            GLenum result=glClientWaitSync(m_meshBuffer.sync, 0, 0);
+
+            if((result==GL_ALREADY_SIGNALED)||(result==GL_CONDITION_SATISFIED))
+            {
+                m_meshBuffer.ready=true;
+                glDeleteSync(m_meshBuffer.sync);
+            }
+            else
+                return;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshBuffer.vertexBuffer);
 
         glBindVertexArray(m_vertexArray);
 //        glDrawArraysInstanced(GL_TRIANGLES, 0, 36, m_validBlocks);
 
         // Draw the mesh
-        glDrawElements(GL_TRIANGLES, m_validBlocks, m_indexType, 0);
+        glDrawElements(GL_TRIANGLES, m_meshBuffer.indices, m_meshBuffer.indexType, 0);
         assert(glGetError()==GL_NO_ERROR);
     }
 }
@@ -464,27 +498,28 @@ void SimpleChunkRenderer<_Parent, _Chunk>::drawOutline(opengl_util::Program *pro
 //    else
 //        color=glm::vec3(0.0f, 1.0f, 0.0f);
 
-    ChunkHandleType::Status status=m_chunkHandle->status();
+    ChunkAction action=m_chunkHandle->action();
     
-    if(status==ChunkHandleType::Unknown)
-        color=glm::vec3(1.0f, 0.0f, 0.0f);
-    else if(status==ChunkHandleType::Loading)
-        color=glm::vec3(1.0f, 0.0f, 1.0f);
-    else if(status==ChunkHandleType::Generating)
-        color=glm::vec3(0.0f, 0.0f, 1.0f);
-    else if(status==ChunkHandleType::Memory)
+    if(action==ChunkAction::Idle)
     {
-//        if(refCount>0)
-//            color=glm::vec3(0.0f, 1.0f, 1.0f);
-//        else
-//            color=glm::vec3(1.0f, 1.0f, 0.0f);
-//        if(m_chunkHandle->memoryUsed>0)
-//            color=glm::vec3(1.0f, 1.0f, 0.0f);
-//        else
-            color=glm::vec3(0.0f, 1.0f, 0.0f);
+        ChunkState state=m_chunkHandle->state();
+
+        if(state==ChunkState::Memory)
+        {
+            if(m_chunkHandle->empty())
+                color=glm::vec3(0.0f, 0.0f, 1.0f);
+            else if(m_meshBuffer.ready)
+                color=glm::vec3(0.0f, 1.0f, 0.0f);
+            else
+                color=glm::vec3(0.0f, 1.0f, 1.0f);
+        }
+        else if(state==ChunkState::Unknown)
+            color=glm::vec3(0.0f, 0.0f, 0.0f);
     }
-    else
-        color=glm::vec3(1.0f, 0.0f, 0.5f);
+    else if(action==ChunkAction::Reading)
+        color=glm::vec3(0.5f, 0.0f, 1.0f);
+    else if(action==ChunkAction::Generating)
+        color=glm::vec3(1.0f, 0.5f, 0.0f);
 
     program->uniform(colorId)=color;
  //   glm::vec3 position=m_parent->getGrid()->getDescriptors().chunkOffset(m_chunkHandle->hash)+m_chunkOffset;
@@ -501,6 +536,13 @@ void SimpleChunkRenderer<_Parent, _Chunk>::setLod(size_t lod)
 //        return;
 //
 //    m_lodUpdated=true;
+}
+
+template<typename _Parent, typename _Chunk>
+void SimpleChunkRenderer<_Parent, _Chunk>::clear()
+{
+    m_chunkHandle.reset();
+    m_outlineBuilt=false;
 }
 
 template<typename _Parent, typename _Chunk>

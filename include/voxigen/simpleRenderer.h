@@ -10,6 +10,8 @@
 #include "voxigen/SimpleChunkRenderer.h"
 #include "voxigen/simpleShapes.h"
 #include "voxigen/object.h"
+#include "voxigen/renderPrepThread.h"
+#include "voxigen/renderCube.h"
 
 #include <string>
 #include <algorithm>
@@ -44,12 +46,12 @@ struct RegionRenderer
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
 template<typename _Grid>
-class SimpleRenderer
+class SimpleRenderer:public RegularGridTypes<_Grid>
 {
 public:
-    typedef _Grid GridType;
-    typedef typename GridType::ChunkType ChunkType;
-    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+//    typedef _Grid GridType;
+//    typedef typename GridType::ChunkType ChunkType;
+//    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRendererType;
     typedef std::unique_ptr<ChunkRenderType> UniqueChunkRenderer;
@@ -58,10 +60,13 @@ public:
     //    typedef std::unordered_map<RegionHash, ChunkRendererMap> RegionRendererMap;
 //    typedef std::unordered_map<unsigned __int64, size_t> RendererMap;
     
-    
     typedef RegionRenderer<ChunkRenderType> RegionRendererType;
     typedef typename RegionRendererType::ChunkRendererMap ChunkRendererMap;
     typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
+
+    typedef RenderPrepThread<_Grid, ChunkRenderType> RenderPrepThreadType;
+
+    typedef RenderCube<GridType, ChunkRendererType> RenderCubeType;
 
     SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
@@ -70,30 +75,47 @@ public:
 
     void build();
     void destroy();
-    void update();
+    
     void updateProjection(size_t width, size_t height);
     void updateView();
+    
     void draw();
+    void update();
 
     void setCamera(SimpleFpsCamera *camera);
     void setViewRadius(float radius);
-    void updateChunks();
+//    void updateChunks();
 
-    void addPrepQueue(ChunkRenderType *chunkRenderer);
-    void startPrepThread();
-    void stopPrepThread();
-    void prepThread();
+    void setTextureAtlas(SharedTextureAtlas textureAtlas) { m_textureAtlas=textureAtlas; m_textureAtlasDirty=true; }
 
-    ChunkRenderType *createRenderNode(Key key);
+////    void addPrepQueue(ChunkRenderType *chunkRenderer);
+//    void addPrepQueue(const std::vector<ChunkRenderType *> &chunkRenderers);
+//    void removePrepQueue(const std::vector<ChunkRenderType *> &chunkRenderers);
 
-    bool updateCallback(SharedChunkHandle chunkHandle);
+//    void startPrepThread();
+//    void stopPrepThread();
+//    void prepThread();
+
+//    ChunkRenderType *createRenderNode(Key key);
+//
+//    bool updateCallback(SharedChunkHandle chunkHandle);
+    void displayOutline(bool display) { m_displayOutline=display; }
+    bool isDisplayOutline() { return m_displayOutline; }
 
 private:
-    void rendererUpdateChunks();
-    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers);
-    void updateOcclusionQueries();
+    void updateChunkHandles();
+    void updatePrepChunks();
 
-    ChunkRenderType *getFreeRenderer();
+//    void processAdd(typename RenderPrepThreadType::RequestAdd *request);
+//    void processRemove(typename RenderPrepThreadType::RequestRemove *request);
+    void processMesh(typename RenderPrepThreadType::RequestMesh *request);
+
+    RenderPrepThreadType m_renderPrepThread;
+//    void rendererUpdateChunks();
+//    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers);
+//    void updateOcclusionQueries();
+
+//    ChunkRenderType *getFreeRenderer();
 
     static std::string vertShader;
     static std::string fragmentShader;
@@ -111,19 +133,28 @@ private:
     SimpleFpsCamera *m_camera;
     Object m_playerPos;
     glm::vec3 m_lastUpdatePosition;
-    glm::ivec3 m_currentRegion;
-    glm::ivec3 m_currentChunk;
+    glm::ivec3 m_currentRegionIndex;
+    glm::ivec3 m_currentChunkIndex;
 
-    typedef std::vector<ChunkRenderType *> SearchRing;
-    typedef std::vector<SearchRing> SearchMap;
-    SearchMap m_searchMap;
-    
-    bool m_updateChunks;
+    RenderCubeType m_renderCube;
+
+    GLuint m_textureAtlasId;
+    SharedTextureAtlas m_textureAtlas;
+    bool m_textureAtlasDirty;
+
+
+//    typedef std::vector<ChunkRenderType *> SearchRing;
+//    typedef std::vector<SearchRing> SearchMap;
+//    SearchMap m_searchMap;
+//    
+//    bool m_updateChunks;
+    std::vector<prep::Request *> m_completedRequest;
+
     std::vector<ChunkRenderType *> m_addedChunkRenderers;
     std::vector<ChunkRenderType *> m_updatedChunkRenderers;
     std::vector<ChunkRenderType *> m_removedChunkRenderers;
 
-    bool m_outlineChunks;
+    bool m_displayOutline;
 
     GridType *m_grid;
 
@@ -145,7 +176,7 @@ private:
     std::vector<ChunkRenderType *> m_removeChunkRenderer;
 
     RegionRendererMap m_regionRenderers;
-    std::vector<ChunkRenderType *> m_freeChunkRenderers; //renderers available for re-use
+//    std::vector<ChunkRenderType *> m_freeChunkRenderers; //renderers available for re-use
 
     //    RegionRendererMap m_rendererMap;
 //    RendererMap m_rendererMap;
@@ -177,12 +208,15 @@ private:
     HGLRC m_prepGlContext;
 #else
 #endif
-    std::mutex m_prepMutex;
-    std::thread m_prepThread;
-    std::deque<ChunkRenderType *> m_prepQueue;
-    std::condition_variable m_prepEvent;
-    std::condition_variable m_prepUpdateEvent;
-    bool m_prepThreadRun;
+//    std::mutex m_prepMutex;
+//    std::thread m_prepThread;
+//    
+//    std::deque<ChunkRenderType *> m_prepQueue;
+//    std::deque<ChunkRenderType *> m_removeQueue;
+//
+//    std::condition_variable m_prepEvent;
+//    std::condition_variable m_prepUpdateEvent;
+//    bool m_prepThreadRun;
 
     //Status updates
 //    std::mutex m_chunkUpdatedMutex;

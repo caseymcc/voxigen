@@ -10,10 +10,15 @@
 #include "voxigen/simpleRenderer.h"
 #include "voxigen/equiRectWorldGenerator.h"
 
+#include "voxigen/texturePack.h"
+#include "voxigen/textureAtlas.h"
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-namespace bfs=boost::filesystem;
+#include <filesystem>
+
+namespace fs=boost::filesystem;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -39,6 +44,16 @@ namespace voxigen
 //force generator instantiation
 template GeneratorTemplate<EquiRectWorldGenerator<World>>;
 }
+voxigen::SimpleRenderer<World> *g_renderer;
+
+void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
+{
+//    if(severity != DEBUG_SEVERITY_NOTIFICATION)
+    if(type == GL_DEBUG_TYPE_ERROR)
+        LOG(INFO)<<"Opengl - error: "<<message;
+//    else
+//        LOG(INFO)<<"Opengl : "<<message;
+}
 
 int main(int argc, char ** argv)
 {
@@ -57,6 +72,10 @@ int main(int argc, char ** argv)
     size_t width=1920;
     size_t height=1080;
 
+#ifndef NDEBUG
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
+
     window=glfwCreateWindow(width, height, "TestApp", NULL, NULL);
     
     if(!window)
@@ -65,6 +84,18 @@ int main(int argc, char ** argv)
         return -1;
 
     }
+
+    voxigen::TexturePack texturePack;
+
+    fs::path texturePackPath("resources/TexturePacks/SoA_Default");
+
+    texturePack.load(texturePackPath.string());
+
+    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+    std::vector<std::string> blockNames={"dirt", "grass", "mud", "mud_dry", "sand", "clay", "cobblestone", "stone", "granite", "slate", "snow"};
+
+    textureAtlas->build(blockNames, texturePack);
+    textureAtlas->save(texturePackPath.string(), "terrain");
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
@@ -75,26 +106,32 @@ int main(int argc, char ** argv)
     glfwSetCursorPosCallback(window, mouse_callback);
     
     glewInit();
+
+#ifndef NDEBUG
+    glDebugMessageCallback(debugMessage, nullptr);
+    glEnable(GL_DEBUG_OUTPUT);
+#endif
+
     glViewport(0, 0, width, height);
 
     World world;
 
-    bfs::path worldsDirectory("worlds");
+    fs::path worldsDirectory("worlds");
 
-    if(!bfs::exists(worldsDirectory))
-        bfs::create_directory(worldsDirectory);
+    if(!fs::exists(worldsDirectory))
+        fs::create_directory(worldsDirectory);
 
-    std::vector<bfs::directory_entry> worldDirectories;
+    std::vector<fs::directory_entry> worldDirectories;
 
-    for(auto &entry:bfs::directory_iterator(worldsDirectory))
+    for(auto &entry:fs::directory_iterator(worldsDirectory))
         worldDirectories.push_back(entry);
 
     if(worldDirectories.empty())
     {
         std::string worldDirectory=worldsDirectory.string()+"/TestApWorld";
-        bfs::path worldPath(worldDirectory);
+        fs::path worldPath(worldDirectory);
         
-        bfs::create_directory(worldPath);
+        fs::create_directory(worldPath);
         world.create(worldDirectory, "TestApWorld", glm::ivec3(32768, 32768, 1024), "EquiRectWorldGenerator");
     }
     else
@@ -116,16 +153,21 @@ int main(int argc, char ** argv)
     playerChunkIndex=world.getChunkIndex(playerChunk);
     
     //set player position to local region
-    player.setPosition(playerRegion, world.gridPosToRegionPos(playerRegion, worldMiddle));
+    glm::vec3 regionPos=world.gridPosToRegionPos(playerRegion, worldMiddle)+glm::vec3(32.0f, 32.0f, 8.0f);
+    
+    player.setPosition(playerRegion, regionPos);
     world.updatePosition(playerRegionIndex, playerChunkIndex);
 
     voxigen::SimpleRenderer<World> renderer(&world);
 
+    g_renderer=&renderer;
+    renderer.setTextureAtlas(textureAtlas);
+
     renderer.setCamera(&player);
     renderer.build();
-    renderer.setViewRadius(256.0f);
+    renderer.setViewRadius(512.0f);
 //    lastUpdateAdded=renderer.updateChunks();
-    renderer.updateChunks();
+//    renderer.updateChunks();
 
     float movementSpeed=100;
 
@@ -289,25 +331,22 @@ int main(int argc, char ** argv)
             }
         }
 
-        if(updateChunks)// || lastUpdateAdded)
-            renderer.updateChunks();
-//            lastUpdateAdded=renderer.updateChunks();
-
-        /* Render here */
-//        glDepthFunc(GL_LESS);
-
-        
+        //Rendering started
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
         
-
-//        renderer.setCamera(player);
+        //render anything that needs it
         renderer.draw();
 
-        /* Swap front and back buffers */
+        //get opengl started, we can handle some updating before calling the swap
+        glFlush();
+
+        //take time to make any scene updates
+        renderer.update();
+
+        // Swap front and back buffers when opengl ready
         glfwSwapBuffers(window);
 
-        /* Poll for and process events */
+        // Poll for and process events
         glfwPollEvents();
 
     }
@@ -413,5 +452,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             key_left_shift=true;
         else if(action==GLFW_RELEASE)
             key_left_shift=false;
+    }
+    else if(key==GLFW_KEY_O)
+    {
+        if(action==GLFW_RELEASE)
+            g_renderer->displayOutline(!g_renderer->isDisplayOutline());
     }
 }

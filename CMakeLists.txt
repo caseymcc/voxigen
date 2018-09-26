@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.0)
 
 option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
 option(USE_OCTOMAP "Use octomap octree transversal" OFF)
+option(VOXIGEN_TEXTURE "Setup texture classes" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
 message(STATUS "Module path:${CMAKE_MODULE_PATH}")
@@ -16,6 +17,18 @@ HunterGate(
 )
 
 project(voxigen)
+
+#setup build folders
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/)
+#for multi-config builds (e.g. msvc)
+foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/bin/${OUTPUTCONFIG}/)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
+endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 
 message(STATUS "USE_OCTOMAP ${USE_OCTOMAP}")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -38,10 +51,29 @@ find_package(glog CONFIG REQUIRED)
 hunter_add_package(Boost COMPONENTS filesystem system)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 
+if(VOXIGEN_TEXTURE)
+    hunter_add_package(PNG)
+    find_package(PNG)
+
+    set(IMGLIB_USE_BOOST_FILESYSTEM ON)
+    set(IMGLIB_USE_COMPILETIME_TYPE OFF)
+    set(IMGLIB_USE_PNG ON)
+    set(IMGLIB_USE_EIGEN ON)
+    set(IMGLIB_USE_OPENCL OFF)
+    set(IMGLIB_USE_OPENCL_CPP OFF)
+    set(IMGLIB_USE_CUDA OFF)
+    set(IMGLIB_BUILD_TEST OFF)
+
+    add_subdirectory(imglib)
+    set_target_properties(imglib PROPERTIES FOLDER Libraries)
+endif()
+
 add_subdirectory(FastNoiseSIMD)
-SET_TARGET_PROPERTIES (fastNoise PROPERTIES FOLDER Libraries)
+set_target_properties(fastNoise PROPERTIES FOLDER Libraries)
 add_subdirectory(opengl_util)
-SET_TARGET_PROPERTIES (opengl_util PROPERTIES FOLDER Libraries)
+set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
+add_subdirectory(generic)
+set_target_properties(generic PROPERTIES FOLDER Libraries)
 
 if(USE_OCTOMAP)
     add_definitions(-DUSE_OCTOMAP)
@@ -49,10 +81,10 @@ if(USE_OCTOMAP)
     set(BUILD_OCTOVIS_SUBPROJECT OFF)
     set(BUILD_DYNAMICETD3D_SUBPROJECT OFF)
     add_subdirectory(octomap)
-    SET_TARGET_PROPERTIES (octomap PROPERTIES FOLDER Libraries)
-    SET_TARGET_PROPERTIES (octomap-static PROPERTIES FOLDER Libraries)
-    SET_TARGET_PROPERTIES (octomath PROPERTIES FOLDER Libraries)
-    SET_TARGET_PROPERTIES (octomath-static PROPERTIES FOLDER Libraries)
+    set_target_properties (octomap PROPERTIES FOLDER Libraries)
+    set_target_properties (octomap-static PROPERTIES FOLDER Libraries)
+    set_target_properties (octomath PROPERTIES FOLDER Libraries)
+    set_target_properties (octomath-static PROPERTIES FOLDER Libraries)
 endif()
 
 if(MSVC)
@@ -75,15 +107,20 @@ set(voxigen_headers
     include/voxigen/defines.h
     include/voxigen/entity.h
     include/voxigen/equiRectWorldGenerator.h
+    include/voxigen/faces.h
     include/voxigen/generator.h
     include/voxigen/gridDescriptors.h
     include/voxigen/initGlew.h
     include/voxigen/jsonSerializer.h
     include/voxigen/object.h
     include/voxigen/processQueue.h
+    include/voxigen/regular2DGrid.h
     include/voxigen/regularGrid.h
     include/voxigen/region.h
     include/voxigen/regionHandle.h
+    include/voxigen/renderCube.h
+    include/voxigen/renderPrepThread.h
+    include/voxigen/search.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleFileSystem.h
@@ -93,6 +130,8 @@ set(voxigen_headers
 
 set(voxigen_inline
     include/voxigen/processQueue.inl
+    include/voxigen/renderCube.inl
+    include/voxigen/renderPrepThread.inl
     include/voxigen/simpleChunkRenderer.inl
     include/voxigen/simpleRenderer.inl
 )
@@ -101,6 +140,7 @@ set(voxigen_sources
     src/data/biome.cpp
     src/data/entity.cpp
     src/data/gridDescriptors.cpp
+    src/data/regular2DGrid.cpp
     src/data/object.cpp
     src/generator/equiRectWorldGenerator.cpp
     src/rendering/initGlew.cpp
@@ -111,17 +151,44 @@ set(voxigen_sources
     src/utils/simpleFileSystem.cpp
 )
 
-set(voxigen_libraries
-    glm
+
+set(voxigen_public_libraries
     opengl_util
     fastNoise
     glew::glew
     Boost::filesystem
     Boost::system
-    RapidJSON::rapidjson
     gflags
     glog::glog
+    generic
 )
+
+set(voxigen_libraries ${voxigen_public_libraries}
+    glm
+    RapidJSON::rapidjson
+)
+
+if(VOXIGEN_TEXTURE)
+    set(voxigen_headers ${voxigen_headers}
+        include/voxigen/blendMethod.h
+        include/voxigen/chunkTextureMesh.h
+        include/voxigen/layerMethod.h
+        include/voxigen/textureAtlas.h
+        include/voxigen/texturePack.h
+    )
+
+    set(voxigen_sources ${voxigen_sources}
+        src/rendering/blendMethod.cpp
+        src/rendering/chunkTextureMesh.cpp
+        src/rendering/layerMethod.cpp
+        src/rendering/textureAtlas.cpp
+        src/rendering/texturePack.cpp
+    )
+
+    set(voxigen_libraries ${voxigen_libraries}
+        imglib
+    )
+endif()
 
 if(USE_OCTOMAP)
     set(voxigen_libraries ${voxigen_libraries} octomap-static)
@@ -152,3 +219,11 @@ set(testApp_sources
 
 add_executable(testApp ${testApp_sources})
 target_link_libraries(testApp voxigen glfw)
+
+set(voxigen_public_libraries ${voxigen_public_libraries} glfw)
+foreach(target ${voxigen_public_libraries})
+    set(VS_ENVIROMENT_DIR ${VS_ENVIROMENT_DIR} "$<TARGET_FILE_DIR:${target}>")
+endforeach()
+
+configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config @ONLY)
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config CONDITION $<CONFIG:Debug>)

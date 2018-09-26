@@ -1,0 +1,4017 @@
+{
+    "version": 1,
+    "layers": [
+        {
+            "name": "add_overlay",
+            "method": "connect",
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "add_overlay_soft",
+            "method": "connect",
+            "path": "Blocks/Misc/add_overlay_soft.png"
+        },
+        {
+            "name": "aliencrop_bottom",
+            "path": "Blocks/Flora_block/aliencrop_bottom.png"
+        },
+        {
+            "name": "aliencrop_side",
+            "path": "Blocks/Flora_block/aliencrop_side.png"
+        },
+        {
+            "name": "aliencrop_top",
+            "path": "Blocks/Flora_block/aliencrop_top.png"
+        },
+        {
+            "name": "aluminium",
+            "method": "repeat",
+            "path": "Blocks/Metals/aluminium.png"
+        },
+        {
+            "name": "aluminium_lithium",
+            "method": "repeat",
+            "path": "Blocks/Metals/aluminium_lithium.png"
+        },
+        {
+            "name": "aluminium_lithium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/aluminium_lithium_overlay.png"
+        },
+        {
+            "name": "aluminium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/aluminium_overlay.png"
+        },
+        {
+            "name": "amatol",
+            "path": "Blocks/Explosives/amatol.png"
+        },
+        {
+            "name": "ammon_nitrate",
+            "path": "Blocks/Explosives/ammon_nitrate.png"
+        },
+        {
+            "name": "ammoniaplant",
+            "path": "Blocks/Flora_block/ammoniaplant.png"
+        },
+        {
+            "name": "ammoniaplant_bottom",
+            "path": "Blocks/Flora_block/ammoniaplant_bottom.png"
+        },
+        {
+            "name": "anfo",
+            "path": "Blocks/Explosives/anfo.png"
+        },
+        {
+            "name": "ash_volcanic",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ash_volcanic.png"
+        },
+        {
+            "name": "bargonite_blue",
+            "method": "repeat",
+            "color": [
+                37,
+                37,
+                214
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_blue_overlay",
+            "method": "connect",
+            "color": [
+                37,
+                37,
+                214
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_cyan",
+            "method": "repeat",
+            "color": [
+                37,
+                214,
+                214
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_cyan_overlay",
+            "method": "connect",
+            "color": [
+                37,
+                214,
+                214
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_green",
+            "method": "repeat",
+            "color": [
+                37,
+                214,
+                37
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_green_overlay",
+            "method": "connect",
+            "color": [
+                37,
+                214,
+                37
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_magenta",
+            "method": "repeat",
+            "color": [
+                214,
+                37,
+                214
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_magenta_overlay",
+            "method": "connect",
+            "color": [
+                214,
+                37,
+                214
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_orange",
+            "method": "repeat",
+            "color": [
+                214,
+                126,
+                37
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_orange_overlay",
+            "method": "connect",
+            "color": [
+                214,
+                126,
+                37
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_red",
+            "method": "repeat",
+            "color": [
+                214,
+                37,
+                37
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_red_overlay",
+            "method": "connect",
+            "color": [
+                214,
+                37,
+                37
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_white",
+            "method": "repeat",
+            "color": [
+                214,
+                214,
+                214
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_white_overlay",
+            "method": "connect",
+            "color": [
+                214,
+                214,
+                214
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "bargonite_yellow",
+            "method": "repeat",
+            "color": [
+                214,
+                214,
+                37
+            ],
+            "path": "Blocks/Minerals/bargonite.png"
+        },
+        {
+            "name": "bargonite_yellow_overlay",
+            "method": "connect",
+            "color": [
+                214,
+                214,
+                37
+            ],
+            "path": "Blocks/Misc/add_overlay.png"
+        },
+        {
+            "name": "basalt",
+            "method": "repeat",
+            "path": "Blocks/Terrain/basalt.png"
+        },
+        {
+            "name": "basalt_lava",
+            "method": "repeat",
+            "path": "Blocks/Terrain/basalt_lava.png"
+        },
+        {
+            "name": "basalt_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/basalt_overlay.png"
+        },
+        {
+            "name": "basalt_semisolid",
+            "method": "repeat",
+            "path": "Blocks/Terrain/basalt_semisolid.png"
+        },
+        {
+            "name": "bauxite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/bauxite.png"
+        },
+        {
+            "name": "bauxite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/bauxite_overlay.png"
+        },
+        {
+            "name": "black_powder",
+            "path": "Blocks/Explosives/black_powder.png"
+        },
+        {
+            "name": "black_powder_100g",
+            "path": "Blocks/Explosives/black_powder_100g.png"
+        },
+        {
+            "name": "black_powder_10kg",
+            "path": "Blocks/Explosives/black_powder_10kg.png"
+        },
+        {
+            "name": "black_powder_1kg",
+            "path": "Blocks/Explosives/black_powder_1kg.png"
+        },
+        {
+            "name": "black_powder_20kg",
+            "path": "Blocks/Explosives/black_powder_20kg.png"
+        },
+        {
+            "name": "bone",
+            "method": "repeat",
+            "path": "Blocks/Terrain/bone.png"
+        },
+        {
+            "name": "bone_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/bone_overlay.png"
+        },
+        {
+            "name": "brass",
+            "method": "repeat",
+            "path": "Blocks/Metals/brass.png"
+        },
+        {
+            "name": "brass_overlay",
+            "method": "connect",
+            "coupling": [
+                "brass_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/brass_overlay.png"
+        },
+        {
+            "name": "brass_patinated",
+            "method": "repeat",
+            "path": "Blocks/Metals/brass_patinated.png"
+        },
+        {
+            "name": "brass_patinated_overlay",
+            "method": "connect",
+            "coupling": [
+                "brass_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/brass_patinated_overlay.png"
+        },
+        {
+            "name": "bricks_side",
+            "method": "random",
+            "path": "Blocks/Building/bricks_side.png"
+        },
+        {
+            "name": "bricks_top",
+            "method": "random",
+            "path": "Blocks/Building/bricks_top.png"
+        },
+        {
+            "name": "bricks_light_side",
+            "method": "random",
+            "path": "Blocks/Building/bricks_light_side.png"
+        },
+        {
+            "name": "bricks_light_side_overlay",
+            "method": "random",
+            "path": "Blocks/Building/bricks_light_side_overlay.png"
+        },
+        {
+            "name": "bricks_light_top",
+            "method": "random",
+            "path": "Blocks/Building/bricks_light_top.png"
+        },
+        {
+            "name": "bricks_light_top_overlay",
+            "method": "random",
+            "path": "Blocks/Building/bricks_light_top_overlay.png"
+        },
+        {
+            "name": "bricks_loam_side",
+            "method": "random",
+            "path": "Blocks/Building/bricks_loam_side.png"
+        },
+        {
+            "name": "bricks_loam_top",
+            "method": "random",
+            "path": "Blocks/Building/bricks_loam_top.png"
+        },
+        {
+            "name": "bronze",
+            "method": "repeat",
+            "path": "Blocks/Metals/bronze.png"
+        },
+        {
+            "name": "bronze_overlay",
+            "method": "connect",
+            "coupling": [
+                "bronze_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/bronze_overlay.png"
+        },
+        {
+            "name": "bronze_patinated",
+            "method": "repeat",
+            "path": "Blocks/Metals/bronze_patinated.png"
+        },
+        {
+            "name": "bronze_patinated_overlay",
+            "method": "connect",
+            "coupling": [
+                "bronze_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/bronze_patinated_overlay.png"
+        },
+        {
+            "name": "cactus_death",
+            "path": "Blocks/Flora_block/cactus_death.png"
+        },
+        {
+            "name": "cactus_fruit",
+            "path": "Blocks/Flora_block/cactus_fruit.png"
+        },
+        {
+            "name": "cactus_mutated",
+            "path": "Blocks/Flora_block/cactus_mutated.png"
+        },
+        {
+            "name": "cactus_poison",
+            "path": "Blocks/Flora_block/cactus_poison.png"
+        },
+        {
+            "name": "cactus_small_green_bottom",
+            "path": "Blocks/Flora_block/cactus_small_green_bottom.png"
+        },
+        {
+            "name": "cactus_small_green_side",
+            "path": "Blocks/Flora_block/cactus_small_green_side.png"
+        },
+        {
+            "name": "cactus_small_green_top",
+            "path": "Blocks/Flora_block/cactus_small_green_top.png"
+        },
+        {
+            "name": "cactus_small_red_bottom",
+            "path": "Blocks/Flora_block/cactus_small_red_bottom.png"
+        },
+        {
+            "name": "cactus_small_red_side",
+            "path": "Blocks/Flora_block/cactus_small_red_side.png"
+        },
+        {
+            "name": "cactus_small_red_top",
+            "path": "Blocks/Flora_block/cactus_small_red_top.png"
+        },
+        {
+            "name": "cactus_small_yellow_bottom",
+            "path": "Blocks/Flora_block/cactus_small_yellow_bottom.png"
+        },
+        {
+            "name": "cactus_small_yellow_side",
+            "path": "Blocks/Flora_block/cactus_small_yellow_side.png"
+        },
+        {
+            "name": "cactus_small_yellow_top",
+            "path": "Blocks/Flora_block/cactus_small_yellow_top.png"
+        },
+        {
+            "name": "cactus_starch",
+            "path": "Blocks/Flora_block/cactus_starch.png"
+        },
+        {
+            "name": "cassiterite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/cassiterite.png"
+        },
+        {
+            "name": "caveplant_cap",
+            "path": "Blocks/Flora_block/caveplant_cap.png"
+        },
+        {
+            "name": "caveplant_stem_side",
+            "path": "Blocks/Flora_block/caveplant_stem_side.png"
+        },
+        {
+            "name": "caveplant_stem_top",
+            "path": "Blocks/Flora_block/caveplant_stem_top.png"
+        },
+        {
+            "name": "ceramic_alumina",
+            "path": "Blocks/Products/ceramic_alumina.png"
+        },
+        {
+            "name": "ceramic_tungsten_carbide",
+            "path": "Blocks/Products/ceramic_tungsten_carbide.png"
+        },
+        {
+            "name": "clay",
+            "method": "repeat",
+            "path": "Blocks/Terrain/clay.png"
+        },
+        {
+            "name": "clay_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/clay_overlay.png"
+        },
+        {
+            "name": "cloth_black",
+            "method": "repeat",
+            "color": [
+                32,
+                32,
+                32
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_black_overlay",
+            "method": "connect",
+            "color": [
+                32,
+                32,
+                32
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_blue",
+            "method": "repeat",
+            "color": [
+                0,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_blue_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_blue_dark",
+            "method": "repeat",
+            "color": [
+                0,
+                0,
+                150
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_blue_dark_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                0,
+                150
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_blue_light",
+            "method": "repeat",
+            "color": [
+                128,
+                200,
+                255
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_blue_light_overlay",
+            "method": "connect",
+            "color": [
+                128,
+                200,
+                255
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_brown",
+            "method": "repeat",
+            "color": [
+                128,
+                80,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_brown_overlay",
+            "method": "connect",
+            "color": [
+                128,
+                80,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_cyan",
+            "method": "repeat",
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_cyan_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_green",
+            "method": "repeat",
+            "color": [
+                0,
+                128,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_green_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                128,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_green_dark",
+            "method": "repeat",
+            "color": [
+                0,
+                80,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_green_dark_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                80,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_grey",
+            "method": "repeat",
+            "color": [
+                128,
+                128,
+                128
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_grey_overlay",
+            "method": "connect",
+            "color": [
+                128,
+                128,
+                128
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_lime",
+            "method": "repeat",
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_lime_overlay",
+            "method": "connect",
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_magenta",
+            "method": "repeat",
+            "color": [
+                255,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_magenta_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_orange",
+            "method": "repeat",
+            "color": [
+                255,
+                180,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_orange_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                180,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_pink",
+            "method": "repeat",
+            "color": [
+                255,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_pink_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_purple",
+            "method": "repeat",
+            "color": [
+                150,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_purple_overlay",
+            "method": "connect",
+            "color": [
+                150,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_purple_dark",
+            "method": "repeat",
+            "color": [
+                75,
+                0,
+                128
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_purple_dark_overlay",
+            "method": "connect",
+            "color": [
+                75,
+                0,
+                128
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_red",
+            "method": "repeat",
+            "color": [
+                255,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_red_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_red_dark",
+            "method": "repeat",
+            "color": [
+                150,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_red_dark_overlay",
+            "method": "connect",
+            "color": [
+                150,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_white",
+            "method": "repeat",
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_white_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_yellow",
+            "method": "repeat",
+            "color": [
+                255,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_yellow_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "cloth_yellow_light",
+            "method": "repeat",
+            "color": [
+                255,
+                255,
+                180
+            ],
+            "path": "Blocks/Building/cloth.png"
+        },
+        {
+            "name": "cloth_yellow_light_overlay",
+            "method": "connect",
+            "color": [
+                255,
+                255,
+                180
+            ],
+            "path": "Blocks/Building/cloth_overlay.png"
+        },
+        {
+            "name": "coal",
+            "method": "repeat",
+            "path": "Blocks/Minerals/coal.png"
+        },
+        {
+            "name": "cobblestone",
+            "method": "repeat",
+            "path": "Blocks/Building/cobblestone.png"
+        },
+        {
+            "name": "cobblestone_mossy",
+            "method": "repeat",
+            "path": "Blocks/Building/cobblestone_mossy.png"
+        },
+        {
+            "name": "cobblestone_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/cobblestone_overlay.png"
+        },
+        {
+            "name": "coke",
+            "path": "Blocks/Products/coke.png"
+        },
+        {
+            "name": "concrete_side",
+            "method": "repeat",
+            "path": "Blocks/Building/concrete_side.png"
+        },
+        {
+            "name": "concrete_side_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/concrete_side_overlay.png"
+        },
+        {
+            "name": "concrete_top",
+            "method": "repeat",
+            "path": "Blocks/Building/concrete_top.png"
+        },
+        {
+            "name": "copper",
+            "method": "repeat",
+            "path": "Blocks/Metals/copper.png"
+        },
+        {
+            "name": "copper_overlay",
+            "method": "connect",
+            "coupling": [
+                "copper_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/copper_overlay.png"
+        },
+        {
+            "name": "copper_patinated",
+            "method": "repeat",
+            "path": "Blocks/Metals/copper_patinated.png"
+        },
+        {
+            "name": "copper_patinated_overlay",
+            "method": "connect",
+            "coupling": [
+                "copper_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/copper_patinated_overlay.png"
+        },
+        {
+            "name": "desert_chalice",
+            "path": "Blocks/Flora_block/desert_chalice.png"
+        },
+        {
+            "name": "diamond",
+            "method": "repeat",
+            "path": "Blocks/Minerals/diamond.png"
+        },
+        {
+            "name": "diatomite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/diatomite.png"
+        },
+        {
+            "name": "diatomite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/diatomite_overlay.png"
+        },
+        {
+            "name": "dirt",
+            "method": "repeat",
+            "path": "Blocks/Terrain/dirt.png"
+        },
+        {
+            "name": "dirt_overlay",
+            "method": "random",
+            "weights": [
+                400,
+                4,
+                3,
+                5,
+                2,
+                6,
+                8,
+                5
+            ],
+            "path": "Blocks/Terrain/dirt_overlay.png"
+        },
+        {
+            "name": "dolomite",
+            "method": "repeat",
+            "path": "Blocks/Terrain/dolomite.png"
+        },
+        {
+            "name": "dolomite_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/dolomite_overlay.png"
+        },
+        {
+            "name": "dynamite_bottom",
+            "path": "Blocks/Explosives/dynamite_bottom.png"
+        },
+        {
+            "name": "dynamite_side",
+            "path": "Blocks/Explosives/dynamite_side.png"
+        },
+        {
+            "name": "dynamite_top",
+            "path": "Blocks/Explosives/dynamite_top.png"
+        },
+        {
+            "name": "emerald",
+            "method": "repeat",
+            "path": "Blocks/Minerals/emerald.png"
+        },
+        {
+            "name": "firebomb",
+            "path": "Blocks/Explosives/firebomb.png"
+        },
+        {
+            "name": "flower_fringed_pink",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_fringed_pink.png"
+        },
+        {
+            "name": "flower_fringed_pink_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_fringed_pink_overlay.png"
+        },
+        {
+            "name": "flower_fringed_red",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_fringed_red.png"
+        },
+        {
+            "name": "flower_fringed_red_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_fringed_red_overlay.png"
+        },
+        {
+            "name": "flower_fringed_tiny",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_fringed_tiny.png"
+        },
+        {
+            "name": "flower_fringed_tiny_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_fringed_tiny_overlay.png"
+        },
+        {
+            "name": "flower_fringed_white",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_fringed_white.png"
+        },
+        {
+            "name": "flower_fringed_white_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_fringed_white_overlay.png"
+        },
+        {
+            "name": "flower_fringed_yellow",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_fringed_yellow.png"
+        },
+        {
+            "name": "flower_fringed_yellow_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_fringed_yellow_overlay.png"
+        },
+        {
+            "name": "flower_purple_large",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_purple_large.png"
+        },
+        {
+            "name": "flower_purple_large_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_purple_large_overlay.png"
+        },
+        {
+            "name": "flower_red_jungle",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_red_jungle.png"
+        },
+        {
+            "name": "flower_red_jungle_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_red_jungle_overlay.png"
+        },
+        {
+            "name": "flower_red_large",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_red_large.png"
+        },
+        {
+            "name": "flower_red_large_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_red_large_overlay.png"
+        },
+        {
+            "name": "flower_skeleton",
+            "method": "flora",
+            "path": "Blocks/Flora_mesh/flower_skeleton.png"
+        },
+        {
+            "name": "flower_white",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_white.png"
+        },
+        {
+            "name": "flower_white_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_white_overlay.png"
+        },
+        {
+            "name": "flower_yellow_large",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_yellow_large.png"
+        },
+        {
+            "name": "flower_yellow_large_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_yellow_large_overlay.png"
+        },
+        {
+            "name": "flower_yellow_small",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/flower_yellow_small.png"
+        },
+        {
+            "name": "flower_yellow_small_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/flower_yellow_small_overlay.png"
+        },
+        {
+            "name": "fungus_icecaps",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/fungus_icecaps.png"
+        },
+        {
+            "name": "fungus_sacs_sanguine",
+            "method": "flora",
+            "path": "Blocks/Flora_mesh/fungus_sacs_sanguine.png"
+        },
+        {
+            "name": "fungus_sacs_triton",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/fungus_sacs_triton.png"
+        },
+        {
+            "name": "fungus_sorrowthorn",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/fungus_sorrowthorn.png"
+        },
+        {
+            "name": "fungus_terrorlichen",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/fungus_terrorlichen.png"
+        },
+        {
+            "name": "galena",
+            "method": "repeat",
+            "path": "Blocks/Minerals/galena.png"
+        },
+        {
+            "name": "gelignite_side",
+            "path": "Blocks/Explosives/gelignite_side.png"
+        },
+        {
+            "name": "gelignite_top",
+            "path": "Blocks/Explosives/gelignite_top.png"
+        },
+        {
+            "name": "glass",
+            "method": "repeat",
+            "path": "Blocks/Building/glass.png"
+        },
+        {
+            "name": "glass_bargonite_blue",
+            "method": "repeat",
+            "color": [
+                0,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_cyan",
+            "method": "repeat",
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_green",
+            "method": "repeat",
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_magenta",
+            "method": "repeat",
+            "color": [
+                255,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_orange",
+            "method": "repeat",
+            "color": [
+                255,
+                150,
+                0
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_red",
+            "method": "repeat",
+            "color": [
+                255,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_white",
+            "method": "repeat",
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_bargonite_yellow",
+            "method": "repeat",
+            "color": [
+                255,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/glass_bargonite.png"
+        },
+        {
+            "name": "glass_metal_frame",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/glass_metal_frame.png"
+        },
+        {
+            "name": "glass_metal_frame_top",
+            "path": "Blocks/Building/glass_metal_frame_top.png"
+        },
+        {
+            "name": "glass_overlay_blue",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                0,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_cyan",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_green",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_magenta",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                255,
+                0,
+                255
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_orange",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                255,
+                150,
+                0
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_red",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                255,
+                0,
+                0
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_white",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_overlay_yellow",
+            "method": "connect",
+            "innerSeams": true,
+            "color": [
+                255,
+                255,
+                0
+            ],
+            "path": "Blocks/Building/glass_overlay.png"
+        },
+        {
+            "name": "glass_thornmite",
+            "method": "repeat",
+            "path": "Blocks/Building/glass_thornmite.png"
+        },
+        {
+            "name": "glass_thornmite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/glass_thornmite_overlay.png"
+        },
+        {
+            "name": "gneiss_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/gneiss_overlay.png"
+        },
+        {
+            "name": "gneiss_side",
+            "method": "repeat",
+            "path": "Blocks/Terrain/gneiss_side.png"
+        },
+        {
+            "name": "gneiss_top",
+            "method": "repeat",
+            "path": "Blocks/Terrain/gneiss_top.png"
+        },
+        {
+            "name": "gold",
+            "method": "repeat",
+            "path": "Blocks/Metals/gold.png"
+        },
+        {
+            "name": "gold_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/gold_overlay.png"
+        },
+        {
+            "name": "granite",
+            "method": "repeat",
+            "path": "Blocks/Terrain/granite.png"
+        },
+        {
+            "name": "granite_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/granite_overlay.png"
+        },
+        {
+            "name": "grass_dry",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_dry.png"
+        },
+        {
+            "name": "grass_red_flower",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_red_flower.png"
+        },
+        {
+            "name": "grass_red_flower_overlay",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/grass_red_flower_overlay.png"
+        },
+        {
+            "name": "grass_side",
+            "method": "grass",
+            "coupling": [
+                "grass"
+            ],
+            "color": "biome",
+            "path": "Blocks/Terrain/grass_side.png"
+        },
+        {
+            "name": "grass_charred_side",
+            "method": "grass",
+            "path": "Blocks/Terrain/grass_side.png"
+        },
+        {
+            "name": "grass_tall",
+            "method": "flora",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_tall.png"
+        },
+        {
+            "name": "grass_tall_dark",
+            "method": "flora",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_tall_dark.png"
+        },
+        {
+            "name": "grass_tall_light",
+            "method": "flora",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_tall_light.png"
+        },
+        {
+            "name": "grass_top",
+            "method": "repeat",
+            "normalPath": "Blocks/Terrain/grass_top_NRM.png",
+            "dispPath": "Blocks/Terrain/grass_top_DISP.png",
+            "color": "biome",
+            "path": "Blocks/Terrain/grass_top.png"
+        },
+        {
+            "name": "grass_charred_top",
+            "method": "repeat",
+            "normalPath": "Blocks/Terrain/grass_top_NRM.png",
+            "dispPath": "Blocks/Terrain/grass_top_DISP.png",
+            "path": "Blocks/Terrain/grass_top.png"
+        },
+        {
+            "name": "grass_yellow",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/grass_yellow.png"
+        },
+        {
+            "name": "gravel",
+            "method": "repeat",
+            "path": "Blocks/Terrain/gravel.png"
+        },
+        {
+            "name": "gypsum_black",
+            "method": "repeat",
+            "color": [
+                45,
+                45,
+                45
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_blue",
+            "method": "repeat",
+            "color": [
+                40,
+                65,
+                200
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_blue_dark",
+            "method": "repeat",
+            "color": [
+                50,
+                50,
+                160
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_blue_light",
+            "method": "repeat",
+            "color": [
+                160,
+                200,
+                255
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_brown",
+            "method": "repeat",
+            "color": [
+                150,
+                100,
+                0
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_cyan",
+            "method": "repeat",
+            "color": [
+                100,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_green",
+            "method": "repeat",
+            "color": [
+                60,
+                128,
+                60
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_green_dark",
+            "method": "repeat",
+            "color": [
+                40,
+                80,
+                40
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_grey",
+            "method": "repeat",
+            "color": [
+                150,
+                150,
+                150
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_lime",
+            "method": "repeat",
+            "color": [
+                60,
+                222,
+                60
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_magenta",
+            "method": "repeat",
+            "color": [
+                222,
+                100,
+                222
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_orange",
+            "method": "repeat",
+            "color": [
+                245,
+                160,
+                0
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_pink",
+            "method": "repeat",
+            "color": [
+                250,
+                200,
+                200
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_purple",
+            "method": "repeat",
+            "color": [
+                150,
+                75,
+                255
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_purple_dark",
+            "method": "repeat",
+            "color": [
+                85,
+                50,
+                140
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_red",
+            "method": "repeat",
+            "color": [
+                222,
+                50,
+                50
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_red_dark",
+            "method": "repeat",
+            "color": [
+                140,
+                40,
+                40
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_white",
+            "method": "repeat",
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_yellow",
+            "method": "repeat",
+            "color": [
+                255,
+                230,
+                0
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "gypsum_yellow_light",
+            "method": "repeat",
+            "color": [
+                255,
+                148,
+                80
+            ],
+            "path": "Blocks/Building/gypsum.png"
+        },
+        {
+            "name": "hematite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/hematite.png"
+        },
+        {
+            "name": "ice",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ice.png"
+        },
+        {
+            "name": "ice_dry",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ice_dry.png"
+        },
+        {
+            "name": "ice_methane",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ice_methane.png"
+        },
+        {
+            "name": "ice_methane_hydrate",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ice_methane_hydrate.png"
+        },
+        {
+            "name": "ice_nitrogen",
+            "method": "repeat",
+            "path": "Blocks/Terrain/ice_nitrogen.png"
+        },
+        {
+            "name": "iron",
+            "method": "repeat",
+            "path": "Blocks/Metals/iron.png"
+        },
+        {
+            "name": "iron_overlay",
+            "method": "connect",
+            "coupling": [
+                "iron_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/iron_overlay.png"
+        },
+        {
+            "name": "iron_rusty",
+            "method": "repeat",
+            "path": "Blocks/Metals/iron_rusty.png"
+        },
+        {
+            "name": "iron_rusty_overlay",
+            "method": "connect",
+            "coupling": [
+                "iron_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/iron_rusty_overlay.png"
+        },
+        {
+            "name": "lamp_colored_blue_off",
+            "color": [
+                0,
+                0,
+                30
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_blue_on",
+            "color": [
+                0,
+                0,
+                255
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_cyan_off",
+            "color": [
+                0,
+                24,
+                24
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_cyan_on",
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_green_off",
+            "color": [
+                0,
+                30,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_green_on",
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_magenta_off",
+            "color": [
+                30,
+                0,
+                30
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_magenta_on",
+            "color": [
+                255,
+                0,
+                255
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_orange_off",
+            "color": [
+                30,
+                18,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_orange_on",
+            "color": [
+                255,
+                150,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_red_off",
+            "color": [
+                30,
+                0,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_red_on",
+            "color": [
+                255,
+                0,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_white_off",
+            "color": [
+                30,
+                30,
+                30
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_white_on",
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_yellow_off",
+            "color": [
+                30,
+                30,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_colored_yellow_on",
+            "color": [
+                255,
+                255,
+                0
+            ],
+            "path": "Blocks/Electronics/lamp_colored.png"
+        },
+        {
+            "name": "lamp_LED_off",
+            "path": "Blocks/Electronics/lamp_LED_off.png"
+        },
+        {
+            "name": "lamp_LED_on",
+            "path": "Blocks/Electronics/lamp_LED_on.png"
+        },
+        {
+            "name": "lamp_off",
+            "path": "Blocks/Electronics/lamp_off.png"
+        },
+        {
+            "name": "lamp_on",
+            "path": "Blocks/Electronics/lamp_on.png"
+        },
+        {
+            "name": "lamp_xenon_off",
+            "path": "Blocks/Electronics/lamp_xenon_off.png"
+        },
+        {
+            "name": "lamp_xenon_on",
+            "path": "Blocks/Electronics/lamp_xenon_on.png"
+        },
+        {
+            "name": "lapis_lazuli",
+            "method": "repeat",
+            "path": "Blocks/Minerals/lapis_lazuli.png"
+        },
+        {
+            "name": "lead",
+            "method": "repeat",
+            "path": "Blocks/Metals/lead.png"
+        },
+        {
+            "name": "lead_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/lead_overlay.png"
+        },
+        {
+            "name": "leaves_opaque_blossom",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/leaves_opaque_blossom.png"
+        },
+        {
+            "name": "leaves_opaque_coniferous",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_coniferous.png"
+        },
+        {
+            "name": "leaves_opaque_deciduous",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_deciduous.png"
+        },
+        {
+            "name": "leaves_opaque_fruit",
+            "path": "Blocks/Flora_block/leaves_opaque_fruit.png"
+        },
+        {
+            "name": "leaves_opaque_jungle",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_jungle.png"
+        },
+        {
+            "name": "leaves_opaque_mangrove",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_mangrove.png"
+        },
+        {
+            "name": "leaves_opaque_palm",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_palm.png"
+        },
+        {
+            "name": "leaves_opaque_rubber",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_rubber.png"
+        },
+        {
+            "name": "leaves_opaque_savanna",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_savanna.png"
+        },
+        {
+            "name": "leaves_opaque_sugar",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/leaves_opaque_sugar.png"
+        },
+        {
+            "name": "leaves_opaque_swamp",
+            "method": "repeat",
+            "color": "biome",
+            "path": "Blocks/Flora_block/leaves_opaque_swamp.png"
+        },
+        {
+            "name": "limestone",
+            "method": "repeat",
+            "path": "Blocks/Terrain/limestone.png"
+        },
+        {
+            "name": "limestone_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/limestone_overlay.png"
+        },
+        {
+            "name": "lithium",
+            "method": "repeat",
+            "path": "Blocks/Metals/lithium.png"
+        },
+        {
+            "name": "lithium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/lithium_overlay.png"
+        },
+        {
+            "name": "magnetite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/magnetite.png"
+        },
+        {
+            "name": "malachite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/malachite.png"
+        },
+        {
+            "name": "malachite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/malachite_overlay.png"
+        },
+        {
+            "name": "marble",
+            "method": "repeat",
+            "path": "Blocks/Terrain/marble.png"
+        },
+        {
+            "name": "marble_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/marble_overlay.png"
+        },
+        {
+            "name": "mine_plantoid_bottom",
+            "path": "Blocks/Explosives/mine_plantoid_bottom.png"
+        },
+        {
+            "name": "mine_plantoid_side",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Explosives/mine_plantoid_side.png"
+        },
+        {
+            "name": "mine_plantoid_side_overlay",
+            "method": "random",
+            "path": "Blocks/Explosives/mine_plantoid_side_overlay.png"
+        },
+        {
+            "name": "mine_plantoid_top",
+            "color": "biome",
+            "path": "Blocks/Explosives/mine_plantoid_top.png"
+        },
+        {
+            "name": "mine_plantoid_top_overlay",
+            "path": "Blocks/Explosives/mine_plantoid_top_overlay.png"
+        },
+        {
+            "name": "mud",
+            "method": "repeat",
+            "path": "Blocks/Terrain/mud.png"
+        },
+        {
+            "name": "mud_dry",
+            "method": "repeat",
+            "path": "Blocks/Terrain/mud_dry.png"
+        },
+        {
+            "name": "mud_dry_half",
+            "method": "repeat",
+            "path": "Blocks/Terrain/mud_dry_half.png"
+        },
+        {
+            "name": "mushroom_cap_brown",
+            "method": "repeat",
+            "color": [
+                160,
+                100,
+                30
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_blue",
+            "method": "repeat",
+            "color": [
+                0,
+                10,
+                162
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_blue_dark",
+            "method": "repeat",
+            "color": [
+                0,
+                5,
+                88
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_cyan",
+            "method": "repeat",
+            "color": [
+                0,
+                200,
+                200
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_green",
+            "method": "repeat",
+            "color": [
+                120,
+                160,
+                40
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_green_dark",
+            "method": "repeat",
+            "color": [
+                70,
+                90,
+                0
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_grey",
+            "method": "repeat",
+            "color": [
+                100,
+                100,
+                100
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_pink",
+            "method": "repeat",
+            "color": [
+                255,
+                90,
+                200
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_purple",
+            "method": "repeat",
+            "color": [
+                150,
+                40,
+                200
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_purple_dark",
+            "method": "repeat",
+            "color": [
+                80,
+                25,
+                95
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_red",
+            "method": "repeat",
+            "color": [
+                200,
+                0,
+                0
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_red_dark",
+            "method": "repeat",
+            "color": [
+                125,
+                0,
+                0
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_smooth",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_smooth_charred",
+            "method": "repeat",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_smooth.png"
+        },
+        {
+            "name": "mushroom_cap_spotted",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_cap_spotted_charred",
+            "method": "repeat",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Flora_block/mushroom_cap_spotted.png"
+        },
+        {
+            "name": "mushroom_lamella",
+            "path": "Blocks/Flora_block/mushroom_lamella.png"
+        },
+        {
+            "name": "mushroom_lamella_charred",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Flora_block/mushroom_lamella.png"
+        },
+        {
+            "name": "mushroom_small_blue",
+            "path": "Blocks/Flora_mesh/mushroom_small_blue.png"
+        },
+        {
+            "name": "mushroom_small_blue_dark",
+            "path": "Blocks/Flora_mesh/mushroom_small_blue_dark.png"
+        },
+        {
+            "name": "mushroom_small_brown",
+            "path": "Blocks/Flora_mesh/mushroom_small_brown.png"
+        },
+        {
+            "name": "mushroom_small_cyan",
+            "path": "Blocks/Flora_mesh/mushroom_small_cyan.png"
+        },
+        {
+            "name": "mushroom_small_green",
+            "path": "Blocks/Flora_mesh/mushroom_small_green.png"
+        },
+        {
+            "name": "mushroom_small_green_dark",
+            "path": "Blocks/Flora_mesh/mushroom_small_green_dark.png"
+        },
+        {
+            "name": "mushroom_small_grey",
+            "path": "Blocks/Flora_mesh/mushroom_small_grey.png"
+        },
+        {
+            "name": "mushroom_small_pink",
+            "path": "Blocks/Flora_mesh/mushroom_small_pink.png"
+        },
+        {
+            "name": "mushroom_small_purple",
+            "path": "Blocks/Flora_mesh/mushroom_small_purple.png"
+        },
+        {
+            "name": "mushroom_small_purple_dark",
+            "path": "Blocks/Flora_mesh/mushroom_small_purple_dark.png"
+        },
+        {
+            "name": "mushroom_small_red",
+            "path": "Blocks/Flora_mesh/mushroom_small_red.png"
+        },
+        {
+            "name": "mushroom_small_red_dark",
+            "path": "Blocks/Flora_mesh/mushroom_small_red_dark.png"
+        },
+        {
+            "name": "mushroom_stem",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/mushroom_stem.png"
+        },
+        {
+            "name": "mushroom_stem_charred",
+            "method": "repeat",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Flora_block/mushroom_stem.png"
+        },
+        {
+            "name": "mycelium_side",
+            "method": "grass",
+            "coupling": [
+                "grass"
+            ],
+            "path": "Blocks/Terrain/mycelium_side.png"
+        },
+        {
+            "name": "mycelium_top",
+            "method": "repeat",
+            "path": "Blocks/Terrain/mycelium_top.png"
+        },
+        {
+            "name": "nitro_bottom",
+            "path": "Blocks/Explosives/nitro_bottom.png"
+        },
+        {
+            "name": "nitro_side",
+            "path": "Blocks/Explosives/nitro_side.png"
+        },
+        {
+            "name": "nitro_top",
+            "path": "Blocks/Explosives/nitro_top.png"
+        },
+        {
+            "name": "nitrocellulose",
+            "path": "Blocks/Explosives/nitrocellulose.png"
+        },
+        {
+            "name": "nuke_mark1_bottom",
+            "path": "Blocks/Explosives/nuke_mark1_bottom.png"
+        },
+        {
+            "name": "nuke_mark1_side",
+            "path": "Blocks/Explosives/nuke_mark1_side.png"
+        },
+        {
+            "name": "nuke_mark1_top",
+            "path": "Blocks/Explosives/nuke_mark1_top.png"
+        },
+        {
+            "name": "nuke_mark2_bottom",
+            "path": "Blocks/Explosives/nuke_mark2_bottom.png"
+        },
+        {
+            "name": "nuke_mark2_side",
+            "path": "Blocks/Explosives/nuke_mark2_side.png"
+        },
+        {
+            "name": "nuke_mark2_top",
+            "path": "Blocks/Explosives/nuke_mark2_top.png"
+        },
+        {
+            "name": "nuke_mark3_bottom",
+            "path": "Blocks/Explosives/nuke_mark3_bottom.png"
+        },
+        {
+            "name": "nuke_mark3_side",
+            "path": "Blocks/Explosives/nuke_mark3_side.png"
+        },
+        {
+            "name": "nuke_mark3_top",
+            "path": "Blocks/Explosives/nuke_mark3_top.png"
+        },
+        {
+            "name": "onc_bottom",
+            "path": "Blocks/Explosives/onc_bottom.png"
+        },
+        {
+            "name": "onc_side",
+            "path": "Blocks/Explosives/onc_side.png"
+        },
+        {
+            "name": "onc_top",
+            "path": "Blocks/Explosives/onc_top.png"
+        },
+        {
+            "name": "pitch",
+            "path": "Blocks/Products/pitch.png"
+        },
+        {
+            "name": "pitchblende",
+            "method": "repeat",
+            "path": "Blocks/Minerals/pitchblende.png"
+        },
+        {
+            "name": "plant_dreamweed",
+            "method": "flora",
+            "path": "Blocks/Flora_mesh/plant_dreamweed.png"
+        },
+        {
+            "name": "plant_dreamweed_blue_light",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/plant_dreamweed_blue_light.png"
+        },
+        {
+            "name": "plant_dreamweed_sticky",
+            "method": "flora",
+            "path": "Blocks/Flora_mesh/plant_dreamweed_sticky.png"
+        },
+        {
+            "name": "plant_dreamweed_striped",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/plant_dreamweed_striped.png"
+        },
+        {
+            "name": "plant_fern",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_fern.png"
+        },
+        {
+            "name": "plant_fern_small",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_fern_small.png"
+        },
+        {
+            "name": "plant_fern_tall",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_fern_tall.png"
+        },
+        {
+            "name": "plant_jungle1",
+            "method": "random",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_jungle1.png"
+        },
+        {
+            "name": "plant_jungle2",
+            "path": "Blocks/Flora_mesh/plant_jungle2.png"
+        },
+        {
+            "name": "plant_jungle3",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_jungle3.png"
+        },
+        {
+            "name": "plant_jungle4",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_jungle4.png"
+        },
+        {
+            "name": "plant_jungle5",
+            "path": "Blocks/Flora_mesh/plant_jungle5.png"
+        },
+        {
+            "name": "plant_jungle6",
+            "path": "Blocks/Flora_mesh/plant_jungle6.png"
+        },
+        {
+            "name": "plant_jungle7",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/plant_jungle7.png"
+        },
+        {
+            "name": "plant_methane_ball",
+            "method": "flora",
+            "path": "Blocks/Flora_mesh/plant_methane_ball.png"
+        },
+        {
+            "name": "plant_red_bush",
+            "method": "random",
+            "path": "Blocks/Flora_mesh/plant_red_bush.png"
+        },
+        {
+            "name": "plating_aluminium",
+            "method": "connect",
+            "path": "Blocks/Building/plating_aluminium.png"
+        },
+        {
+            "name": "plating_aluminium_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/plating_aluminium_overlay.png"
+        },
+        {
+            "name": "plating_ceramic",
+            "method": "repeat",
+            "path": "Blocks/Building/plating_ceramic.png"
+        },
+        {
+            "name": "plating_ceramic_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/plating_ceramic_overlay.png"
+        },
+        {
+            "name": "plating_lightmetal",
+            "method": "connect",
+            "path": "Blocks/Building/plating_lightmetal.png"
+        },
+        {
+            "name": "plating_lightmetal_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/plating_lightmetal_overlay.png"
+        },
+        {
+            "name": "plating_steel",
+            "method": "connect",
+            "coupling": [
+                "steel_plating"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Building/plating_steel.png"
+        },
+        {
+            "name": "plating_steel_rusty",
+            "method": "connect",
+            "coupling": [
+                "steel_plating"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Building/plating_steel_rusty.png"
+        },
+        {
+            "name": "plating_steel_tungsten",
+            "method": "repeat",
+            "path": "Blocks/Building/plating_steel_tungsten.png"
+        },
+        {
+            "name": "plating_steel_tungsten_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/plating_steel_tungsten_overlay.png"
+        },
+        {
+            "name": "plating_thornmite",
+            "method": "repeat",
+            "path": "Blocks/Building/plating_thornmite.png"
+        },
+        {
+            "name": "plating_thornmite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/plating_thornmite_overlay.png"
+        },
+        {
+            "name": "plating_titanium",
+            "method": "repeat",
+            "path": "Blocks/Building/plating_titanium.png"
+        },
+        {
+            "name": "plating_titanium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Building/plating_titanium_overlay.png"
+        },
+        {
+            "name": "platinum",
+            "method": "repeat",
+            "path": "Blocks/Metals/platinum.png"
+        },
+        {
+            "name": "plutonium",
+            "method": "repeat",
+            "path": "Blocks/Metals/plutonium.png"
+        },
+        {
+            "name": "plutonium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/plutonium_overlay.png"
+        },
+        {
+            "name": "quartz",
+            "method": "repeat",
+            "path": "Blocks/Minerals/quartz.png"
+        },
+        {
+            "name": "rubber",
+            "path": "Blocks/Products/rubber.png"
+        },
+        {
+            "name": "rubber_charred",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Products/rubber.png"
+        },
+        {
+            "name": "ruby",
+            "method": "repeat",
+            "normalPath": "Blocks/Minerals/ruby_NRM.png",
+            "dispPath": "Blocks/Minerals/ruby_DISP.png",
+            "path": "Blocks/Minerals/ruby.png"
+        },
+        {
+            "name": "rutile",
+            "method": "repeat",
+            "path": "Blocks/Minerals/rutile.png"
+        },
+        {
+            "name": "salpeter",
+            "path": "Blocks/Minerals/salpeter.png"
+        },
+        {
+            "name": "salpeterplant_light",
+            "path": "Blocks/Flora_block/salpeterplant_light.png"
+        },
+        {
+            "name": "salpeterplant_trap",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/salpeterplant_trap.png"
+        },
+        {
+            "name": "sand",
+            "method": "repeat",
+            "path": "Blocks/Terrain/sand.png"
+        },
+        {
+            "name": "sand_red",
+            "method": "repeat",
+            "path": "Blocks/Terrain/sand_red.png"
+        },
+        {
+            "name": "sandbags_side",
+            "path": "Blocks/Building/sandbags_side.png"
+        },
+        {
+            "name": "sandbags_top",
+            "path": "Blocks/Building/sandbags_top.png"
+        },
+        {
+            "name": "sandstone",
+            "method": "repeat",
+            "path": "Blocks/Terrain/sandstone.png"
+        },
+        {
+            "name": "sandstone_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/sandstone_overlay.png"
+        },
+        {
+            "name": "sandstone_red",
+            "method": "repeat",
+            "path": "Blocks/Terrain/sandstone_red.png"
+        },
+        {
+            "name": "sandstone_red_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/sandstone_red_overlay.png"
+        },
+        {
+            "name": "sapling_coniferous",
+            "path": "Blocks/Flora_mesh/sapling_coniferous.png"
+        },
+        {
+            "name": "sapling_dead",
+            "path": "Blocks/Flora_mesh/sapling_dead.png"
+        },
+        {
+            "name": "sapling_deciduous",
+            "path": "Blocks/Flora_mesh/sapling_deciduous.png"
+        },
+        {
+            "name": "sapling_fruit",
+            "path": "Blocks/Flora_mesh/sapling_fruit.png"
+        },
+        {
+            "name": "sapling_jungle",
+            "path": "Blocks/Flora_mesh/sapling_jungle.png"
+        },
+        {
+            "name": "sapling_mangrove",
+            "path": "Blocks/Flora_mesh/sapling_mangrove.png"
+        },
+        {
+            "name": "sapling_palm",
+            "path": "Blocks/Flora_mesh/sapling_palm.png"
+        },
+        {
+            "name": "sapling_rubber",
+            "path": "Blocks/Flora_mesh/sapling_rubber.png"
+        },
+        {
+            "name": "sapling_savanna",
+            "path": "Blocks/Flora_mesh/sapling_savanna.png"
+        },
+        {
+            "name": "sapling_sugar",
+            "path": "Blocks/Flora_mesh/sapling_sugar.png"
+        },
+        {
+            "name": "sapling_swamp",
+            "path": "Blocks/Flora_mesh/sapling_swamp.png"
+        },
+        {
+            "name": "sapphire",
+            "method": "repeat",
+            "path": "Blocks/Minerals/sapphire.png"
+        },
+        {
+            "name": "scheelite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/scheelite.png"
+        },
+        {
+            "name": "seamorphite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/seamorphite.png"
+        },
+        {
+            "name": "seamorphite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/seamorphite_overlay.png"
+        },
+        {
+            "name": "shrapnel_bomb",
+            "path": "Blocks/Explosives/shrapnel_bomb.png"
+        },
+        {
+            "name": "silicon",
+            "path": "Blocks/Products/silicon.png"
+        },
+        {
+            "name": "silver",
+            "method": "repeat",
+            "path": "Blocks/Metals/silver.png"
+        },
+        {
+            "name": "silver_platinum_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/silver_platinum_overlay.png"
+        },
+        {
+            "name": "slate_overlay",
+            "method": "connect",
+            "path": "Blocks/Terrain/slate_overlay.png"
+        },
+        {
+            "name": "slate_side",
+            "method": "repeat",
+            "path": "Blocks/Terrain/slate_side.png"
+        },
+        {
+            "name": "slate_top",
+            "method": "repeat",
+            "path": "Blocks/Terrain/slate_top.png"
+        },
+        {
+            "name": "snow",
+            "method": "repeat",
+            "path": "Blocks/Terrain/snow.png"
+        },
+        {
+            "name": "soda",
+            "path": "Blocks/Minerals/soda.png"
+        },
+        {
+            "name": "soda_lithium",
+            "color": [
+                235,
+                235,
+                235
+            ],
+            "path": "Blocks/Minerals/soda.png"
+        },
+        {
+            "name": "steel",
+            "method": "repeat",
+            "coupling": [
+                "steel"
+            ],
+            "path": "Blocks/Metals/steel.png"
+        },
+        {
+            "name": "steel_overlay",
+            "method": "connect",
+            "coupling": [
+                "steel_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/steel_overlay.png"
+        },
+        {
+            "name": "steel_rusty",
+            "method": "repeat",
+            "coupling": [
+                "steel"
+            ],
+            "path": "Blocks/Metals/steel_rusty.png"
+        },
+        {
+            "name": "steel_rusty_overlay",
+            "method": "connect",
+            "coupling": [
+                "steel_overlay"
+            ],
+            "innerSeams": true,
+            "path": "Blocks/Metals/steel_rusty_overlay.png"
+        },
+        {
+            "name": "steel_tungsten",
+            "method": "repeat",
+            "path": "Blocks/Metals/steel_tungsten.png"
+        },
+        {
+            "name": "steel_tungsten_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/steel_tungsten_overlay.png"
+        },
+        {
+            "name": "stone",
+            "method": "repeat",
+            "normalPath": "Blocks/Terrain/stone_NRM.png",
+            "dispPath": "Blocks/Terrain/stone_DISP.png",
+            "path": "Blocks/Terrain/stone.png"
+        },
+        {
+            "name": "stone_bricks",
+            "method": "random",
+            "path": "Blocks/Building/stone_bricks.png"
+        },
+        {
+            "name": "stone_bricks_granite",
+            "method": "random",
+            "weights": [
+                10,
+                10,
+                10,
+                3,
+                3,
+                2,
+                4,
+                2
+            ],
+            "path": "Blocks/Building/stone_bricks_granite.png"
+        },
+        {
+            "name": "stone_bricks_lime",
+            "method": "random",
+            "path": "Blocks/Building/stone_bricks_lime.png"
+        },
+        {
+            "name": "stone_bricks_marble",
+            "method": "repeat",
+            "path": "Blocks/Building/stone_bricks_marble.png"
+        },
+        {
+            "name": "stone_bricks_marble_overlay",
+            "method": "random",
+            "weights": [
+                2,
+                2,
+                2,
+                5,
+                1,
+                3,
+                2,
+                2
+            ],
+            "path": "Blocks/Building/stone_bricks_marble_overlay.png"
+        },
+        {
+            "name": "stone_bricks_sand",
+            "method": "repeat",
+            "path": "Blocks/Building/stone_bricks_sand.png"
+        },
+        {
+            "name": "stone_bricks_sand_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/stone_bricks_sand_overlay.png"
+        },
+        {
+            "name": "stone_bricks_sand_red",
+            "method": "repeat",
+            "path": "Blocks/Building/stone_bricks_sand_red.png"
+        },
+        {
+            "name": "stone_bricks_sand_red_overlay",
+            "method": "connect",
+            "path": "Blocks/Building/stone_bricks_sand_red_overlay.png"
+        },
+        {
+            "name": "stone_chiseled_marble_ornament_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_marble_ornament_side.png"
+        },
+        {
+            "name": "stone_chiseled_marble_ornament_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_marble_ornament_top.png"
+        },
+        {
+            "name": "stone_chiseled_marble_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_marble_side.png"
+        },
+        {
+            "name": "stone_chiseled_marble_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_marble_top.png"
+        },
+        {
+            "name": "stone_chiseled_sand_ornament_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_sand_ornament_side.png"
+        },
+        {
+            "name": "stone_chiseled_sand_ornament_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_sand_ornament_top.png"
+        },
+        {
+            "name": "stone_chiseled_sand_red_ornament_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_sand_red_ornament_side.png"
+        },
+        {
+            "name": "stone_chiseled_sand_red_ornament_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_sand_red_ornament_top.png"
+        },
+        {
+            "name": "stone_chiseled_sand_red_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_sand_red_side.png"
+        },
+        {
+            "name": "stone_chiseled_sand_red_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_sand_red_top.png"
+        },
+        {
+            "name": "stone_chiseled_sand_side",
+            "method": "horizontal",
+            "path": "Blocks/Building/stone_chiseled_sand_side.png"
+        },
+        {
+            "name": "stone_chiseled_sand_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_chiseled_sand_top.png"
+        },
+        {
+            "name": "stone_column_marble",
+            "method": "connect",
+            "path": "Blocks/Building/stone_column_marble.png"
+        },
+        {
+            "name": "stone_column_marble_twisted_side",
+            "method": "vertical",
+            "path": "Blocks/Building/stone_column_marble_twisted_side.png"
+        },
+        {
+            "name": "stone_column_marble_twisted_top",
+            "method": "random",
+            "path": "Blocks/Building/stone_column_marble_twisted_top.png"
+        },
+        {
+            "name": "stone_cut",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut.png"
+        },
+        {
+            "name": "stone_cut_granite",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut_granite.png"
+        },
+        {
+            "name": "stone_cut_lime",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut_lime.png"
+        },
+        {
+            "name": "stone_cut_marble",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut_marble.png"
+        },
+        {
+            "name": "stone_cut_sand",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut_sand.png"
+        },
+        {
+            "name": "stone_cut_sand_red",
+            "method": "random",
+            "path": "Blocks/Building/stone_cut_sand_red.png"
+        },
+        {
+            "name": "stone_mossy",
+            "method": "repeat",
+            "normalPath": "Blocks/Terrain/stone_NRM.png",
+            "dispPath": "Blocks/Terrain/stone_DISP.png",
+            "path": "Blocks/Terrain/stone_mossy.png"
+        },
+        {
+            "name": "stone_mycelia_icecaps_side",
+            "method": "grass",
+            "path": "Blocks/Terrain/stone_mycelia_icecaps_side.png"
+        },
+        {
+            "name": "stone_mycelia_icecaps_top",
+            "method": "connect",
+            "path": "Blocks/Terrain/stone_mycelia_icecaps_top.png"
+        },
+        {
+            "name": "stone_overlay",
+            "method": "connect",
+            "coupling": "texture",
+            "path": "Blocks/Terrain/stone_overlay.png"
+        },
+        {
+            "name": "sub_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Misc/sub_overlay.png"
+        },
+        {
+            "name": "submarium",
+            "method": "repeat",
+            "path": "Blocks/Minerals/submarium.png"
+        },
+        {
+            "name": "submarium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/submarium_overlay.png"
+        },
+        {
+            "name": "succulent_blue_bottom",
+            "path": "Blocks/Flora_block/succulent_blue_bottom.png"
+        },
+        {
+            "name": "succulent_blue_side",
+            "path": "Blocks/Flora_block/succulent_blue_side.png"
+        },
+        {
+            "name": "succulent_blue_top",
+            "path": "Blocks/Flora_block/succulent_blue_top.png"
+        },
+        {
+            "name": "succulent_purple_bottom",
+            "path": "Blocks/Flora_block/succulent_purple_bottom.png"
+        },
+        {
+            "name": "succulent_purple_side",
+            "path": "Blocks/Flora_block/succulent_purple_side.png"
+        },
+        {
+            "name": "succulent_purple_top",
+            "path": "Blocks/Flora_block/succulent_purple_top.png"
+        },
+        {
+            "name": "succulent_stone_bottom",
+            "path": "Blocks/Flora_block/succulent_stone_bottom.png"
+        },
+        {
+            "name": "succulent_stone_side",
+            "path": "Blocks/Flora_block/succulent_stone_side.png"
+        },
+        {
+            "name": "succulent_stone_top",
+            "path": "Blocks/Flora_block/succulent_stone_top.png"
+        },
+        {
+            "name": "sulfur",
+            "method": "repeat",
+            "path": "Blocks/Minerals/sulfur.png"
+        },
+        {
+            "name": "sulfur_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/sulfur_overlay.png"
+        },
+        {
+            "name": "tarmac",
+            "method": "repeat",
+            "path": "Blocks/Building/tarmac.png"
+        },
+        {
+            "name": "tarmac_semisolid",
+            "method": "repeat",
+            "color": [
+                170,
+                170,
+                170
+            ],
+            "path": "Blocks/Building/tarmac.png"
+        },
+        {
+            "name": "tholin",
+            "method": "repeat",
+            "path": "Blocks/Terrain/tholin.png"
+        },
+        {
+            "name": "thornmite",
+            "method": "repeat",
+            "path": "Blocks/Minerals/thornmite.png"
+        },
+        {
+            "name": "thornmite_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/thornmite_overlay.png"
+        },
+        {
+            "name": "tiling",
+            "method": "random",
+            "path": "Blocks/Building/tiling.png"
+        },
+        {
+            "name": "tin",
+            "method": "repeat",
+            "path": "Blocks/Metals/tin.png"
+        },
+        {
+            "name": "tin_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/tin_overlay.png"
+        },
+        {
+            "name": "titanium",
+            "method": "repeat",
+            "path": "Blocks/Metals/titanium.png"
+        },
+        {
+            "name": "titanium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/titanium_overlay.png"
+        },
+        {
+            "name": "tnt_bottom",
+            "path": "Blocks/Explosives/tnt_bottom.png"
+        },
+        {
+            "name": "tnt_side",
+            "path": "Blocks/Explosives/tnt_side.png"
+        },
+        {
+            "name": "tnt_top",
+            "path": "Blocks/Explosives/tnt_top.png"
+        },
+        {
+            "name": "tungsten",
+            "method": "repeat",
+            "path": "Blocks/Metals/tungsten.png"
+        },
+        {
+            "name": "tungsten_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/tungsten_overlay.png"
+        },
+        {
+            "name": "uranium",
+            "method": "repeat",
+            "path": "Blocks/Metals/uranium.png"
+        },
+        {
+            "name": "uranium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/uranium_overlay.png"
+        },
+        {
+            "name": "vine_garas",
+            "method": "connect",
+            "color": "biome",
+            "path": "Blocks/Flora_mesh/vine_garas.png"
+        },
+        {
+            "name": "wambronium",
+            "method": "repeat",
+            "path": "Blocks/Minerals/wambronium.png"
+        },
+        {
+            "name": "wambronium_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Minerals/wambronium_overlay.png"
+        },
+        {
+            "name": "wood_coniferous",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_coniferous.png"
+        },
+        {
+            "name": "wood_coniferous_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_coniferous_bark.png"
+        },
+        {
+            "name": "wood_coniferous_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_coniferous_bark.png"
+        },
+        {
+            "name": "wood_coniferous_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_coniferous.png"
+        },
+        {
+            "name": "wood_dead",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_dead.png"
+        },
+        {
+            "name": "wood_dead_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_dead.png"
+        },
+        {
+            "name": "wood_deciduous",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_deciduous.png"
+        },
+        {
+            "name": "wood_deciduous_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_deciduous_bark.png"
+        },
+        {
+            "name": "wood_deciduous_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_deciduous_bark.png"
+        },
+        {
+            "name": "wood_deciduous_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_deciduous.png"
+        },
+        {
+            "name": "wood_fruit",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_fruit.png"
+        },
+        {
+            "name": "wood_fruit_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_fruit_bark.png"
+        },
+        {
+            "name": "wood_fruit_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_fruit_bark.png"
+        },
+        {
+            "name": "wood_fruit_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_fruit.png"
+        },
+        {
+            "name": "wood_jungle",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_jungle.png"
+        },
+        {
+            "name": "wood_jungle_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_jungle_bark.png"
+        },
+        {
+            "name": "wood_jungle_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_jungle_bark.png"
+        },
+        {
+            "name": "wood_jungle_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_jungle.png"
+        },
+        {
+            "name": "wood_mangrove",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_mangrove.png"
+        },
+        {
+            "name": "wood_mangrove_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_mangrove_bark.png"
+        },
+        {
+            "name": "wood_mangrove_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_mangrove_bark.png"
+        },
+        {
+            "name": "wood_mangrove_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_mangrove.png"
+        },
+        {
+            "name": "wood_palm",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_palm.png"
+        },
+        {
+            "name": "wood_palm_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_palm_bark.png"
+        },
+        {
+            "name": "wood_palm_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_palm_bark.png"
+        },
+        {
+            "name": "wood_palm_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_palm.png"
+        },
+        {
+            "name": "wood_rubber",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_rubber.png"
+        },
+        {
+            "name": "wood_rubber_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_rubber_bark.png"
+        },
+        {
+            "name": "wood_rubber_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_rubber_bark.png"
+        },
+        {
+            "name": "wood_rubber_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_rubber.png"
+        },
+        {
+            "name": "wood_savanna",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_savanna.png"
+        },
+        {
+            "name": "wood_savanna_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_savanna_bark.png"
+        },
+        {
+            "name": "wood_savanna_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_savanna_bark.png"
+        },
+        {
+            "name": "wood_savanna_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_savanna.png"
+        },
+        {
+            "name": "wood_sugar",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_sugar.png"
+        },
+        {
+            "name": "wood_sugar_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_sugar_bark.png"
+        },
+        {
+            "name": "wood_sugar_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_sugar_bark.png"
+        },
+        {
+            "name": "wood_sugar_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_sugar.png"
+        },
+        {
+            "name": "wood_swamp",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_swamp.png"
+        },
+        {
+            "name": "wood_swamp_bark",
+            "method": "repeat",
+            "path": "Blocks/Flora_block/wood_swamp_bark.png"
+        },
+        {
+            "name": "wood_swamp_bark_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_swamp_bark.png"
+        },
+        {
+            "name": "wood_swamp_charred",
+            "method": "repeat",
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Flora_block/wood_swamp.png"
+        },
+        {
+            "name": "wooden_planks_coniferous_side",
+            "method": "random",
+            "weights": [
+                5,
+                5,
+                5,
+                10,
+                10,
+                3,
+                3
+            ],
+            "path": "Blocks/Building/wooden_planks_coniferous_side.png"
+        },
+        {
+            "name": "wooden_planks_coniferous_side_charred",
+            "method": "random",
+            "weights": [
+                5,
+                5,
+                5,
+                10,
+                10,
+                3,
+                3
+            ],
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_coniferous_side.png"
+        },
+        {
+            "name": "wooden_planks_coniferous_top",
+            "method": "random",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_coniferous_top.png"
+        },
+        {
+            "name": "wooden_planks_coniferous_top_charred",
+            "method": "random",
+            "path": "Blocks/Building/wooden_planks_coniferous_top.png"
+        },
+        {
+            "name": "wooden_planks_dead",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_dead.png"
+        },
+        {
+            "name": "wooden_planks_dead_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_dead.png"
+        },
+        {
+            "name": "wooden_planks_deciduous",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_deciduous.png"
+        },
+        {
+            "name": "wooden_planks_deciduous_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_deciduous.png"
+        },
+        {
+            "name": "wooden_planks_fruit",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_fruit.png"
+        },
+        {
+            "name": "wooden_planks_fruit_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_fruit.png"
+        },
+        {
+            "name": "wooden_planks_jungle",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_jungle.png"
+        },
+        {
+            "name": "wooden_planks_jungle_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_jungle.png"
+        },
+        {
+            "name": "wooden_planks_mangrove",
+            "method": "random",
+            "weights": [
+                8,
+                8,
+                4,
+                4,
+                5,
+                5,
+                5,
+                3,
+                3,
+                2,
+                1,
+                2,
+                1,
+                1
+            ],
+            "path": "Blocks/Building/wooden_planks_mangrove.png"
+        },
+        {
+            "name": "wooden_planks_mangrove_charred",
+            "method": "random",
+            "weights": [
+                8,
+                8,
+                4,
+                4,
+                5,
+                5,
+                5,
+                3,
+                3,
+                2,
+                1,
+                2,
+                1,
+                1
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_mangrove.png"
+        },
+        {
+            "name": "wooden_planks_palm_side",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_palm_side.png"
+        },
+        {
+            "name": "wooden_planks_palm_side_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_palm_side.png"
+        },
+        {
+            "name": "wooden_planks_palm_top",
+            "method": "random",
+            "path": "Blocks/Building/wooden_planks_palm_top.png"
+        },
+        {
+            "name": "wooden_planks_palm_top_charred",
+            "method": "random",
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_palm_top.png"
+        },
+        {
+            "name": "wooden_planks_rubber",
+            "method": "random",
+            "weights": [
+                6,
+                5,
+                5,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                2,
+                2,
+                4,
+                4,
+                4
+            ],
+            "path": "Blocks/Building/wooden_planks_rubber.png"
+        },
+        {
+            "name": "wooden_planks_rubber_charred",
+            "method": "random",
+            "weights": [
+                6,
+                5,
+                5,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                2,
+                2,
+                4,
+                4,
+                4
+            ],
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_rubber.png"
+        },
+        {
+            "name": "wooden_planks_savanna",
+            "method": "random",
+            "weights": [
+                50,
+                15,
+                15,
+                15,
+                25,
+                25,
+                25,
+                20,
+                5,
+                1,
+                40,
+                15,
+                15,
+                5
+            ],
+            "path": "Blocks/Building/wooden_planks_savanna.png"
+        },
+        {
+            "name": "wooden_planks_savanna_charred",
+            "method": "random",
+            "weights": [
+                50,
+                15,
+                15,
+                15,
+                25,
+                25,
+                25,
+                20,
+                5,
+                1,
+                40,
+                15,
+                15,
+                5
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_savanna.png"
+        },
+        {
+            "name": "wooden_planks_sugar",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "path": "Blocks/Building/wooden_planks_sugar.png"
+        },
+        {
+            "name": "wooden_planks_sugar_charred",
+            "method": "random",
+            "weights": [
+                10,
+                3,
+                3,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                5,
+                5,
+                6
+            ],
+            "color": [
+                48,
+                48,
+                48
+            ],
+            "path": "Blocks/Building/wooden_planks_sugar.png"
+        },
+        {
+            "name": "wooden_planks_swamp",
+            "method": "random",
+            "weights": [
+                8,
+                4,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                4,
+                2,
+                5,
+                5,
+                6,
+                2
+            ],
+            "path": "Blocks/Building/wooden_planks_swamp.png"
+        },
+        {
+            "name": "wooden_planks_swamp_charred",
+            "method": "random",
+            "weights": [
+                8,
+                4,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                4,
+                2,
+                5,
+                5,
+                6,
+                2
+            ],
+            "color": [
+                64,
+                64,
+                64
+            ],
+            "path": "Blocks/Building/wooden_planks_swamp.png"
+        },
+        {
+            "name": "zinc",
+            "method": "repeat",
+            "path": "Blocks/Metals/zinc.png"
+        },
+        {
+            "name": "zinc_overlay",
+            "method": "connect",
+            "innerSeams": true,
+            "path": "Blocks/Metals/zinc_overlay.png"
+        },
+        {
+            "name": "zincblende",
+            "method": "repeat",
+            "path": "Blocks/Minerals/zincblende.png"
+        }
+    ]
+}

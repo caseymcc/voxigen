@@ -3,6 +3,7 @@
 
 #include "voxigen/defines.h"
 #include "voxigen/voxigen_export.h"
+#include "voxigen/chunkFunctions.h"
 
 #include <glm/glm.hpp>
 //#include <rapidjson/prettywriter.h>
@@ -151,6 +152,8 @@ struct GridDescriptors:IGridDescriptors
     virtual void setGeneratorDescriptors(const char *value) { m_generatorDescriptors=value; }
 
     virtual float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const { return distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2); }
+    void getIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
+    
 };
 
 template<typename _Grid>
@@ -297,14 +300,15 @@ glm::vec3 GridDescriptors<_Grid>::adjustRegion(glm::ivec3 &regionIndex, glm::ive
 template<typename _Grid>
 float GridDescriptors<_Grid>::distance(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2) const
 {
-    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
-
-    if(regionIndex1!=regionIndex2)
-        offset=(regionIndex2-regionIndex1)*m_regionSize;
-
-    glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
-    glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
-    return glm::length(glm::vec3(chunkPos2-chunkPos1));
+    return voxigen::distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2, m_regionSize, m_chunkSize);
+//    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
+//
+//    if(regionIndex1!=regionIndex2)
+//        offset=(regionIndex2-regionIndex1)*m_regionSize;
+//
+//    glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
+//    glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
+//    return glm::length(glm::vec3(chunkPos2-chunkPos1));
 }
 
 template<typename _Grid>
@@ -334,6 +338,34 @@ glm::vec3 GridDescriptors<_Grid>::chunkOffset(ChunkHash chunkHash) const
     glm::vec3 offset=m_chunkSize*index;
 
     return offset;
+}
+
+template<typename _Grid>
+void GridDescriptors<_Grid>::getIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const
+{
+    regionIndex=startRegionIndex;
+    chunkIndex=startChunkIndex+delta;
+
+    glm::ivec3 regionDelta=chunkIndex/m_regionSize;
+
+    regionIndex+=regionDelta;
+    chunkIndex-=regionDelta*m_regionSize;
+
+    if(chunkIndex.x<0)
+    {
+        regionIndex.x--;
+        chunkIndex.x+=m_regionSize.x;
+    }
+    if(chunkIndex.y<0)
+    {
+        regionIndex.y--;
+        chunkIndex.y+=m_regionSize.y;
+    }
+    if(chunkIndex.z<0)
+    {
+        regionIndex.z--;
+        chunkIndex.z+=m_regionSize.z;
+    }
 }
 #pragma warning(pop)
 

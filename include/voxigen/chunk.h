@@ -9,7 +9,9 @@
 #include <memory>
 #include <type_traits>
 
+#ifdef DEBUG_ALLOCATION
 #include <glog/logging.h>
+#endif//DEBUG_ALLOCATION
 
 namespace voxigen
 {
@@ -19,12 +21,7 @@ class Chunk//:public BoundingBox
 {
 public:
     Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset, size_t lod);
-    ~Chunk()
-    {
-#ifdef DEBUG_ALLOCATION
-        LOG(INFO)<<"chunk ("<<m_hash<<") freed - data "<<std::hex<<m_cells.data()<<std::dec<<"\n";
-#endif
-    };
+    ~Chunk();
 
     typedef std::vector<_Cell> Cells;
     typedef _Cell CellType;
@@ -74,9 +71,17 @@ m_lod(lod)
     m_cells.resize(size);
     
 #ifdef DEBUG_ALLOCATION
-    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data"<<std::hex<<m_cells.data()<<std::dec<<" size"<<size<<"\n";
+    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data "<<std::hex<<m_cells.data()<<std::dec<<" size"<<size<<"\n";
 #endif
 }
+
+template<typename _Cell, size_t _x, size_t _y, size_t _z>
+Chunk<_Cell, _x, _y, _z>::~Chunk()
+{
+#ifdef DEBUG_ALLOCATION
+    LOG(INFO)<<"chunk ("<<m_hash<<") freed - data "<<std::hex<<m_cells.data()<<std::dec<<"\n";
+#endif
+};
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
 _Cell &Chunk<_Cell, _x, _y, _z>::getCell(const glm::vec3 &position)

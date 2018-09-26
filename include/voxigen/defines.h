@@ -5,6 +5,9 @@
 
 //#define DEBUG_ALLOCATION
 //#define LOG_PROCESS_QUEUE
+//#define DEBUG_DRAW_CALLS
+//#define DEBUG_RENDERERS
+//#define DEBUG_MESH
 
 namespace voxigen
 {
