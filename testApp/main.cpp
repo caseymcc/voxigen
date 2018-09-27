@@ -132,7 +132,7 @@ int main(int argc, char ** argv)
         fs::path worldPath(worldDirectory);
         
         fs::create_directory(worldPath);
-        world.create(worldDirectory, "TestApWorld", glm::ivec3(32768, 32768, 1024), "EquiRectWorldGenerator");
+        world.create(worldDirectory, "TestApWorld", glm::ivec3(32768, 32768, 256), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());

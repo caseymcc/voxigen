@@ -20,6 +20,10 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 template<typename _Grid, typename _ChunkRenderer>
 RenderPrepThread<_Grid, _ChunkRenderer>::RenderPrepThread()
 {
+    size_t vertexes=ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeY::value*6*4; //6 faces 4 vertexes
+    size_t indexes=ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeY::value*6*2*3; //6 faces 2 triangles per face 3 indexes per triangle 
+
+    m_mesh.reserve(vertexes, indexes);
 }
 
 template<typename _Grid, typename _ChunkRenderer>
