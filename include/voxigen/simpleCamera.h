@@ -10,6 +10,25 @@
 namespace voxigen
 {
 
+class VOXIGEN_EXPORT Position
+{
+public:
+    void setPosition(const glm::ivec3 &regionIndex, const glm::vec3 &position) { m_regionIndex=regionIndex; m_position=position; }
+    void setPosition(const glm::vec3 &position) { m_position=position; }
+    const glm::vec3 &getPosition() { return m_position; }
+    const glm::ivec3 &getRegionIndex() { return m_regionIndex; }
+
+    void move(const glm::vec3 &delta);
+
+protected:
+//    float m_yaw;
+//    float m_pitch;
+    glm::ivec3 m_regionIndex;
+    glm::vec3 m_position;
+
+    glm::vec3 m_worldUp;
+};
+
 class VOXIGEN_EXPORT SimpleFpsCamera
 {
 public:
@@ -28,7 +47,7 @@ public:
     
     void setPosition(const glm::vec3 &position) { m_position=position; }
     void setPosition(RegionHash regionHash, const glm::vec3 &position) { m_regionHash=regionHash;  m_position=position; }
-    void move(const glm::vec3 &velocity);
+    void moveDirection(const glm::vec3 &velocity, glm::vec3 &delta);
 
     bool isDirty() { return (m_projectionDirty||m_viewDirty); }
     void clearDirty() { m_projectionDirty=false; m_viewDirty=false; }

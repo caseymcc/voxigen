@@ -42,6 +42,7 @@ struct RegionRenderer
     ChunkRendererMap chunkRenderers;
 };
 
+
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +68,7 @@ public:
     typedef RenderPrepThread<_Grid, ChunkRenderType> RenderPrepThreadType;
 
     typedef RenderCube<GridType, ChunkRendererType> RenderCubeType;
+    typedef RenderCube<GridType, RegionRendererType> RegionRenderCubeType;
 
     SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
@@ -83,7 +85,9 @@ public:
     void update();
 
     void setCamera(SimpleFpsCamera *camera);
-    void setViewRadius(float radius);
+    void setCameraChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
+    void setViewRadius(const glm::ivec3 &radius);
+    void setPlayerChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
 //    void updateChunks();
 
     void setTextureAtlas(SharedTextureAtlas textureAtlas) { m_textureAtlas=textureAtlas; m_textureAtlasDirty=true; }
@@ -123,7 +127,7 @@ private:
     static std::string vertOutlineShader;
     static std::string fragmentOutlineShader;
 
-    float m_viewRadius;
+    glm::ivec3 m_viewRadius;
     float m_viewRadiusMax; //keep renderer till it is outside of this range
     float m_viewLODDistance;
     int m_maxChunkRing;
@@ -133,10 +137,11 @@ private:
     SimpleFpsCamera *m_camera;
     Object m_playerPos;
     glm::vec3 m_lastUpdatePosition;
-    glm::ivec3 m_currentRegionIndex;
-    glm::ivec3 m_currentChunkIndex;
+    glm::ivec3 m_playerRegionIndex;
+    glm::ivec3 m_playerChunkIndex;
 
     RenderCubeType m_renderCube;
+//    RegionRenderCubeType m_regionRenderCube;
 
     GLuint m_textureAtlasId;
     SharedTextureAtlas m_textureAtlas;

@@ -166,7 +166,7 @@ std::string SimpleRenderer<_Grid>::fragmentOutlineShader=
 template<typename _Grid>
 SimpleRenderer<_Grid>::SimpleRenderer(_Grid *grid):
 m_grid(grid),
-m_viewRadius(60.0f),
+m_viewRadius(128.0f, 128.0f, 128.0f),
 m_viewLODDistance(90.0f),
 m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
@@ -381,7 +381,7 @@ void SimpleRenderer<_Grid>::draw()
 #ifdef OCCLUSSION_QUERY
     updateOcclusionQueries();
 #endif //OCCLUSSION_QUERY
-    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+//    glm::ivec3 playerRegionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
 
     //draw all chunks that are built, using regions
     glActiveTexture(GL_TEXTURE0);
@@ -483,6 +483,8 @@ void SimpleRenderer<_Grid>::draw()
         }
         
         m_renderCube.drawOutline(&m_outlineProgram, m_outlineOffsetId, m_outlineStatusColor);
+//        m_regionRenderCube.drawOutline(&m_outlineProgram, m_outlineOffsetId, m_outlineStatusColor);
+
 //        for(auto &iter:m_regionRenderers)
 //        {
 //            RegionRenderer<ChunkRenderType> &renderer=iter.second;
@@ -508,10 +510,11 @@ void SimpleRenderer<_Grid>::update()
     //update render information
 
     //update player position
-    glm::ivec3 regionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
-    glm::ivec3 chunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
+//    glm::ivec3 regionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+//    glm::ivec3 chunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
 
-    m_renderCube.update(regionIndex, chunkIndex);
+    m_renderCube.update(m_playerRegionIndex, m_playerChunkIndex);
+//    m_regionRenderCube.update(regionIndex, chunkIndex);
 
     //force cached item into the queue
     m_grid->updateProcessQueue();
@@ -738,6 +741,8 @@ void SimpleRenderer<_Grid>::processMesh(typename RenderPrepThreadType::RequestMe
         m_renderPrepThread.requestReleaseMesh(mesh);
 
     cubeRenderer->setAction(RenderAction::Idle);
+
+    m_grid->releaseChunk(cubeRenderer->getChunkHandle());
 }
 
 
@@ -745,15 +750,25 @@ template<typename _Grid>
 void SimpleRenderer<_Grid>::setCamera(SimpleFpsCamera *camera)
 {
     m_camera=camera;
+
+    m_playerRegionIndex=m_grid->getRegionIndex(camera->getRegionHash());
+    m_playerChunkIndex=m_grid->getChunkIndex(m_camera->getPosition());
+
     if(glm::distance(m_camera->getPosition(), m_lastUpdatePosition)>8.0f)
         m_lastUpdatePosition=m_camera->getPosition();
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::setViewRadius(float radius)
+void SimpleRenderer<_Grid>::setCameraChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+{
+    m_renderCube.updateCamera(regionIndex, chunkIndex);
+}
+
+template<typename _Grid>
+void SimpleRenderer<_Grid>::setViewRadius(const glm::ivec3 &radius)
 {
     m_viewRadius=radius;
-    m_viewRadiusMax=radius*1.5f;
+//    m_viewRadiusMax=radius*1.5f;
 
     m_renderCube.setViewRadius(radius);
 //    m_maxChunkRing=std::ceil(radius/std::max(std::max(ChunkType::sizeX::value, ChunkType::sizeY::value), ChunkType::sizeZ::value));
@@ -764,13 +779,20 @@ void SimpleRenderer<_Grid>::setViewRadius(float radius)
 //        ringCube<ChunkType>(m_chunkIndices[i], i);
 //    m_chunkIndices=buildRadiusRingMap<ChunkType>(m_viewRadiusMax);
     m_chunkIndices.resize(1);
-    spiralCube<ChunkType>(m_chunkIndices[0], m_viewRadiusMax);
+//    spiralCube<ChunkType>(m_chunkIndices[0], m_viewRadiusMax);
 
     m_maxChunkRing=m_chunkIndices.size();
 
 //    m_updateRenderCube=true;
 //    if(m_chunkIndices.empty()) //always want at least the current chunk
 //        m_chunkIndices.push_back(glm::ivec3(0, 0, 0));
+}
+
+template<typename _Grid>
+void SimpleRenderer<_Grid>::setPlayerChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+{
+    m_playerRegionIndex=regionIndex;
+    m_playerChunkIndex=chunkIndex;
 }
 
 struct ChunkQueryOffset
