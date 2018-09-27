@@ -11,8 +11,7 @@ The library is template based. The type of block is up to the user and is the fi
 ```
     World<BlockType, ChunkSizeX, ChunkSizeY, ChunkSizeZ, RegionSizeX, RegionSizeY, RegionSizeZ> world;
 ```
-The world segmentation is chossen at compile-time but the size of the world is a runtime option. Currently the limit 
-It should be noted that the library assumes right handed world with z as the "up" dimension in the world.
+The world segmentation is chossen at compile-time but the size of the world is a runtime option. Currently it can easily hold an earth sized planet and with some bit shifting in the hash key it could holder a Jupiter sized planet (assuming 0.5 meter cubes). It should be noted that the library assumes right handed world with z as the "up" dimension in the world.
 
 This is still very new and likely at any point things may change and also not work. 
 
