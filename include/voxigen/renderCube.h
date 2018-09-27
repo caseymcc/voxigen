@@ -48,10 +48,11 @@ public:
     RenderCube(GridType *grid, DescriptorType *descriptors, RenderPrepThreadType *prepThread);
     ~RenderCube();
 
-    void setViewRadius(float radius);
+    void setViewRadius(const glm::ivec3 &radius);
     void setOutlineInstance(unsigned int outlineInstanceId);
 
     void init(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
+    void updateCamera(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
     void update(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
 
     void draw(opengl_util::Program *program, size_t offsetId);
@@ -62,7 +63,7 @@ public:
 
 
 private:
-    glm::ivec3 calcCubeSize(float radius);
+    glm::ivec3 calcCubeSize(const glm::ivec3 &radius);
 
     ChunkRendererType *getFreeRenderer();
     void releaseRenderer(ChunkRendererType *renderer);
@@ -78,8 +79,11 @@ private:
     const DescriptorType *m_descriptors;
     RenderPrepThreadType *m_renderPrepThread;
 
-    int m_viewRadius;
+    glm::ivec3 m_viewRadius;
     unsigned int m_outlineInstanceId;
+
+    glm::ivec3 m_cameraRegionIndex;
+    glm::ivec3 m_cameraChunkIndex;
 
     glm::ivec3 m_regionIndex;
     glm::ivec3 m_chunkIndex;

@@ -104,7 +104,7 @@ void ProcessQueue<_Grid>::addCancel(SharedChunkHandle chunkHandle)
 template<typename _Grid>
 void ProcessQueue<_Grid>::addRelease(SharedChunkHandle chunkHandle)
 {
-    chunkHandle->setReleasing();
+    chunkHandle->setAction(ChunkAction::Releasing);
     std::shared_ptr<ReleaseRequestType> request=std::make_shared<ReleaseRequestType>(chunkHandle);
 
     checkInputThread();

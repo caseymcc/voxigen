@@ -63,6 +63,7 @@ public:
 //    UniqueChunkType generateChunk(glm::ivec3 chunkIndex, void *buffer, size_t bufferSize);
 //    UniqueChunkType generateChunk(unsigned int hash, glm::ivec3 &chunkIndex, void *buffer, size_t bufferSize);
     unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod);
+    unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod);
 
 private:
     GridDescriptors<_Grid> *m_descriptors;
@@ -325,6 +326,29 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
     return validCells;
 //    chunk->setValidCellCount(validCells);
 //    return chunk;
+}
+
+template<typename _Grid>
+unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod)
+{
+    glm::vec3 scaledOffset=startPos*m_descriptorValues.m_noiseScale;
+    glm::vec3 position=scaledOffset;
+
+    //    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, startPos);
+    //    ChunkType::Cells &cells=chunk->getCells();
+
+    ChunkType::CellType *cells=(ChunkType::CellType *)buffer;
+    size_t stride=glm::pow(2, lod);
+    glm::ivec3 lodChunkSize=chunkSize/(int)stride;
+    float noiseScale=m_descriptorValues.m_noiseScale/stride;
+
+    //verify chunkSize matches template chunk size
+    assert(chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
+
+    //verify buffer is large enough for data
+    assert(bufferSize>=(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z)*sizeof(ChunkType::CellType));
+
+    int heightMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y);
 }
 
 }//namespace voxigen

@@ -128,6 +128,8 @@ public:
     void updateProcessQueue() { m_processQueue.updateQueue(); }
     void processThread();
 
+    bool alignPosition(glm::ivec3 &regionIndex, glm::vec3 &position);
+
 private:
     void loadRegions(std::string directory);
 
@@ -529,7 +531,7 @@ Key RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Reg
     glm::ivec3 position=glm::floor(gridPosition);
     glm::ivec3 regionCellSize(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
     glm::ivec3 regionIndex=position/regionCellSize;
-    glm::ivec3 chunkIndex=position-(regionIndex*regionCellSize);
+    glm::ivec3 chunkIndex=(position-(regionIndex*regionCellSize))/m_descriptors.m_chunkSize;
 
     return Key(m_descriptors.regionHash(regionIndex), m_descriptors.chunkHash(chunkIndex));
 }
@@ -582,6 +584,55 @@ glm::vec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX
 
     return pos;
 }
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
+bool RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::alignPosition(glm::ivec3 &regionIndex, glm::vec3 &position)
+{
+    bool updateRegion=false;
+    glm::ivec3 regionCellSize(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
+
+    if(position.x<0)
+    {
+        regionIndex.x--;
+        position.x+=regionCellSize.x;
+        updateRegion=true;
+    }
+    else if(position.x>regionCellSize.x)
+    {
+        regionIndex.x++;
+        position.x-=regionCellSize.x;
+        updateRegion=true;
+    }
+
+    if(position.y<0)
+    {
+        regionIndex.y--;
+        position.y+=regionCellSize.y;
+        updateRegion=true;
+    }
+    else if(position.y>regionCellSize.y)
+    {
+        regionIndex.y++;
+        position.y-=regionCellSize.y;
+        updateRegion=true;
+    }
+
+    if(position.z<0)
+    {
+        regionIndex.z--;
+        position.z+=regionCellSize.z;
+        updateRegion=true;
+    }
+    else if(position.z>regionCellSize.z)
+    {
+        regionIndex.z++;
+        position.z-=regionCellSize.z;
+        updateRegion=true;
+    }
+
+    return updateRegion;
+}
+
 
 }//namespace voxigen
 

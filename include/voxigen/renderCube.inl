@@ -22,9 +22,9 @@ RenderCube<_Grid, _ChunkRenderer>::~RenderCube()
 }
 
 template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::setViewRadius(float radius)
+void RenderCube<_Grid, _ChunkRenderer>::setViewRadius(const glm::ivec3 &radius)
 {
-    m_viewRadius=(int)radius;
+    m_viewRadius=radius;
 
     glm::ivec3 cubeSize=calcCubeSize(m_viewRadius);
     size_t rendererCount=cubeSize.x*cubeSize.y*cubeSize.z;
@@ -40,12 +40,12 @@ void RenderCube<_Grid, _ChunkRenderer>::setOutlineInstance(unsigned int outlineI
 }
 
 template<typename _Grid, typename _ChunkRenderer>
-glm::ivec3 RenderCube<_Grid, _ChunkRenderer>::calcCubeSize(float radius)
+glm::ivec3 RenderCube<_Grid, _ChunkRenderer>::calcCubeSize(const glm::ivec3 &radius)
 {
     glm::ivec3 cubeSize;
     glm::ivec3 chunkSize=m_descriptors->getChunkSize();
 
-    cubeSize=((int)radius)/chunkSize;
+    cubeSize=(radius)/chunkSize;
 
     //make everything odd
     if(cubeSize.x%2==0)
@@ -111,6 +111,13 @@ void RenderCube<_Grid, _ChunkRenderer>::init(const glm::ivec3 &regionIndex, cons
 
     m_regionIndex=regionIndex;
     m_chunkIndex=chunkIndex;
+}
+
+template<typename _Grid, typename _ChunkRenderer>
+void RenderCube<_Grid, _ChunkRenderer>::updateCamera(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+{
+    m_cameraRegionIndex=regionIndex;
+    m_cameraChunkIndex=chunkIndex;
 }
 
 template<typename _Grid, typename _ChunkRenderer>
@@ -584,11 +591,13 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
 template<typename _Grid, typename _ChunkRenderer>
 void RenderCube<_Grid, _ChunkRenderer>::draw(opengl_util::Program *program, size_t offsetId)
 {
+    glm::ivec3 regionIndex=m_regionIndex-(m_regionIndex-m_cameraRegionIndex);
+
     for(auto renderer:m_renderCube)
     {
         if(renderer)
         {
-            glm::vec3 regionOffset=renderer->getRegionIndex()-m_regionIndex;
+            glm::vec3 regionOffset=renderer->getRegionIndex()-regionIndex;
             glm::vec3 offset=regionOffset*glm::vec3(m_grid->getDescriptors().m_regionCellSize);
 
             offset=offset+renderer->getGridOffset();
@@ -602,11 +611,13 @@ void RenderCube<_Grid, _ChunkRenderer>::draw(opengl_util::Program *program, size
 template<typename _Grid, typename _ChunkRenderer>
 void RenderCube<_Grid, _ChunkRenderer>::drawOutline(opengl_util::Program *program, size_t offsetId, size_t colorId)
 {
+    glm::ivec3 regionIndex=m_regionIndex-(m_regionIndex-m_cameraRegionIndex);
+
     for(auto renderer:m_renderCube)
     {
         if(renderer)
         {
-            glm::vec3 regionOffset=renderer->getRegionIndex()-m_regionIndex;
+            glm::vec3 regionOffset=renderer->getRegionIndex()-regionIndex;
             glm::vec3 offset=regionOffset*glm::vec3(m_grid->getDescriptors().m_regionCellSize);
 
             offset=offset;// +renderer->getGridOffset();

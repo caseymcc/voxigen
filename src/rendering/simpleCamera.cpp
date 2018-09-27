@@ -6,6 +6,11 @@
 namespace voxigen
 {
 
+void Position::move(const glm::vec3 &delta)
+{
+    m_position+=delta;
+}
+
 SimpleFpsCamera::SimpleFpsCamera(glm::vec3 position, glm::vec3 direction):
 m_projectionDirty(true),
 m_viewDirty(true),
@@ -63,12 +68,12 @@ void SimpleFpsCamera::setPitch(float angle)
     m_viewDirty=true;
 }
 
-void SimpleFpsCamera::move(const glm::vec3 &velocity)
+void SimpleFpsCamera::moveDirection(const glm::vec3 &velocity, glm::vec3 &delta)
 {
     glm::vec3 direction=getDirection();
     glm::vec3 right=glm::normalize(glm::cross(direction, m_worldUp));
-    glm::vec3 delta=(direction*velocity.x)+(right*velocity.y)+(m_worldUp*velocity.z);
-
+    
+    delta=(direction*velocity.x)+(right*velocity.y)+(m_worldUp*velocity.z);
     m_position+=delta;
     m_viewDirty=true;
 }
