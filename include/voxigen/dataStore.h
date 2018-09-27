@@ -99,6 +99,7 @@ public:
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
 
     void loadChunk(SharedChunkHandle handle, size_t lod, bool force=false);
+    void cancelLoadChunk(SharedChunkHandle handle);
 //    void removeHandle(ChunkHandleType *chunkHandle);
 
     void addUpdated(Key hash);
@@ -108,6 +109,7 @@ public:
     void read(SharedChunkHandle chunkHandle, size_t lod);
     void write(SharedChunkHandle chunkHandle);
     void empty(SharedChunkHandle chunkHandle);
+    void cancel(SharedChunkHandle chunkHandle);
 
     void readChunk(SharedChunkHandle handle);
     void writeChunk(SharedChunkHandle handle);
@@ -433,6 +435,12 @@ void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod, bool forc
 }
 
 template<typename _Grid>
+void DataStore<_Grid>::cancelLoadChunk(SharedChunkHandle handle)
+{
+    return getRegion(handle->regionHash())->cancelLoadChunk(handle);
+}
+
+template<typename _Grid>
 void DataStore<_Grid>::ioThread()
 {
     std::unique_lock<std::mutex> lock(m_ioMutex);
@@ -622,6 +630,16 @@ void DataStore<_Grid>::empty(SharedChunkHandle chunkHandle)
 {
 //    chunkHandle->setAction(ChunkAction::Updating);
 //    m_processQueue->addUpdate(chunkHandle);
+}
+
+template<typename _Grid>
+void DataStore<_Grid>::cancel(SharedChunkHandle chunkHandle)
+{
+#ifdef LOG_PROCESS_QUEUE
+    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") canceling";
+#endif//LOG_PROCESS_QUEUE
+
+    m_processQueue->addCancel(chunkHandle);
 }
 
 

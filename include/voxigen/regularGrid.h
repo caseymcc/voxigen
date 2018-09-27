@@ -93,6 +93,7 @@ public:
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
     SharedChunkHandle getChunk(Key &key);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force=false);
+    void cancelLoadChunk(SharedChunkHandle chunkHandle);
     void releaseChunk(SharedChunkHandle chunkHandle);
     std::vector<Key> getUpdatedChunks();
 
@@ -411,6 +412,12 @@ template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSi
 void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force)
 {
     m_dataStore.loadChunk(chunkHandle, lod, force);
+}
+
+template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
+void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::cancelLoadChunk(SharedChunkHandle chunkHandle)
+{
+    m_dataStore.cancelLoadChunk(chunkHandle);
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>

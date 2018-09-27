@@ -23,6 +23,7 @@ namespace Process
         Read,
         Write,
         Update,
+        Cancel,
         Release
     };
 }
@@ -111,6 +112,16 @@ struct UpdateRequest:public ProcessRequest<_Chunk>
 {
     UpdateRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Update, 100, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
     UpdateRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Update, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
+
+    SharedChunkHandleType getChunkHandle() override { return chunkHandle.lock(); }
+
+    WeakChunkHandleType chunkHandle;
+};
+
+template<typename _Chunk>
+struct CancelRequest:public ProcessRequest<_Chunk>
+{
+    CancelRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Cancel, 9, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
 
     SharedChunkHandleType getChunkHandle() override { return chunkHandle.lock(); }
 
@@ -231,6 +242,7 @@ public:
     typedef ReadRequest<ChunkType> ReadRequestType;
     typedef WriteRequest<ChunkType> WriteRequestType;
     typedef UpdateRequest<ChunkType> UpdateRequestType;
+    typedef CancelRequest<ChunkType> CancelRequestType;
     typedef ReleaseRequest<ChunkType> ReleaseRequestType;
 
     ProcessQueue(DescriptorType *descriptor):
@@ -238,6 +250,7 @@ public:
         m_inputThreadIdSet(false),
         m_outputThreadIdSet(false),
 #endif
+        m_checkForUpdates(0),
         m_descriptor(descriptor) 
     { ProcessCompare<ChunkType>::descriptor=descriptor; }
 
@@ -246,12 +259,13 @@ public:
     void addRead(SharedChunkHandle chunkHandle, size_t lod);
     void addWrite(SharedChunkHandle chunkHandle);
     void addUpdate(SharedChunkHandle chunkHandle);
+    void addCancel(SharedChunkHandle chunkHandle);
     void addRelease(SharedChunkHandle chunkHandle);
 
     bool empty() { return m_priorityQueue.empty(); }
 
     SharedRequest getNextProcessRequest(SharedChunkHandle &chunkHandle, size_t &data);
-    void removeRequests(SharedChunkHandle &chunkHandle);
+    void removeRequests(RequestQueue &cancelRequests);
     
     void updateQueue();
     void updatePriorityQueue();
@@ -292,7 +306,7 @@ private:
     RequestQueue m_outputCompletedQueue;
     RequestQueue m_completedQueue;
 
-    
+    std::atomic<int> m_checkForUpdates;
 };
 
 

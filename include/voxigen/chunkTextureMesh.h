@@ -42,7 +42,22 @@ public:
     ChunkTextureMesh(){};
     ChunkTextureMesh(TextureAtlas *textureAtlas):m_textureAtlas(textureAtlas) {};
 
-    void setTextureAtlas(TextureAtlas *textureAtlas) { m_textureAtlas=textureAtlas; }
+    void setTextureAtlas(TextureAtlas *textureAtlas)
+    {
+        m_textureAtlas=textureAtlas; 
+
+        short resolution=(short)m_textureAtlas->resolution();
+
+        textOffsetX[0]=0;
+        textOffsetX[1]=resolution;
+        textOffsetX[2]=resolution;
+        textOffsetX[3]=0;
+
+        textOffsetY[0]=0;
+        textOffsetY[1]=0;
+        textOffsetY[2]=resolution;
+        textOffsetY[3]=resolution;
+    }
     void addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 4> &quad);
 
     std::vector<Vertex> &getVerticies() { return m_verticies; }
@@ -50,9 +65,13 @@ public:
 
     size_t memoryUsed();
 
+    void reserve(size_t vertexCount, size_t indexCount);
     void clear();
+
 private:
     TextureAtlas *m_textureAtlas;
+    std::array<short, 4> textOffsetX;
+    std::array<short, 4> textOffsetY;
 
     std::vector<Vertex> m_verticies;
     std::vector<int> m_indices;
@@ -106,8 +125,8 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
         texY=texY+(texPos.y%entry.tileY)*resolution;
     }
 
-    std::vector<short> textOffsetX={0, resolution, resolution, 0};
-    std::vector<short> textOffsetY={0, 0, resolution, resolution};
+//    std::vector<short> textOffsetX={0, resolution, resolution, 0};
+//    std::vector<short> textOffsetY={0, 0, resolution, resolution};
 
     for(size_t i=0; i<4; ++i)
     {
@@ -139,6 +158,12 @@ inline size_t ChunkTextureMesh::memoryUsed()
     memoryUsed+=m_indices.size()*sizeof(int);
 
     return memoryUsed;
+}
+
+inline void ChunkTextureMesh::reserve(size_t vertexCount, size_t indexCount)
+{
+    m_verticies.reserve(vertexCount);
+    m_indices.reserve(indexCount);
 }
 
 inline void ChunkTextureMesh::clear()

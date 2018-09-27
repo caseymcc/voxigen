@@ -663,6 +663,9 @@ void RenderCube<_Grid, _ChunkRenderer>::releaseChunkInfo(ChunkRendererType *rend
         return;
 
 //    assert(renderer->getAction()==RenderAction::Idle);
+    //we are dumping this renderer so chunk no longer need.
+    if(renderer->getChunkHandle()->action()!=ChunkAction::Idle)
+        m_grid->cancelLoadChunk(renderer->getChunkHandle());
 
     //can only release the renderer if it is not busy
     if((renderer->getAction()==RenderAction::Idle) )//&& (renderer->getChunkHandle()->action()==ChunkAction::Idle))

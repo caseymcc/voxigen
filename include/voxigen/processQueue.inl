@@ -92,6 +92,16 @@ void ProcessQueue<_Grid>::addUpdate(SharedChunkHandle chunkHandle)
 }
 
 template<typename _Grid>
+void ProcessQueue<_Grid>::addCancel(SharedChunkHandle chunkHandle)
+{
+//    chunkHandle->setReleasing();
+    std::shared_ptr<CancelRequestType> request=std::make_shared<CancelRequestType>(chunkHandle);
+
+    checkInputThread();
+    m_cacheQueue.push_back(request);
+}
+
+template<typename _Grid>
 void ProcessQueue<_Grid>::addRelease(SharedChunkHandle chunkHandle)
 {
     chunkHandle->setReleasing();
@@ -112,6 +122,7 @@ void ProcessQueue<_Grid>::updateQueue()
             m_queue.insert(m_queue.end(), m_cacheQueue.begin(), m_cacheQueue.end());
         }
         m_cacheQueue.resize(0);
+        m_checkForUpdates++;
     }
     m_queueEvent.notify_all();
 }
@@ -160,15 +171,28 @@ template<typename _Grid>
 typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessRequest(SharedChunkHandle &chunkHandle, size_t &data)
 {
     SharedRequest request;
+    RequestQueue cancelRequests;
 ///    SharedChunkHandle chunkHandle;
 
-    if(!m_priorityQueue.empty())
+    if(m_checkForUpdates>0)
+    {
+        updatePriorityQueue();
+        m_checkForUpdates=0;
+    }
+
+    while(!m_priorityQueue.empty())
     {
 //        request=m_queue.top();
 //        m_queue.pop_back();
         std::pop_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
         request=m_priorityQueue.back();
         m_priorityQueue.pop_back();
+
+        if(request->type==Process::Type::Cancel)
+        {
+            cancelRequests.push_back(request);
+            continue;
+        }
 
         switch(request->type)
         {
@@ -223,7 +247,13 @@ typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessR
             }
             break;
         }
+
+        break;
     }
+
+    //clear all request request
+    if(!cancelRequests.empty())
+        removeRequests(cancelRequests);
 
 #ifdef LOG_PROCESS_QUEUE
     if(chunkHandle)
@@ -240,12 +270,24 @@ typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessR
 }
 
 template<typename _Grid>
-void ProcessQueue<_Grid>::removeRequests(SharedChunkHandle &chunkHandle)
+void ProcessQueue<_Grid>::removeRequests(RequestQueue &cancelRequests)
 {
     size_t removed=0;
+    std::vector<SharedChunkHandle> chunkHandles;
 
-    for(auto iter=m_priorityQueue.begin(); iter!=m_priorityQueue.end();)
+    for(SharedRequest &request:cancelRequests)
     {
+        CancelRequestType *cancelRequest=(CancelRequestType *)request.get();
+        SharedChunkHandle lockedChunkHandle=cancelRequest->chunkHandle.lock();
+
+        if(lockedChunkHandle)
+            chunkHandles.push_back(lockedChunkHandle);
+    }
+
+//    for(auto iter=m_priorityQueue.begin(); iter!=m_priorityQueue.end();)
+    std::for_each(m_priorityQueue.begin(), m_priorityQueue.end(), [&](SharedRequest &request)
+    {
+//        SharedRequest &request=*iter;
         SharedChunkHandle requestChunkHandle;
 
         switch(request->type)
@@ -282,18 +324,50 @@ void ProcessQueue<_Grid>::removeRequests(SharedChunkHandle &chunkHandle)
             break;
         }
 
-        if(requestChunkHandle==chunkHandle)
+        //handle dropped so remove request
+        if(!requestChunkHandle)
         {
-            iter=m_priorityQueue.erase(iter);
+            request.reset();
             removed++;
         }
-        else
-            ++iter;
 
-    }
+        for(size_t i=0; i<chunkHandles.size(); ++i)
+        {
+            SharedChunkHandle &chunkHandle=chunkHandles[i];
 
-    if(removed)
+            if(requestChunkHandle==chunkHandle)
+            {
+                request.reset();
+                chunkHandles[i]=chunkHandles.back();
+                chunkHandles.pop_back();
+                removed++;
+                break;
+            }
+        }
+
+    });
+
+    if(removed>0)
+    {
+        for(size_t i=0; i+1<m_priorityQueue.size(); ++i)
+        {
+            SharedRequest &request=m_priorityQueue[i];
+
+            if(!request)
+            {
+                while(!m_priorityQueue.back() && (i+1<m_priorityQueue.size()))
+                    m_priorityQueue.pop_back();
+
+                m_priorityQueue[i]=m_priorityQueue.back();
+                m_priorityQueue.pop_back();
+            }
+        }
+
+        while(!m_priorityQueue.back())
+            m_priorityQueue.pop_back();
+
         std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
+    }
 }
 
 template<typename _Grid>

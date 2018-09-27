@@ -52,6 +52,7 @@ public:
 
     SharedChunkHandle getChunk(ChunkHash chunkHash);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force=false);
+    void cancelLoadChunk(SharedChunkHandle chunkHandle);
 
     Status getStatus() { return m_status; }
 
@@ -321,6 +322,16 @@ void RegionHandle<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod, b
                 m_dataStore->read(chunkHandle, lod);
         }
     }
+}
+
+template<typename _Grid>
+void RegionHandle<_Grid>::cancelLoadChunk(SharedChunkHandle chunkHandle)
+{
+    //if we are not doing anything ignore
+    if(chunkHandle->action()==ChunkAction::Idle)
+        return;
+    
+    m_dataStore->cancel(chunkHandle);
 }
 
 } //namespace voxigen
