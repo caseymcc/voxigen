@@ -3,5 +3,25 @@
  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
   <LocalDebuggerEnvironment>PATH=@VS_ENVIROMENT_DIR@;%PATH%</LocalDebuggerEnvironment>
   <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
- </PropertyGroup>	 	
+  <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>
+  <LocalDebuggerWorkingDirectory>@VS_WORKING_DIRECTORY@</LocalDebuggerWorkingDirectory>
+ </PropertyGroup>
+ <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <LocalDebuggerEnvironment>PATH=@VS_ENVIROMENT_DIR@;%PATH%</LocalDebuggerEnvironment>
+  <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>
+  <LocalDebuggerWorkingDirectory>@VS_WORKING_DIRECTORY@</LocalDebuggerWorkingDirectory>
+ </PropertyGroup>
+ <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+  <LocalDebuggerEnvironment>PATH=@VS_ENVIROMENT_DIR@;%PATH%</LocalDebuggerEnvironment>
+  <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>
+  <LocalDebuggerWorkingDirectory>@VS_WORKING_DIRECTORY@</LocalDebuggerWorkingDirectory>
+ </PropertyGroup>
+ <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+  <LocalDebuggerEnvironment>PATH=@VS_ENVIROMENT_DIR@;%PATH%</LocalDebuggerEnvironment>
+  <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  <LocalDebuggerCommandArguments></LocalDebuggerCommandArguments>
+  <LocalDebuggerWorkingDirectory>@VS_WORKING_DIRECTORY@</LocalDebuggerWorkingDirectory>
+ </PropertyGroup>
 </Project>
