@@ -224,6 +224,7 @@ set(voxigen_public_libraries ${voxigen_public_libraries} glfw)
 foreach(target ${voxigen_public_libraries})
     set(VS_ENVIROMENT_DIR ${VS_ENVIROMENT_DIR} "$<TARGET_FILE_DIR:${target}>")
 endforeach()
+set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config @ONLY)
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config CONDITION $<CONFIG:Debug>)
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config)
