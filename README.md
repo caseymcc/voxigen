@@ -1,7 +1,11 @@
-# voxigen
-Voxel handling library, mainly for block worlds. Video of current version - https://youtu.be/urhNRiDqqWE
+[![discord](https://img.shields.io/discord/495955797872869376.svg?logo=discord "Discord")](https://discord.gg/BfceAsX)
 
-Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
+# voxigen
+Voxel handling library, generating/loading/saving/meshing/memory managment. Video of current version - https://youtu.be/urhNRiDqqWE
+
+![screenshot](https://github.com/caseymcc/voxigen/tree/master/resources/screenshot1.png)
+
+Although the library is currently geared towards blocky worlds the hope is to support Marchin Cubes and Dual Countoring in the future. Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
 
 The plan is to support physics directly into this layer so the world is segmented into regions that the physics will stay stable in. There should be sharing across the segments to make sure the simulation is across the full world.
 
@@ -11,7 +15,7 @@ The library is template based. The type of block is up to the user and is the fi
 ```
     World<BlockType, ChunkSizeX, ChunkSizeY, ChunkSizeZ, RegionSizeX, RegionSizeY, RegionSizeZ> world;
 ```
-The world segmentation is chossen at compile-time but the size of the world is a runtime option. Currently it can easily hold an earth sized planet and with some bit shifting in the hash key it could holder a Jupiter sized planet (assuming 0.5 meter cubes). It should be noted that the library assumes right handed world with z as the "up" dimension in the world.
+The world segmentation is chosen at compile-time but the size of the world is a runtime option. Currently it can easily handle a sun sized planet (assuming 0.5 meter cubes). It should be noted that the library assumes right handed world with z as the "up" dimension in the world.
 
 This is still very new and likely at any point things may change and also not work. 
 
