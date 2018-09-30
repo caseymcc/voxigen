@@ -3,7 +3,7 @@
 # voxigen
 Voxel handling library, generating/loading/saving/meshing/memory managment. Video of current version - https://youtu.be/urhNRiDqqWE
 
-![screenshot](https://github.com/caseymcc/voxigen/tree/master/resources/screenshot1.png)
+![screenshot](https://github.com/caseymcc/voxigen/raw/master/resources/screenshot1.png)
 
 Although the library is currently geared towards blocky worlds the hope is to support Marchin Cubes and Dual Countoring in the future. Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
 
