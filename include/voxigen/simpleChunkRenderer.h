@@ -7,7 +7,6 @@
 #include "voxigen/chunk.h"
 #include "voxigen/chunkHandle.h"
 #include "voxigen/chunkInfo.h"
-#include "voxigen/chunkVolume.h"
 #include "voxigen/cubicMeshBuilder.h"
 #include "voxigen/textureAtlas.h"
 #include "voxigen/chunkTextureMesh.h"
@@ -87,6 +86,7 @@ public:
     void buildOutline(unsigned int instanceData);
 
     void buildMesh();
+    MeshBuffer clearMesh();
     MeshBuffer setMesh(MeshBuffer &mesh);
     bool update();
     void updated();

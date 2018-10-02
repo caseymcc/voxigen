@@ -6,8 +6,8 @@
 #include "voxigen/voxigen_export.h"
 #include "voxigen/initGlew.h"
 #include "voxigen/regularGrid.h"
-#include "voxigen/SimpleCamera.h"
-#include "voxigen/SimpleChunkRenderer.h"
+#include "voxigen/simpleCamera.h"
+#include "voxigen/simpleChunkRenderer.h"
 #include "voxigen/simpleShapes.h"
 #include "voxigen/object.h"
 #include "voxigen/renderPrepThread.h"
@@ -22,6 +22,8 @@
 
 #ifdef _WINDOWS
 #include "windows.h"
+#else
+#include <GL/glx.h>
 #endif
 
 namespace voxigen
@@ -47,20 +49,19 @@ struct RegionRenderer
 //SimpleRenderer
 /////////////////////////////////////////////////////////////////////////////////////////
 template<typename _Grid>
-class SimpleRenderer:public RegularGridTypes<_Grid>
+class SimpleRenderer//:public RegularGridTypes<_Grid>
 {
 public:
-//    typedef _Grid GridType;
-//    typedef typename GridType::ChunkType ChunkType;
-//    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+    typedef typename _Grid::GridType GridType;
+    typedef typename _Grid::DescriptorType DescriptorType;
+    typedef typename _Grid::ChunkType ChunkType;
+    typedef typename _Grid::ChunkHandleType ChunkHandleType;
+    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
     typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRendererType;
     typedef std::unique_ptr<ChunkRenderType> UniqueChunkRenderer;
 
-    //    typedef std::unordered_map<ChunkHash, size_t> ChunkRendererMap;
-    //    typedef std::unordered_map<RegionHash, ChunkRendererMap> RegionRendererMap;
-//    typedef std::unordered_map<unsigned __int64, size_t> RendererMap;
-    
     typedef RegionRenderer<ChunkRenderType> RegionRendererType;
     typedef typename RegionRendererType::ChunkRendererMap ChunkRendererMap;
     typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
@@ -212,6 +213,9 @@ private:
     HDC m_prepDC;
     HGLRC m_prepGlContext;
 #else
+    Display *m_prepDisplay;
+    GLXDrawable m_prepDrawable;
+    GLXContext m_prepGlContext;
 #endif
 //    std::mutex m_prepMutex;
 //    std::thread m_prepThread;

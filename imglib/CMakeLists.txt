@@ -61,9 +61,10 @@ if(IMGLIB_USE_EIGEN)
     set(imglib_libraries ${imglib_libraries} Eigen3::Eigen)
 endif()
 
+message(STATUS "IMGLIB_USE_PNG ${IMGLIB_USE_PNG}")
 if(IMGLIB_USE_PNG)
-    hunter_add_package(png)
-    find_package(png CONFIG REQUIRED)
+    hunter_add_package(PNG)
+    find_package(PNG CONFIG REQUIRED)
 #    add_definitions(-DIMGLIB_PNG)
 
     set(imglib_headers ${imglib_headers}

@@ -7,7 +7,7 @@ namespace imglib
 {
 
 template<typename _Image>
-void reduceSimple<_Image>(_Image &srcImage, _Image &dstImage)
+void reduceSimple(_Image &srcImage, _Image &dstImage)
 {
 #ifdef IMGLIB_OPENCL
     if((location(srcImage)==Location::OpenCL)||(location(dstImage)==Location::OpenCL))
@@ -35,7 +35,7 @@ void reduceSimple<_Image>(_Image &srcImage, _Image &dstImage)
 }
 
 template<typename _Image>
-void expandSimple<_Image>(_Image &srcImage, _Image &dstImage)
+void expandSimple(_Image &srcImage, _Image &dstImage)
 {
 #ifdef IMGLIB_OPENCL
     if((location(srcImage)==Location::OpenCL)||(location(dstImage)==Location::OpenCL))
@@ -63,7 +63,7 @@ void expandSimple<_Image>(_Image &srcImage, _Image &dstImage)
 }
 
 template<typename _Image>
-void reduce<_Image>(_Image &srcImage, _Image &dstImage)
+void reduce(_Image &srcImage, _Image &dstImage)
 {
     assert(location(srcImage)==Location::System);
     assert(location(dstImage)==Location::System);
@@ -72,7 +72,7 @@ void reduce<_Image>(_Image &srcImage, _Image &dstImage)
 }
 
 template<typename _Image>
-void expand<_Image>(_Image &srcImage, _Image &dstImage)
+void expand(_Image &srcImage, _Image &dstImage)
 {
     assert(location(srcImage)==Location::System);
     assert(location(dstImage)==Location::System);

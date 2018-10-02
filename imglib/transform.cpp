@@ -5,11 +5,11 @@
 namespace imglib
 {
 
-void reduceSimple_1(unsigned __int8 *srcBuffer, size_t srcSize, Depth srcDepth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void reduceSimple_1(uint8_t *srcBuffer, size_t srcSize, Depth srcDepth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
 }
 
-void reduceSimple_4(unsigned __int8 *srcBuffer, size_t srcSize, Depth srcDepth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void reduceSimple_4(uint8_t *srcBuffer, size_t srcSize, Depth srcDepth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
     if((srcWidth/2) != dstWidth)
     {
@@ -32,7 +32,7 @@ void reduceSimple_4(unsigned __int8 *srcBuffer, size_t srcSize, Depth srcDepth, 
     }
 }
 
-void reduceSimple(unsigned __int8 *srcBuffer, size_t srcSize, Format srcFormat, Depth srcDepth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void reduceSimple(uint8_t *srcBuffer, size_t srcSize, Format srcFormat, Depth srcDepth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
     if(srcFormat!=dstFormat)
     {
@@ -65,19 +65,19 @@ void reduceSimple(unsigned __int8 *srcBuffer, size_t srcSize, Format srcFormat, 
     }
 }
 
-void expandSimple(unsigned __int8 *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void expandSimple(uint8_t *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
     //not implemented
     assert(false);
 }
 
-void reduce(unsigned __int8 *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void reduce(uint8_t *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
     //not implemented
     assert(false);
 }
 
-void expand(unsigned __int8 *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, unsigned __int8 *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
+void expand(uint8_t *srcBuffer, size_t srcSize, Format format, Depth depth, size_t srcWidth, size_t srcHeight, uint8_t *dstBuffer, size_t dstSize, Format dstFormat, Depth dstDepth, size_t dstWidth, size_t dstHeight)
 {
     //not implemented
     assert(false);

@@ -15,6 +15,9 @@
 namespace voxigen
 {
 
+//need empty function for regular2DGrid
+inline bool empty(bool value) { return !value; }
+
 class VOXIGEN_EXPORT TextureAtlas
 {
 public:

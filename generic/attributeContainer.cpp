@@ -113,7 +113,7 @@ void AttributeContainer::addAttribute(SharedAttribute attribute)
 //	m_attributes[name].reset(new AttributeInt(name, value));
 //}
 //
-//void AttributeContainer::addAttribute(std::string name, __int64 value)
+//void AttributeContainer::addAttribute(std::string name, int64_t value)
 //{
 //	m_attributes[name].reset(new AttributeInt64(name, value));
 //}

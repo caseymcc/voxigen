@@ -60,18 +60,13 @@ public:
 			onAttributeChanged(name, attribute);
 		}
 	}
-	template<> void AttributeContainer::setAttribute(std::string name, const char *value)
-	{
-		setAttribute(name, std::string(value));
-	}
+	
 	template<typename T> void setAttribute(std::string name, T value, const std::vector<T> &values);
 
 	Attributes &attributes(){return m_attributes;}
 
 	void addAttribute(SharedAttribute attribute);
 	template <typename T> void addAttribute(std::string name, T value){m_attributes[name].reset(new AttributeTemplate<T>(this, name, value));}
-	template<> void addAttribute<const char *>(std::string name, const char * value){addAttribute(name, std::string(value));}
-	template<> void addAttribute<char *>(std::string name, char * value){addAttribute(name, std::string(value));}
 	template <typename T> void addAttribute(std::string name, T value, const std::vector<T> &values){m_attributes[name].reset(new AttributeEnum<T>(this, name, value, values));}
 
 	void attributeChanged(std::string name) override;
@@ -100,6 +95,14 @@ private:
 
     std::vector<ChangeListener *> m_changeListners;
 };
+
+template<> void AttributeContainer::setAttribute<const char *>(std::string name, const char *value)
+{
+	setAttribute(name, std::string(value));
+}
+
+template<> void AttributeContainer::addAttribute<const char *>(std::string name, const char * value){addAttribute(name, std::string(value));}
+template<> void AttributeContainer::addAttribute<char *>(std::string name, char * value){addAttribute(name, std::string(value));}
 
 }//namespace generic
 

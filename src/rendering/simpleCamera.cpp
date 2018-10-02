@@ -1,4 +1,4 @@
-#include "voxigen/SimpleCamera.h"
+#include "voxigen/simpleCamera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>

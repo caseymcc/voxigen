@@ -2,6 +2,8 @@
 #include "opengl_util/program.h"
 
 #include <assert.h>
+#include <cstring>
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -140,7 +142,7 @@ void UniformBuffer::buildUbo()
         std::vector<GLchar> &name=namesHolder[nameIndex];
 
         name.resize(key.size()+1);
-        strcpy_s(name.data(), key.length()+1, key.data());
+        strcpy(name.data(), key.data());
 
         names[nameIndex]=name.data();
         ++nameIndex;

@@ -8,6 +8,8 @@
 #include "voxigen/generator.h"
 #include "voxigen/simpleFilesystem.h"
 
+#include <generic/jsonSerializer.h>
+
 #ifdef USE_OCTOMAP
 #include "octomap/OcTree.h"
 #endif //USE_OCTOMAP
@@ -33,7 +35,7 @@ template<typename _Grid>
 class DataStore;
 
 template<typename _Grid>
-class RegionHandle:public DataHandler<ChunkHash, ChunkHandle<typename _Grid::ChunkType>, typename _Grid::ChunkType>
+class RegionHandle:public DataHandler<RegionHash, ChunkHandle<typename _Grid::ChunkType>, typename _Grid::ChunkType>
 {
 public:
     typedef typename _Grid::RegionType RegionType;
@@ -42,6 +44,13 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
     
+    //DataHandler typdefs
+    typedef RegionHash HashType;
+    typedef typename DataHandler<RegionHash, ChunkHandle<typename _Grid::ChunkType>, typename _Grid::ChunkType>::DataHandle DataHandle;
+
+    typedef std::shared_ptr<DataHandle> SharedDataHandle;
+    typedef std::unordered_map<RegionHash, SharedDataHandle> SharedDataHandleMap;
+
     enum Status
     {
         Unknown,
@@ -50,7 +59,7 @@ public:
 
     RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue);
 
-    SharedChunkHandle getChunk(ChunkHash chunkHash);
+    SharedChunkHandle getChunk(RegionHash chunkHash);
     void loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force=false);
     void cancelLoadChunk(SharedChunkHandle chunkHandle);
 
@@ -72,7 +81,7 @@ public:
 #endif //USE_OCTOMAP
 
 protected:
-    virtual DataHandle *newHandle(HashType hash);
+    DataHandle *newHandle(HashType hash) override;
 
 private:
     void loadConfig(); 
@@ -152,44 +161,44 @@ typename RegionHandle<_Grid>::DataHandle *RegionHandle<_Grid>::newHandle(HashTyp
 template<typename _Grid>
 void RegionHandle<_Grid>::loadConfig()
 {
-    JsonUnserializer serializer;
+    generic::JsonDeserializer deserializer;
 
-    serializer.open(m_configFile.c_str());
+    deserializer.open(m_configFile.c_str());
 
-    serializer.openObject();
-    if(serializer.key("version"))
-        m_version=serializer.getUInt();
+    deserializer.openObject();
+    if(deserializer.key("version"))
+        m_version=deserializer.getUInt();
 
-    if(serializer.key("chunks"))
+    if(deserializer.key("chunks"))
     {
-        if(serializer.openArray())
+        if(deserializer.openArray())
         {
             do
             {
-                if(serializer.openObject())
+                if(deserializer.openObject())
                 {
-                    if(serializer.key("id"))
+                    if(deserializer.key("id"))
                     {
-                        RegionHash hash=serializer.getUInt();
+                        RegionHash hash=deserializer.getUInt();
                         SharedChunkHandle chunkHandle(newHandle(hash));
 
                         chunkHandle->setCachedOnDisk(true);
 
-                        if(serializer.key("empty"))
-                            chunkHandle->setEmpty(serializer.getBool());
+                        if(deserializer.key("empty"))
+                            chunkHandle->setEmpty(deserializer.getBool());
                         else
                             chunkHandle->setEmpty(true);
 
-                        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, chunkHandle));
+                        this->m_dataHandles.insert(typename SharedDataHandleMap::value_type(hash, chunkHandle));
                     }
 
-                    serializer.closeObject();
+                    deserializer.closeObject();
                 }
-            } while(serializer.advance());
-            serializer.closeArray();
+            } while(deserializer.advance());
+            deserializer.closeArray();
         }
     }
-    serializer.closeObject();
+    deserializer.closeObject();
 }
 
 template<typename _Grid>
@@ -201,7 +210,7 @@ void RegionHandle<_Grid>::saveConfig()
 template<typename _Grid>
 void RegionHandle<_Grid>::saveConfigTo(std::string configFile)
 {
-    JsonSerializer serializer;
+    generic::JsonSerializer serializer;
 
     serializer.open(m_configFile.c_str());
 
@@ -212,7 +221,7 @@ void RegionHandle<_Grid>::saveConfigTo(std::string configFile)
 
     serializer.addKey("chunks");
     serializer.startArray();
-    for(auto &handle:m_dataHandles)
+    for(auto &handle:this->m_dataHandles)
     {
         if(handle.second->empty())
         {
@@ -261,7 +270,7 @@ void RegionHandle<_Grid>::loadDataStore()
         handle->setCachedOnDisk(true);
         handle->setEmpty(false);
 
-        m_dataHandles.insert(SharedDataHandleMap::value_type(chunkHash, handle));
+        this->m_dataHandles.insert(typename SharedDataHandleMap::value_type(chunkHash, handle));
     }
 }
 
@@ -274,7 +283,7 @@ void RegionHandle<_Grid>::verifyDirectory()
 template<typename _Grid>
 typename RegionHandle<_Grid>::SharedChunkHandle RegionHandle<_Grid>::getChunk(ChunkHash chunkHash)
 {
-    SharedChunkHandle chunkHandle=getDataHandle(chunkHash);
+    SharedChunkHandle chunkHandle=this->getDataHandle(chunkHash);
 
     glm::ivec3 chunkIndex=m_descriptors->chunkIndex(chunkHash);
     chunkHandle->setRegionOffset(glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex);

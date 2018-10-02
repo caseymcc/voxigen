@@ -198,9 +198,9 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
     if(!m_chunk)
         return;
 
-    ChunkType::Cells &cells=m_chunk->getCells();
+    typename ChunkType::Cells &cells=m_chunk->getCells();
 
-    unsigned int validCells=generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(ChunkType::CellType), lod);
+    unsigned int validCells=generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(typename ChunkType::CellType), lod);
 
     m_chunk->setValidCellCount(validCells);
 //    setState(ChunkState::Memory);
@@ -216,7 +216,7 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
     }
     else
     {
-        m_memoryUsed=cells.size()*sizeof(ChunkType::CellType);
+        m_memoryUsed=cells.size()*sizeof(typename ChunkType::CellType);
         setEmpty(false);
     }
 }
@@ -237,7 +237,7 @@ void ChunkHandle<_Chunk>::release()
 }
 
 template<typename _Chunk>
-void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0)
+void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string &fileName, size_t lod)
 {
     glm::ivec3 chunkIndex=descriptors->getChunkIndex(m_hash);
     glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
@@ -260,7 +260,7 @@ void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string 
 }
 
 template<typename _Chunk>
-void ChunkHandle<_Chunk>::write(IGridDescriptors *descriptors, const std::string &fileName, size_t lod=0)
+void ChunkHandle<_Chunk>::write(IGridDescriptors *descriptors, const std::string &fileName, size_t lod)
 {
     auto &cells=m_chunk->getCells();
     std::ofstream file;

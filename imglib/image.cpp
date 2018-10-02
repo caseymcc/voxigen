@@ -1,5 +1,6 @@
 #include "imglib/image.h"
 #include <unordered_map>
+#include <cstring>
 
 namespace imglib
 {

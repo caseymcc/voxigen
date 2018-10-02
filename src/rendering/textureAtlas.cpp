@@ -129,9 +129,6 @@ void TextureAtlas::save(const std::string &path, const std::string &name)
     imglib::save(m_image, imagePath);
 }
 
-//need empty function for regular2DGrid
-bool empty(bool value) { return !value; }
-
 struct ImageEntry:public TextureAtlas::TextureEntry
 {
     size_t index;

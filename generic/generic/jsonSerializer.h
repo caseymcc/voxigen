@@ -29,8 +29,8 @@ public:
     void addString(const std::string &value) override;
     void addInt(const int &value) override;
     void addUInt(const unsigned int &value) override;
-    void addInt64(const __int64 &value) override;
-    void addUInt64(const unsigned __int64 &value) override;
+    void addInt64(const int64_t &value) override;
+    void addUInt64(const uint64_t &value) override;
     void addFloat(const float &value) override;
     void addDouble(const double &value) override;
 
@@ -67,8 +67,8 @@ public:
     std::string getString() override;
     int getInt() override;
     unsigned int getUInt() override;
-    __int64 getInt64() override;
-    unsigned __int64 getUInt64() override;
+    int64_t getInt64() override;
+    uint64_t getUInt64() override;
     float getFloat() override;
     double getDouble() override;
 

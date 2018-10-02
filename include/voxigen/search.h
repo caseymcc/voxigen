@@ -99,7 +99,7 @@ bool searchRenderers(_Grid *grid, const SearchSettings& settings, _AllocateRende
                 continue;
 
             Key key(iter.first);
-            _Grid::SharedChunkHandle chunkHandle=grid->getChunk(key.regionHash, key.chunkHash);
+            typename _Grid::SharedChunkHandle chunkHandle=grid->getChunk(key.regionHash, key.chunkHash);
 
             chunkRenderer->setChunk(chunkHandle);
 

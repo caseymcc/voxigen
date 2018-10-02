@@ -34,7 +34,7 @@ public:
 
     Type *get();
     template<typename _Functor>
-    Type *get(_Functor &functor);
+    Type *get(const _Functor &functor);
     void release(_Type *item);
     template<typename _Functor>
     void release(_Type *item, _Functor &functor);

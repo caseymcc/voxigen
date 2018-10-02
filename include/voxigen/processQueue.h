@@ -67,6 +67,8 @@ using SharedProcessRequest=std::shared_ptr<ProcessRequest<_Chunk>>;
 template<typename _Chunk>
 struct UpdateQueueRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+
     UpdateQueueRequest(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex):ProcessRequest<_Chunk>(Process::Type::UpdateQueue, 20, regionIndex, chunkIndex){}
 
     virtual SharedChunkHandleType getChunkHandle() { return SharedChunkHandleType(); }
@@ -75,8 +77,11 @@ struct UpdateQueueRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct GenerateRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
+
     GenerateRequest(SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Generate, 100, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod){}
-    GenerateRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Type::Generate, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) lod(lod) {}
+    GenerateRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Generate, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
 
     SharedChunkHandleType getChunkHandle() override{ return chunkHandle.lock(); }
 
@@ -87,8 +92,11 @@ struct GenerateRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct ReadRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
+
     ReadRequest(SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Read, 100, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
-    ReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Type::Read, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
+    ReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle, size_t lod):ProcessRequest<_Chunk>(Process::Type::Read, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle), lod(lod) {}
 
     SharedChunkHandleType getChunkHandle() override{ return chunkHandle.lock(); }
 
@@ -99,8 +107,11 @@ struct ReadRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct WriteRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
+
     WriteRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Write, 100, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
-    WriteRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Write, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()){}
+    WriteRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Write, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()){}
 
     SharedChunkHandleType getChunkHandle() override { return chunkHandle; }
 
@@ -110,8 +121,11 @@ struct WriteRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct UpdateRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
+
     UpdateRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Update, 100, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
-    UpdateRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Update, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
+    UpdateRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Update, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle){}
 
     SharedChunkHandleType getChunkHandle() override { return chunkHandle.lock(); }
 
@@ -121,6 +135,8 @@ struct UpdateRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct CancelRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
     CancelRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Cancel, 9, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
 
     SharedChunkHandleType getChunkHandle() override { return chunkHandle.lock(); }
@@ -131,8 +147,11 @@ struct CancelRequest:public ProcessRequest<_Chunk>
 template<typename _Chunk>
 struct ReleaseRequest:public ProcessRequest<_Chunk>
 {
+    typedef typename ProcessRequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+    typedef typename ProcessRequest<_Chunk>::WeakChunkHandleType WeakChunkHandleType;
+
     ReleaseRequest(SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Release, 10, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
-    ReleaseRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Type::Update, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
+    ReleaseRequest(unsigned int priority, SharedChunkHandleType chunkHandle):ProcessRequest<_Chunk>(Process::Type::Update, priority, chunkHandle->regionIndex(), chunkHandle->chunkIndex()), chunkHandle(chunkHandle) {}
 
     SharedChunkHandleType getChunkHandle() override { return chunkHandle.lock(); }
 

@@ -705,13 +705,15 @@ typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid,
         }
     }
 
-    return m_rendererQueue.get([&](ChunkRendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId); });
+    ChunkRendererType *renderer=m_rendererQueue.get([&](ChunkRendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId); });
+    
+    return renderer;
 }
 
 template<typename _Grid, typename _ChunkRenderer>
 void RenderCube<_Grid, _ChunkRenderer>::releaseRenderer(ChunkRendererType *renderer)
 {
-    MeshBuffer mesh=renderer->setMesh(MeshBuffer());
+    MeshBuffer mesh=renderer->clearMesh();
 
     if(mesh.valid)
         m_renderPrepThread->requestReleaseMesh(mesh);

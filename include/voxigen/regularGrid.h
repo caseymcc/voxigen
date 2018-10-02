@@ -103,7 +103,7 @@ public:
 
     glm::ivec3 getChunkIndex(const glm::vec3 &position);
     glm::ivec3 getChunkIndex(ChunkHash hash);
-    ChunkHash chunkHash(const glm::ivec3 &chunkIndex) const;
+    ChunkHash getChunkHash(const glm::ivec3 &chunkIndex) const;
     ChunkHash getChunkHash(RegionHash regionHash, const glm::vec3 &gridPosition);
     ChunkHash getChunkHashFromRegionPos(const glm::vec3 &regionPosition);
     ChunkHash getChunkHash(const glm::vec3 &gridPosition);
@@ -181,7 +181,7 @@ RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionS
     {
         //shutdown processing thread
         {
-            std::unique_lock<std::mutex> &lock=m_processQueue.getLock();
+            std::unique_lock<std::mutex> lock(m_processMutex);
 
             m_processThreadRunning=false;
             m_processQueue.trigger(lock);//force update
@@ -388,15 +388,15 @@ glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSize
     return glm::ivec3(regionCellSizeX::value, regionCellSizeY::value, regionCellSizeZ::value);
 }
 
-template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
-typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunk(const glm::ivec3 &cell)
-{
-    glm::ivec3 chunkIndex=cell/m_descriptors.m_chunkSize;
-
-    ChunkHash chunkHash=chunkHash(chunkIndex);
-
-    return m_chunkHandler.getChunk(chunkHash);
-}
+//template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
+//typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunk(const glm::ivec3 &cell)
+//{
+//    glm::ivec3 chunkIndex=cell/m_descriptors.m_chunkSize;
+//
+//    ChunkHash chunkHash=getChunkHash(chunkIndex);
+//
+//    return m_dataStore.getChunk(chunkHash);
+//}
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 typename RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::SharedChunkHandle RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunk(Key &key)
@@ -442,12 +442,12 @@ std::vector<Key> RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _Regi
 //    if(m_processQueue.isCompletedQueueEmpty())
 //        m_processQueue.updateCompletedQueue();
 
-    ProcessQueueType::RequestQueue completedQueue;
+    typename ProcessQueueType::RequestQueue completedQueue;
 
     m_processQueue.getCompletedQueue(completedQueue);
     for(auto &request:completedQueue)
     {
-        ProcessQueueType::SharedChunkHandle chunkHandle=request->getChunkHandle();
+        typename ProcessQueueType::SharedChunkHandle chunkHandle=request->getChunkHandle();
 
         if(!chunkHandle)
             continue;
@@ -506,7 +506,7 @@ glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSize
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
-ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::chunkHash(const glm::ivec3 &index) const
+ChunkHash RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::getChunkHash(const glm::ivec3 &index) const
 {
     return m_descriptors.chunkHash(index);
 }
@@ -580,7 +580,7 @@ glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSize
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 glm::vec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::gridPosToRegionPos(RegionHash regionHash, const glm::vec3 &gridPosition)
 {
-    glm::vec3 pos=gridPosition-m_descriptors.regionOffset(playerRegion);
+    glm::vec3 pos=gridPosition-m_descriptors.regionOffset(regionHash);
 
     return pos;
 }
