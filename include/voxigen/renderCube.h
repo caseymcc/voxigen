@@ -36,9 +36,15 @@ namespace voxigen
 //RenderCube
 /////////////////////////////////////////////////////////////////////////////////////////
 template<typename _Grid, typename _ChunkRenderer>
-class RenderCube:public RegularGridTypes<_Grid>
+class RenderCube//:public RegularGridTypes<_Grid>
 {
 public:
+    typedef typename _Grid::GridType GridType;
+    typedef typename _Grid::DescriptorType DescriptorType;
+    typedef typename _Grid::ChunkType ChunkType;
+    typedef typename _Grid::ChunkHandleType ChunkHandleType;
+    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+
     typedef _ChunkRenderer ChunkRendererType;
     typedef std::vector<ChunkRendererType> ChunkRenderers;
 //    typedef ChunkRenderInfo<SharedChunkHandle, _ChunkRenderer> ChunkRenderInfoType;

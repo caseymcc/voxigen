@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <memory>
+#include <type_traits>
 
 #include "imglib_export.h"
 #include "imglib/location.h"
@@ -16,6 +17,7 @@ namespace imglib
 
 enum class Format
 {
+    Unknown,
     Binary,
     GreyScale, //Grey
     RA, //Red, Alpha
@@ -31,6 +33,7 @@ IMGLIB_EXPORT size_t formatToChannels(Format format);
 
 enum class Depth
 {
+    Unknown,
     Bit1,
     Bit8,
     Bit10,
@@ -53,35 +56,35 @@ IMGLIB_EXPORT size_t depthToBits(Depth depth);
 //the imglib namespace, see simpleImage.h for an example of how to use.
 //namespace imglib
 //{
-//  template<typename _Image>
-//  Format format(const _Image &);
-//
-//  template<typename _Image>
-//  Depth depth(const _Image &);
-//  
-//  template<typename _Image>
-//  Location location(const _Image &);
-//  
-//  template<typename _Image>
-//  size_t width(const _Image &);
-//  
-//  template<typename _Image>
-//  size_t height(const _Image &);
-//  
-//  template<typename _Image>
-//  size_t stride(const _Image &);
-//  
-//  template<typename _Image>
-//  size_t nativeId(const _Image &);
-//
-//  template<typename _Image>
-//  uint8_t *data(_Image &);
-//  
-//  template<typename _Image>
-//  size_t size(const _Image &);
-//
-//  template<typename _Image>
-//  bool resize(_Image &image, Format format, Depth depth, size_t width, size_t height);
+  template<typename _Image>
+  Format format(const _Image &){return Format::Unknown;}
+
+  template<typename _Image>
+  Depth depth(const _Image &){return Depth::Unknown;}
+  
+  template<typename _Image>
+  Location location(const _Image &){return Location::System;}
+  
+  template<typename _Image>
+  size_t width(const _Image &){return 0;}
+  
+  template<typename _Image>
+  size_t height(const _Image &){return 0;}
+  
+  template<typename _Image>
+  size_t stride(const _Image &){return 0;}
+  
+  template<typename _Image>
+  size_t nativeId(const _Image &){return 0;}
+
+  template<typename _Image>
+  uint8_t *data(_Image &){return nullptr;}
+  
+  template<typename _Image>
+  size_t dataSize(const _Image &){return 0;}
+
+  template<typename _Image>
+  bool resize(_Image &image, Format format, Depth depth, size_t width, size_t height){return false;}
 //}
 
 //Polymorphic image concept that is used internally in the library to wrap template types
@@ -92,7 +95,7 @@ class ImageWrapper
 public:
     template<typename _Type>
     ImageWrapper(_Type &value):m_self(new ImageModel<_Type>(value)) {}
-    ImageWrapper(ImageWrapper &that):m_self(that.m_self) {}
+    ImageWrapper(const ImageWrapper &that):m_self(that.m_self) {}
 
 #ifdef IMGLIB_USE_COMPILETIME_TYPE
     ctti::type_id_t typeId() const { return m_self->typeId(); }
@@ -157,10 +160,10 @@ private:
         size_t stride() const override { return imglib::stride(m_data); }
 
         size_t nativeId() const override { return imglib::nativeId(m_data); }
-        uint8_t *data() const override { return imglib::data(const_cast<std::remove_const<_Type>::type &>(m_data)); }
+        uint8_t *data() const override { return imglib::data(const_cast<typename std::remove_const<_Type>::type &>(m_data)); }
         size_t dataSize() const override { return imglib::dataSize(m_data); }
 
-        bool resize(Format format, Depth depth, size_t width, size_t height) const override { return imglib::resize(const_cast<std::remove_const<_Type>::type &>(m_data), format, depth, width, height); }
+        bool resize(Format format, Depth depth, size_t width, size_t height) const override { return imglib::resize(const_cast<typename std::remove_const<_Type>::type &>(m_data), format, depth, width, height); }
 
         _Type &m_data;
     };

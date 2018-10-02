@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <vector>
+#include <cstring>
+#include <limits>
 
 namespace imglib
 {

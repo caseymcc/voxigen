@@ -1,4 +1,4 @@
-#include "voxigen/simpleFileSystem.h"
+#include "voxigen/simpleFilesystem.h"
 
 #include <boost/filesystem.hpp>
 

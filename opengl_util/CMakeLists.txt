@@ -6,6 +6,10 @@ find_package(glew CONFIG REQUIRED)
 #remove min and max macro declares from windows builds, causes issues with std::min/max
 add_definitions(-DNOMINMAX)
 
+#if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#    find_package(OpenGL)
+#endif()
+
 set(opengl_util_sources
     initGlew.cpp
     program.cpp
@@ -23,9 +27,18 @@ set(opengl_util_headers
 )
 
 set(opengl_util_libraries
-    opengl32.lib
     glew::glew
 )
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(opengl_util_libraries ${opengl_util_libraries}
+        opengl32.lib
+    )
+#elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#    set(opengl_util_libraries ${opengl_util_libraries}
+#        ${OPENGL_gl_LIBRARY}
+#    )
+endif()
 
 if(VOXIGEN_OUTPUT_DIRECTORY_DEBUG)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
@@ -34,7 +47,7 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
-add_library(opengl_util SHARED
+add_library(opengl_util STATIC
     ${opengl_util_sources}
     ${opengl_util_headers}
 )

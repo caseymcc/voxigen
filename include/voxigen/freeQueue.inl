@@ -59,7 +59,7 @@ typename FreeQueue<_Type>::Type *FreeQueue<_Type>::get()
 
 template<typename _Type>
 template<typename _Functor>
-typename FreeQueue<_Type>::Type *FreeQueue<_Type>::get(_Functor &functor)
+typename FreeQueue<_Type>::Type *FreeQueue<_Type>::get(const _Functor &functor)
 {
     if(m_freeItems.empty())
     {
@@ -86,14 +86,14 @@ typename FreeQueue<_Type>::Type *FreeQueue<_Type>::get(_Functor &functor)
 }
 
 template<typename _Type>
-typename void FreeQueue<_Type>::release(Type *item)
+void FreeQueue<_Type>::release(Type *item)
 {
     m_freeItems.push_back(item);
 }
 
 template<typename _Type>
 template<typename _Functor>
-typename void FreeQueue<_Type>::release(Type *item, _Functor &functor)
+void FreeQueue<_Type>::release(Type *item, _Functor &functor)
 {
     functor(item);
     m_freeItems.push_back(item);

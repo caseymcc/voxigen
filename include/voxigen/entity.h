@@ -36,12 +36,12 @@ private:
 template<typename _Object>
 void Entity<_Object>::move(const glm::vec3 &velocity)
 {
-    glm::vec3 direction=getDirection();
-    glm::vec3 right=glm::normalize(glm::cross(direction, m_worldUp));
-    glm::vec3 delta=(direction*velocity.x)+(right*velocity.y)+(m_worldUp*velocity.z);
-
-    m_position+=delta;
-    m_viewDirty=true;
+//    glm::vec3 direction=getDirection();
+//    glm::vec3 right=glm::normalize(glm::cross(direction, m_worldUp));
+//    glm::vec3 delta=(direction*velocity.x)+(right*velocity.y)+(m_worldUp*velocity.z);
+//
+//    m_position+=delta;
+//    m_viewDirty=true;
 }
 
 }//namespace voxigen

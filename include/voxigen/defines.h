@@ -2,7 +2,7 @@
 #define _voxigen_defines_h_
 
 #include <set>
-
+#include <cstdint>
 //#define DEBUG_ALLOCATION
 //#define LOG_PROCESS_QUEUE
 //#define DEBUG_DRAW_CALLS
@@ -12,17 +12,17 @@
 namespace voxigen
 {
 
-typedef unsigned __int32 ChunkHash;
-typedef unsigned __int32 RegionHash;
+typedef uint32_t ChunkHash;
+typedef uint32_t RegionHash;
 
 struct Key
 {
-    typedef __int64 Type;
+    typedef uint64_t Type;
     typedef ChunkHash ChunkHashType;
     typedef RegionHash RegionHashType;
 
     Key() {}
-    Key(__int64 hash):hash(hash){}
+    Key(uint64_t hash):hash(hash){}
     Key(RegionHash regionHash, ChunkHash chunkHash):regionHash(regionHash), chunkHash(chunkHash){}
 
     union
@@ -32,7 +32,7 @@ struct Key
             RegionHash regionHash;
             ChunkHash chunkHash;
         };
-        unsigned __int64 hash;
+        uint64_t hash;
     };
 };
 

@@ -4,6 +4,7 @@
 #include "generic/types.h"
 #include "generic/serializer.h"
 
+#include <assert.h>
 #include <memory>
 #include <unordered_map>
 
@@ -50,14 +51,14 @@ public:
 	Type type(){return m_type;}
 	std::string name(){return m_name;}
 
-	template <typename T> void from(T value){AttributeTemplate<T> *d=dynamic_cast<AttributeTemplate<T> *>(this);d?d->from(value):assert(false);}
-	template <typename T> T to() const { const AttributeTemplate<T> *d=dynamic_cast<const AttributeTemplate<T> *>(this); return d?d->to<T>():assert(false); }
+	template <typename T> void from(T value);
+	template <typename T> T to() const;
 
 	virtual void fromString(std::string value)=0;
 	virtual void fromInt(int value)=0;
 	virtual void fromUInt(unsigned int value)=0;
-	virtual void fromInt64(__int64 value)=0;
-	virtual void fromUInt64(unsigned __int64 value)=0;
+	virtual void fromInt64(int64_t value)=0;
+	virtual void fromUInt64(uint64_t value)=0;
 	virtual void fromFloat(float value)=0;
 	virtual void fromDouble(double value)=0;
 	virtual void fromBool(bool value)=0;
@@ -65,8 +66,8 @@ public:
 	virtual std::string toString() const=0;
 	virtual int toInt() const=0;
 	virtual unsigned int toUInt() const=0;
-	virtual __int64 toInt64() const=0;
-	virtual unsigned __int64 toUInt64() const=0;
+	virtual int64_t toInt64() const=0;
+	virtual uint64_t toUInt64() const=0;
 	virtual float toFloat() const=0;
 	virtual double toDouble() const=0;
 	virtual bool toBool() const=0;
@@ -96,10 +97,10 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 //if you are here it is because Attribute does not know how to handle your type
-    AttributeTemplate(const std::string name):Attribute(Type::UNKNOWN, name), m_parent(nullptr) { std::static_assert(false);  assert(false); };
-	AttributeTemplate(const std::string name, classType value):Attribute(Type::UNKNOWN, name), m_parent(nullptr), m_value(value) { assert(false); };
-	AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UNKNOWN, name), m_parent(parent){assert(false);};
-	AttributeTemplate(IChangeNotify *parent, const std::string name, classType value):Attribute(Type::UNKNOWN, name), m_parent(parent), m_value(value){assert(false);};
+    AttributeTemplate(const std::string name):Attribute(Type::Unknown, name), m_parent(nullptr) { assert(false); };
+	AttributeTemplate(const std::string name, classType value):Attribute(Type::Unknown, name), m_parent(nullptr), m_value(value) { assert(false); };
+	AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Unknown, name), m_parent(parent){assert(false);};
+	AttributeTemplate(IChangeNotify *parent, const std::string name, classType value):Attribute(Type::Unknown, name), m_parent(parent), m_value(value){assert(false);};
 ///////////////////////////////////////////////////////////////////////////////
 
 	~AttributeTemplate() override {};
@@ -112,8 +113,8 @@ public:
 	void fromString(std::string value) override{m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
 	void fromInt(int value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
 	void fromUInt(unsigned int value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
-	void fromInt64(__int64 value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
-	void fromUInt64(unsigned __int64 value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
+	void fromInt64(int64_t value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
+	void fromUInt64(uint64_t value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
 	void fromFloat(float value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
 	void fromDouble(double value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
 	void fromBool(bool value) override {m_value=boost::lexical_cast<classType>(value); if(m_parent != nullptr) m_parent->attributeChanged(m_name);}
@@ -121,8 +122,8 @@ public:
 	std::string toString() const override {return boost::lexical_cast<std::string>(m_value);}
 	int toInt() const override {return boost::lexical_cast<int>(m_value);}
 	unsigned int toUInt() const override {return boost::lexical_cast<int>(m_value);}
-	__int64 toInt64() const override {return boost::lexical_cast<__int64>(m_value);}
-	unsigned __int64 toUInt64() const override {return boost::lexical_cast<__int64>(m_value);}
+	int64_t toInt64() const override {return boost::lexical_cast<int64_t>(m_value);}
+	uint64_t toUInt64() const override {return boost::lexical_cast<int64_t>(m_value);}
 	float toFloat() const override {return boost::lexical_cast<float>(m_value);}
 	double toDouble() const override {return boost::lexical_cast<double>(m_value);}
 	bool toBool() const override {return boost::lexical_cast<bool>(m_value);}
@@ -134,6 +135,9 @@ protected:
 	classType m_value;
 	IChangeNotify *m_parent;
 };
+
+template <typename T> void Attribute::from(T value){AttributeTemplate<T> *d=(AttributeTemplate<T> *)(this);d?d->template from<T>(value):assert(false);}
+template <typename T> T Attribute::to() const { const AttributeTemplate<T> *d=(const AttributeTemplate<T> *)(this); return d?d->template to<T>():assert(false); }
 
 template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name):Attribute(Type::Bool, name), m_parent(nullptr), m_value(false) {};
 template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name, bool value):Attribute(Type::Bool, name), m_parent(nullptr), m_value(value) {};
@@ -159,21 +163,21 @@ template<> void generic_EXPORT AttributeTemplate<unsigned int>::serialize(Serial
 template<> void generic_EXPORT AttributeTemplate<unsigned int>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
 typedef AttributeTemplate<unsigned int> AttributeUInt;
 
-template<> generic_EXPORT AttributeTemplate<__int64>::AttributeTemplate(const std::string name):Attribute(Type::Int64, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<__int64>::AttributeTemplate(const std::string name, __int64 value):Attribute(Type::Int64, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<__int64>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int64, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<__int64>::AttributeTemplate(IChangeNotify *parent, const std::string name, __int64 value):Attribute(Type::Int64, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<__int64>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt64(m_value); }
-template<> void generic_EXPORT AttributeTemplate<__int64>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
-typedef AttributeTemplate<__int64> AttributeInt64;
+template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name):Attribute(Type::Int64, name), m_parent(nullptr), m_value(0) {};
+template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(nullptr), m_value(value) {};
+template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int64, name), m_parent(parent), m_value(0){};
+template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(parent), m_value(value){};
+template<> void generic_EXPORT AttributeTemplate<int64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt64(m_value); }
+template<> void generic_EXPORT AttributeTemplate<int64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
+typedef AttributeTemplate<int64_t> AttributeInt64;
 
-template<> generic_EXPORT AttributeTemplate<unsigned __int64>::AttributeTemplate(const std::string name):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<unsigned __int64>::AttributeTemplate(const std::string name, unsigned __int64 value):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<unsigned __int64>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt64, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<unsigned __int64>::AttributeTemplate(IChangeNotify *parent, const std::string name, unsigned __int64 value):Attribute(Type::UInt64, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<unsigned __int64>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt64(m_value); }
-template<> void generic_EXPORT AttributeTemplate<unsigned __int64>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
-typedef AttributeTemplate<unsigned __int64> AttributeUInt64;
+template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(0) {};
+template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(value) {};
+template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt64, name), m_parent(parent), m_value(0){};
+template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(parent), m_value(value){};
+template<> void generic_EXPORT AttributeTemplate<uint64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt64(m_value); }
+template<> void generic_EXPORT AttributeTemplate<uint64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
+typedef AttributeTemplate<uint64_t> AttributeUInt64;
 
 template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name):Attribute(Type::Float, name), m_parent(nullptr), m_value(0.0f) {};
 template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name, float value):Attribute(Type::Float, name), m_parent(nullptr), m_value(value) {};
@@ -203,14 +207,14 @@ template<typename classType>
 class generic_EXPORT AttributeEnum:public AttributeTemplate<classType>
 {
 public:
-	AttributeEnum(const std::string name):AttributeTemplate(nullptr, name) {};
-	AttributeEnum(const std::string name, const classType value):AttributeTemplate(nullptr, name, value) {};
-	AttributeEnum(const std::string name, const classType  value, const std::vector<classType> values):AttributeTemplate(nullptr, name, value), m_values(values) {};
-	AttributeEnum(IChangeNotify *parent, const std::string name):AttributeTemplate(parent, name){};
-	AttributeEnum(IChangeNotify *parent, const std::string name, const classType value):AttributeTemplate(parent, name, value){};
-	AttributeEnum(IChangeNotify *parent, const std::string name, const classType  value, const std::vector<classType> values):AttributeTemplate(parent, name, value), m_values(values){};
-	AttributeEnum(const AttributeEnum<classType> &attribute):AttributeTemplate(nullptr, attribute.m_name){m_value=attribute.m_value; m_values=attribute.m_values;}
-	AttributeEnum(IChangeNotify *parent, const AttributeEnum<classType> &attribute):AttributeTemplate(parent, attribute.m_name){m_value=attribute.m_value; m_values=attribute.m_values;}
+	AttributeEnum(const std::string name):AttributeTemplate<classType>(nullptr, name) {};
+	AttributeEnum(const std::string name, const classType value):AttributeTemplate<classType>(nullptr, name, value) {};
+	AttributeEnum(const std::string name, const classType  value, const std::vector<classType> values):AttributeTemplate<classType>(nullptr, name, value), m_values(values) {};
+	AttributeEnum(IChangeNotify *parent, const std::string name):AttributeTemplate<classType>(parent, name){};
+	AttributeEnum(IChangeNotify *parent, const std::string name, const classType value):AttributeTemplate<classType>(parent, name, value){};
+	AttributeEnum(IChangeNotify *parent, const std::string name, const classType  value, const std::vector<classType> values):AttributeTemplate<classType>(parent, name, value), m_values(values){};
+	AttributeEnum(const AttributeEnum<classType> &attribute):AttributeTemplate<classType>(nullptr, attribute.m_name, attribute.m_value){m_values=attribute.m_values;}
+	AttributeEnum(IChangeNotify *parent, const AttributeEnum<classType> &attribute):AttributeTemplate<classType>(parent, attribute.m_name, attribute.m_value){m_values=attribute.m_values;}
 	~AttributeEnum() override {};
 
 	std::vector<classType> enums() const{return m_values;}
@@ -222,7 +226,7 @@ public:
 
 		for(size_t i=0; i<m_values.size(); ++i)
 		{
-			SharedAttribute attribute(new AttributeTemplate(nullptr, "enum", m_values[i]));
+			SharedAttribute attribute(new AttributeTemplate<classType>(nullptr, "enum", m_values[i]));
 			
 			values.push_back(attribute);
 		}
@@ -234,13 +238,13 @@ protected:
 	std::vector<classType> m_values;
 };
 
-template AttributeEnum<int>;
+//template AttributeEnum<int>;
 typedef AttributeEnum<int> AttributeIntEnum;
 
-template AttributeEnum<float>;
+//template AttributeEnum<float>;
 typedef AttributeEnum<float> AttributeFloatEnum;
 
-template AttributeEnum<std::string>;
+//template AttributeEnum<std::string>;
 typedef AttributeEnum<std::string> AttributeStringEnum;
 typedef std::shared_ptr<AttributeStringEnum> SharedAttributeStringEnum;
 

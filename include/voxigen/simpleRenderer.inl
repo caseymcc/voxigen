@@ -164,7 +164,7 @@ std::string SimpleRenderer<_Grid>::fragmentOutlineShader=
 "";
 
 template<typename _Grid>
-SimpleRenderer<_Grid>::SimpleRenderer(_Grid *grid):
+SimpleRenderer<_Grid>::SimpleRenderer(GridType *grid):
 m_grid(grid),
 m_viewRadius(128.0f, 128.0f, 128.0f),
 m_viewLODDistance(90.0f),
@@ -191,7 +191,7 @@ m_renderCube(grid, &grid->getDescriptors(), &m_renderPrepThread)
                         0.0f, 0.0f, 1.0f, 0.0f,
                         0.0f, 0.0f, 0.0f, 1.0f);
 
-    _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
+    typename _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
 
 //    m_grid->setChunkUpdateCallback(std::bind(&SimpleRenderer<_Grid>::updateCallback, this, std::placeholders::_1));
 }
@@ -260,11 +260,24 @@ void SimpleRenderer<_Grid>::build()
     BOOL success=wglShareLists(currentContext, m_prepGlContext);
 
     assert(success);
+
+    m_renderPrepThread.start(m_prepDC, m_prepGlContext);
 #else
-    assert(false); //need os specific calls to create context for prepThread
+    m_prepDisplay=glXGetCurrentDisplay();
+    m_prepDrawable=glXGetCurrentDrawable();
+    GLXContext currentContext=glXGetCurrentContext();
+
+    int nelements;
+    GLXFBConfig *fbConfig=glXChooseFBConfig(m_prepDisplay, DefaultScreen(m_prepDisplay), 0, &nelements);
+
+    m_prepGlContext=glXCreateNewContext(m_prepDisplay, *fbConfig, GLX_RGBA_TYPE, currentContext, true);
+
+    assert(m_prepGlContext); //need os specific calls to create context for prepThread
+
+    m_renderPrepThread.start(m_prepDisplay, m_prepDrawable, m_prepGlContext);
 #endif
 //    startPrepThread();
-    m_renderPrepThread.start(m_prepDC, m_prepGlContext);
+    
 }
 
 template<typename _Grid>
@@ -537,7 +550,7 @@ void SimpleRenderer<_Grid>::updateChunkHandles()
     if(updatedChunks.empty())
         return;
     
-    RenderCubeType::ChunkRendererType *renderer;
+    typename RenderCubeType::ChunkRendererType *renderer;
 
     for(size_t i=0; i<updatedChunks.size(); ++i)
     {
@@ -570,7 +583,7 @@ void SimpleRenderer<_Grid>::updatePrepChunks()
 //        for(RenderPrepThreadType::Request *request:m_completedRequest)
         for(size_t i=0; i<m_completedRequest.size(); ++i)
         {
-            RenderPrepThreadType::Request *request=m_completedRequest[i];
+            typename RenderPrepThreadType::Request *request=m_completedRequest[i];
 
             switch(request->type)
             {
@@ -581,7 +594,7 @@ void SimpleRenderer<_Grid>::updatePrepChunks()
 //                processRemove((RenderPrepThreadType::RequestRemove *)request);
 //                break;
             case prep::Mesh:
-                processMesh((RenderPrepThreadType::RequestMesh *)request);
+                processMesh((typename RenderPrepThreadType::RequestMesh *)request);
                 break;
             }
             delete request;

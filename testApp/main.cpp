@@ -17,7 +17,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include <filesystem>
+//#include <filesystem>
 
 namespace fs=boost::filesystem;
 
@@ -48,7 +48,7 @@ typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
 namespace voxigen
 {
 //force generator instantiation
-template GeneratorTemplate<EquiRectWorldGenerator<World>>;
+template class GeneratorTemplate<EquiRectWorldGenerator<World>>;
 }
 voxigen::SimpleRenderer<World> *g_renderer;
 
@@ -120,8 +120,8 @@ int main(int argc, char ** argv)
     if(!glfwInit())
         return -1;
 
-    size_t width=1920;
-    size_t height=1080;
+    size_t width=640;
+    size_t height=480;
 
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -153,7 +153,7 @@ int main(int argc, char ** argv)
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouse_callback);
     
     glewInit();

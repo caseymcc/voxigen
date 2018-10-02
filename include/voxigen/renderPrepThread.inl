@@ -233,25 +233,24 @@ void RenderPrepThread<_Grid, _ChunkRenderer>::updateQueues(Requests &completedQu
 //    m_threadOwned_removedQueue.clear();
 //}
 
-#ifdef _WINDOWS
 template<typename _Grid, typename _ChunkRenderer>
+#ifdef _WINDOWS
 void RenderPrepThread<_Grid, _ChunkRenderer>::start(HDC dc, HGLRC glContext)
 {
     m_dc=dc;
     m_glContext=glContext;
-
+#else//_WINDOWS
+void RenderPrepThread<_Grid, _ChunkRenderer>::start(Display *display, GLXDrawable drawable, GLXContext glContext)
+{
+    m_display=display;
+    m_drawable=drawable;
+    m_glContext=glContext;
+#endif//_WINDOWS
     const std::vector<float> &outlineVertices=SimpleCube<ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value>::vertCoords;
-
-//    glGenBuffers(1, &m_outlineInstanceVertices);
-//    glBindBuffer(GL_ARRAY_BUFFER, m_outlineInstanceVertices);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*outlineVertices.size(), outlineVertices.data(), GL_STATIC_DRAW);
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     m_run=true;
     m_thread=std::thread(std::bind(&RenderPrepThread<_Grid, _ChunkRenderer>::processThread, this));
 }
-#else//_WINDOWS
-#endif//_WINDOWS
 
 template<typename _Grid, typename _ChunkRenderer>
 void RenderPrepThread<_Grid, _ChunkRenderer>::stop()
@@ -271,7 +270,7 @@ void RenderPrepThread<_Grid, _ChunkRenderer>::processThread()
 #ifdef _WINDOWS
     wglMakeCurrent(m_dc, m_glContext);
 #else
-    assert(false);
+    glXMakeCurrent(m_display, m_drawable, m_glContext);
 #endif
 
 #ifndef NDEBUG

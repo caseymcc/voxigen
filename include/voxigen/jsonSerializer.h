@@ -31,8 +31,8 @@ public:
 	void addString(const char *value);
 	void addInt(const int &value);
 	void addUInt(const unsigned int &value);
-	void addInt64(const __int64 &value);
-	void addUInt64(const unsigned __int64 &value);
+	void addInt64(const int64_t &value);
+	void addUInt64(const uint64_t &value);
 	void addFloat(const float &value);
 	void addDouble(const double &value);
 
@@ -69,8 +69,8 @@ public:
     const char *getString();
 	int getInt();
 	unsigned int getUInt();
-	__int64 getInt64();
-	unsigned __int64 getUInt64();
+	int64_t getInt64();
+	uint64_t getUInt64();
 	float getFloat();
 	double getDouble();
 

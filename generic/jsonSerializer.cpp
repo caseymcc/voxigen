@@ -1,4 +1,4 @@
-#include "generic/JsonSerializer.h"
+#include "generic/jsonSerializer.h"
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/filereadstream.h"
@@ -107,12 +107,12 @@ void JsonSerializer::addUInt(const unsigned int &value)
     m_hidden->writer->Uint(value);
 }
 
-void JsonSerializer::addInt64(const __int64 &value)
+void JsonSerializer::addInt64(const int64_t &value)
 {
     m_hidden->writer->Int64(value);
 }
 
-void JsonSerializer::addUInt64(const unsigned __int64 &value)
+void JsonSerializer::addUInt64(const uint64_t &value)
 {
     m_hidden->writer->Uint64(value);
 }
@@ -452,13 +452,13 @@ unsigned int JsonDeserializer::getUInt()
     return 0;
 }
 
-__int64 JsonDeserializer::getInt64()
+int64_t JsonDeserializer::getInt64()
 {
     if(m_hidden->iteratorValid)
         return m_hidden->currentIterator->value.GetInt64();
     else if(m_hidden->valueIteratorValid)
     {
-        __int64 value=m_hidden->currentValueIterator->GetInt64();
+        int64_t value=m_hidden->currentValueIterator->GetInt64();
 
         advanceValueIterator();
         return value;
@@ -466,13 +466,13 @@ __int64 JsonDeserializer::getInt64()
     return -1;
 }
 
-unsigned __int64 JsonDeserializer::getUInt64()
+uint64_t JsonDeserializer::getUInt64()
 {
     if(m_hidden->iteratorValid)
         return m_hidden->currentIterator->value.GetUint64();
     else if(m_hidden->valueIteratorValid)
     {
-        unsigned __int64 value=m_hidden->currentValueIterator->GetUint64();
+        uint64_t value=m_hidden->currentValueIterator->GetUint64();
 
         advanceValueIterator();
         return value;

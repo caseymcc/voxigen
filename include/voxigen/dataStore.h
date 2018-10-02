@@ -6,7 +6,7 @@
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/generator.h"
 #include "voxigen/jsonSerializer.h"
-#include "voxigen/simpleFileSystem.h"
+#include "voxigen/simpleFilesystem.h"
 #include "voxigen/processQueue.h"
 
 #include <thread>
@@ -45,10 +45,13 @@ struct IORequest
 template<typename _Chunk>
 struct IOReadRequest:public IORequest<_Chunk>
 {
+    typedef typename IORequest<_Chunk>::ChunkType ChunkType;
+    typedef typename IORequest<_Chunk>::ChunkHandleType ChunkHandleType;
+    typedef typename IORequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
     typedef std::weak_ptr<ChunkHandleType> WeakChunkHandleType;
 
-    IOReadRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Read, 500), chunkHandle(chunkHandle) {}
-    IOReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Read, priority), chunkHandle(chunkHandle) {}
+    IOReadRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(IORequest<_Chunk>::Type::Read, 500), chunkHandle(chunkHandle) {}
+    IOReadRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(IORequest<_Chunk>::Type::Read, priority), chunkHandle(chunkHandle) {}
 
     WeakChunkHandleType chunkHandle;
 };
@@ -56,8 +59,12 @@ struct IOReadRequest:public IORequest<_Chunk>
 template<typename _Chunk>
 struct IOWriteRequest:public IORequest<_Chunk>
 {
-    IOWriteRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Write, 1000), chunkHandle(chunkHandle) {}
-    IOWriteRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(Type::Write, priority), chunkHandle(chunkHandle) {}
+    typedef typename IORequest<_Chunk>::ChunkType ChunkType;
+    typedef typename IORequest<_Chunk>::ChunkHandleType ChunkHandleType;
+    typedef typename IORequest<_Chunk>::SharedChunkHandleType SharedChunkHandleType;
+
+    IOWriteRequest(SharedChunkHandleType chunkHandle):IORequest<_Chunk>(IORequest<_Chunk>::Type::Write, 1000), chunkHandle(chunkHandle) {}
+    IOWriteRequest(unsigned int priority, SharedChunkHandleType chunkHandle):IORequest<_Chunk>(IORequest<_Chunk>::Type::Write, priority), chunkHandle(chunkHandle) {}
 
     SharedChunkHandleType chunkHandle;
 };
@@ -66,12 +73,16 @@ template<typename _Grid>
 class DataStore:public DataHandler<RegionHash, RegionHandle<_Grid>, typename _Grid::RegionType>
 {
 public:
+//DataHandler typdefs
+    typedef DataHandler<RegionHash, RegionHandle<_Grid>, typename _Grid::RegionType> DataHandlerType;
+    typedef typename DataHandlerType::HashType HashType;
+    typedef typename DataHandlerType::DataHandle DataHandle;
+    typedef typename DataHandlerType::SharedDataHandle SharedDataHandle;
+    typedef typename DataHandlerType::SharedDataHandleMap SharedDataHandleMap;
+
     typedef typename _Grid::RegionType RegionType;
     typedef RegionHandle<_Grid> RegionHandleType;
     typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
-//    typedef std::weak_ptr<RegionHandleType> WeakRegionHandle;
-//    typedef std::unordered_map<RegionHash, WeakRegionHandle> WeakRegionHandleMap;
-//    typedef std::unordered_map<RegionHash, SharedRegionHandle> RegionHandleMap;
 
     typedef typename _Grid::ChunkType ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunk;
@@ -244,7 +255,7 @@ void DataStore<_Grid>::loadConfig()
                         else
                             regionHandle->setEmpty(true);
 
-                        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, regionHandle));
+                        this->m_dataHandles.insert(typename SharedDataHandleMap::value_type(hash, regionHandle));
                     }
 
                     serializer.closeObject();
@@ -276,7 +287,7 @@ void DataStore<_Grid>::saveConfigTo(std::string configFile)
 
     serializer.addKey("regions");
     serializer.startArray();
-    for(auto &handle:m_dataHandles)
+    for(auto &handle:this->m_dataHandles)
     {
         if(handle.second->empty())
         {
@@ -395,7 +406,7 @@ void DataStore<_Grid>::loadDataStore()
         handle->setCachedOnDisk(true);
         handle->setEmpty(false);
 
-        m_dataHandles.insert(SharedDataHandleMap::value_type(hash, handle));
+        this->m_dataHandles.insert(typename SharedDataHandleMap::value_type(hash, handle));
     }
 }
 
@@ -408,7 +419,7 @@ void DataStore<_Grid>::verifyDirectory()
 template<typename _Grid>
 typename DataStore<_Grid>::SharedRegionHandle DataStore<_Grid>::getRegion(RegionHash hash)
 {
-    SharedRegionHandle regionHandle=getDataHandle(hash);
+    SharedRegionHandle regionHandle=this->getDataHandle(hash);
 
     if(regionHandle->getStatus()!=RegionHandleType::Loaded)
     {

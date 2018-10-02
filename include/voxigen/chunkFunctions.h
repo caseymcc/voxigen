@@ -4,6 +4,7 @@
 #include "voxigen/voxigen_export.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtx/component_wise.hpp>
 #include <vector>
 #include <functional>
 

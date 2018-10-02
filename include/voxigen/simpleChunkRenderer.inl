@@ -1,5 +1,3 @@
-#include "voxigen/chunkVolume.h"
-
 namespace voxigen
 {
 
@@ -166,6 +164,18 @@ void SimpleChunkRenderer<_Parent, _Chunk>::buildMesh()
 }
 
 template<typename _Parent, typename _Chunk>
+MeshBuffer SimpleChunkRenderer<_Parent, _Chunk>::clearMesh()
+{
+    MeshBuffer previousMesh;
+
+    //release old mesh
+    if(m_meshBuffer.valid)
+        previousMesh=m_meshBuffer;
+
+    return previousMesh;
+}
+
+template<typename _Parent, typename _Chunk>
 MeshBuffer SimpleChunkRenderer<_Parent, _Chunk>::setMesh(MeshBuffer &mesh)
 {
     MeshBuffer previousMesh;
@@ -286,42 +296,43 @@ bool SimpleChunkRenderer<_Parent, _Chunk>::update()
 //    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
 //    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh.getNoOfIndices()*sizeof(typename MeshType::IndexType), m_mesh.getRawIndexData(), GL_STATIC_DRAW);
 //    assert(glGetError()==GL_NO_ERROR);
-
-    //chunk is invalid
-    if(!m_chunkHandle->chunk())
-        return copyStarted;
-
-    m_mesh.setTextureAtlas(m_textureAtlas);
-    buildCubicMesh(m_mesh, m_chunkHandle->chunk());
-
-    auto &verticies=m_mesh.getVerticies();
-    std::vector<int> &indices=m_mesh.getIndices();
-
-    if(!indices.empty())
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-        glBufferData(GL_ARRAY_BUFFER, verticies.size()*sizeof(ChunkMeshVertex), verticies.data(), GL_STATIC_DRAW);
-        assert(glGetError()==GL_NO_ERROR);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-        assert(glGetError()==GL_NO_ERROR);
-
-        m_vertexBufferSync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        copyStarted=true;
-    }
-    else
-        copyStarted=false;
-    //m_validBlocks=m_mesh.getNoOfIndices();
-    m_validBlocks=indices.size();
-
-
-//    //we have mesh lets drop the data
-//    m_chunkHandle->release();
-
-    //m_state=Built;
-//    m_state=Copy;
-    return copyStarted;
+//
+//    //chunk is invalid
+//    if(!m_chunkHandle->chunk())
+//        return copyStarted;
+//
+//    m_mesh.setTextureAtlas(m_textureAtlas);
+//    buildCubicMesh(m_mesh, m_chunkHandle->chunk());
+//
+//    auto &verticies=m_mesh.getVerticies();
+//    std::vector<int> &indices=m_mesh.getIndices();
+//
+//    if(!indices.empty())
+//    {
+//        glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+//        glBufferData(GL_ARRAY_BUFFER, verticies.size()*sizeof(ChunkMeshVertex), verticies.data(), GL_STATIC_DRAW);
+//        assert(glGetError()==GL_NO_ERROR);
+//
+//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+//        assert(glGetError()==GL_NO_ERROR);
+//
+//        m_vertexBufferSync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+//        copyStarted=true;
+//    }
+//    else
+//        copyStarted=false;
+//    //m_validBlocks=m_mesh.getNoOfIndices();
+//    m_validBlocks=indices.size();
+//
+//
+////    //we have mesh lets drop the data
+////    m_chunkHandle->release();
+//
+//    //m_state=Built;
+////    m_state=Copy;
+//    return copyStarted;
+    return false;
 }
 
 template<typename _Parent, typename _Chunk>

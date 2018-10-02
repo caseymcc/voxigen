@@ -198,7 +198,7 @@ typename ChunkSampler<_ChunkVolume>::VoxelType ChunkSampler<_ChunkVolume>::peekV
 template<typename _ChunkVolume>
 typename ChunkSampler<_ChunkVolume>::VoxelType ChunkSampler<_ChunkVolume>::peekVoxel0px1py0pz(void) const
 {
-    return peek0<0, 1, 0>();
+    return peek<0, 1, 0>();
 }
 
 template<typename _ChunkVolume>

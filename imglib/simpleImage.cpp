@@ -1,6 +1,7 @@
 #include "imglib/simpleImage.h"
 
 #include <algorithm>
+#include <cstring>
 
 namespace imglib
 {

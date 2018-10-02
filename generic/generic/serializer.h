@@ -26,8 +26,8 @@ public:
 	virtual void addString(const std::string &value)=0;
 	virtual void addInt(const int &value)=0;
 	virtual void addUInt(const unsigned int &value)=0;
-	virtual void addInt64(const __int64 &value)=0;
-	virtual void addUInt64(const unsigned __int64 &value)=0;
+	virtual void addInt64(const int64_t &value)=0;
+	virtual void addUInt64(const uint64_t &value)=0;
 	virtual void addFloat(const float &value)=0;
 	virtual void addDouble(const double &value)=0;
 };
@@ -55,8 +55,8 @@ public:
 	virtual std::string getString()=0;
 	virtual int getInt()=0;
 	virtual unsigned int getUInt()=0;
-	virtual __int64 getInt64()=0;
-	virtual unsigned __int64 getUInt64()=0;
+	virtual int64_t getInt64()=0;
+	virtual uint64_t getUInt64()=0;
 	virtual float getFloat()=0;
 	virtual double getDouble()=0;
 

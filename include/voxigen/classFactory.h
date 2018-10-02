@@ -42,7 +42,7 @@ public:
     
     std::shared_ptr<_BaseClass> create(std::string typeName)
     {
-        CreateFunctions::iterator iter=m_functionMap.find(typeName);
+        typename CreateFunctions::iterator iter=m_functionMap.find(typeName);
 
         std::shared_ptr<_BaseClass> classInstance;
 
@@ -55,7 +55,7 @@ public:
     {
         std::vector<std::string> names;
 
-        for(FactoryMethods::iterator iter=m_functionMap.begin(); iter!=m_functionMap.end(); ++iter)
+        for(typename CreateFunctions::iterator iter=m_functionMap.begin(); iter!=m_functionMap.end(); ++iter)
             names.push_back(iter->first);
         return names;
     }

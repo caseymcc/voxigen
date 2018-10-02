@@ -123,7 +123,7 @@ set(voxigen_headers
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
-    include/voxigen/simpleFileSystem.h
+    include/voxigen/simpleFilesystem.h
     include/voxigen/simpleRenderer.h
     include/voxigen/simpleShapes.h
 )
@@ -148,7 +148,7 @@ set(voxigen_sources
     src/rendering/simpleCamera.cpp
     src/utils/coords.cpp
     src/utils/jsonSerializer.cpp
-    src/utils/simpleFileSystem.cpp
+    src/utils/simpleFilesystem.cpp
 )
 
 
@@ -201,11 +201,19 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
+if(MSVC)
 add_library(voxigen SHARED
     ${voxigen_headers}
     ${voxigen_inline}
     ${voxigen_sources}
 )
+else()
+add_library(voxigen STATIC
+    ${voxigen_headers}
+    ${voxigen_inline}
+    ${voxigen_sources}
+)
+endif()
 
 source_group("Source Files" FILES ${voxigen_inline})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
@@ -228,3 +236,6 @@ set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config @ONLY)
 file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config)
+
+configure_file(testApp/run.in ${CMAKE_BINARY_DIR}/run.config @ONLY)
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/run_$<CONFIG>.sh INPUT ${CMAKE_BINARY_DIR}/run.config)

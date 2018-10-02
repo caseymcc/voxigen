@@ -3,6 +3,11 @@ project(fastNoise)
 #remove min and max macro declares from windows builds, causes issues with std::min/max
 add_definitions(-DNOMINMAX)
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-msse4.1")
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-msse4.1")
+endif() 
+
 set(fastNoise_sources
     FastNoiseSIMD.cpp
     FastNoiseSIMD_avx2.cpp

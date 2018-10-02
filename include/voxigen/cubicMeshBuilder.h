@@ -254,7 +254,7 @@ void addFace(_ChunkMesh &mesh, size_t face, const glm::ivec3 &position, unsigned
 template<typename _Chunk, typename _ChunkMesh, bool _XNegFace=true, bool _XPosFace=true, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
 void checkCell(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride)
 {
-    _Chunk::CellType &cell=cells[index];
+    typename _Chunk::CellType &cell=cells[index];
 
     if(empty(cell))
         return;
@@ -391,7 +391,7 @@ void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
 //        mesh.scratch[i]=requiredScratchSize;
 ////    memset((void *)mesh.scratch, 0, requiredScratchSize*sizeof(unsigned int));
 
-    _Chunk::Cells &cells=chunk->getCells();
+    typename _Chunk::Cells &cells=chunk->getCells();
     glm::ivec3 position(0, 0, 0);
 
     size_t index=0;

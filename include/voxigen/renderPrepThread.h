@@ -11,6 +11,8 @@
 
 #ifdef _WINDOWS
 #include "windows.h"
+#else
+#include <GL/glx.h>
 #endif
 
 namespace voxigen
@@ -83,9 +85,15 @@ struct RequestReleaseMesh:public Request
 //RenderPrepThread
 /////////////////////////////////////////////////////////////////////////////////////////
 template<typename _Grid, typename _ChunkRenderer>
-class RenderPrepThread:public RegularGridTypes<_Grid>
+class RenderPrepThread//:public RegularGridTypes<_Grid>
 {
 public:
+    typedef typename _Grid::GridType GridType;
+    typedef typename _Grid::DescriptorType DescriptorType;
+    typedef typename _Grid::ChunkType ChunkType;
+    typedef typename _Grid::ChunkHandleType ChunkHandleType;
+    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+
     typedef std::vector<SharedChunkHandle> SharedChunkHandles;
     typedef std::deque<SharedChunkHandle> SharedChunkHandleQueue;
 
@@ -124,6 +132,7 @@ public:
 #ifdef _WINDOWS
     void start(HDC dc, HGLRC glContext);
 #else
+    void start(Display *display, GLXDrawable drawable, GLXContext glContext);
 #endif
     //stop only happens when there is no work todo
     void stop();
@@ -142,6 +151,10 @@ private:
     HDC m_dc;
     HGLRC m_glContext;
 #else
+    Display *m_display;
+    GLXDrawable m_drawable;
+    GLXContext m_glContext;
+
 #endif
     unsigned int m_outlineInstanceVertices;
 

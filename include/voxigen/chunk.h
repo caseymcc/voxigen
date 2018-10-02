@@ -90,7 +90,7 @@ _Cell &Chunk<_Cell, _x, _y, _z>::getCell(const glm::vec3 &position)
     size_t x=_x/lod;
     size_t y=_y/lod;
 
-    glm::ivec3 cellPos=glm::floor(position)/glm::ivec3(lod);
+    glm::ivec3 cellPos=glm::ivec3(glm::floor(position))/glm::ivec3(lod);
     unsigned int index=(x*y)*cellPos.z+x*cellPos.y+cellPos.x;
 
     assert(index>=0);
