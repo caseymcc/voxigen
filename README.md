@@ -1,6 +1,6 @@
 [![discord](https://img.shields.io/discord/495955797872869376.svg?logo=discord "Discord")](https://discord.gg/BfceAsX)
 
-# voxigen
+# ![logo](https://github.com/caseymcc/voxigen/raw/master/resources/voxigen_64_tr.png) voxigen
 Voxel handling library, generating/loading/saving/meshing/memory managment. Video of current version - https://youtu.be/urhNRiDqqWE
 
 ![screenshot](https://github.com/caseymcc/voxigen/raw/master/resources/screenshot1.png)
