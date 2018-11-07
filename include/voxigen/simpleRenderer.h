@@ -8,10 +8,12 @@
 #include "voxigen/regularGrid.h"
 #include "voxigen/simpleCamera.h"
 #include "voxigen/simpleChunkRenderer.h"
+#include "voxigen/simpleRegionRenderer.h"
 #include "voxigen/simpleShapes.h"
 #include "voxigen/object.h"
 #include "voxigen/renderPrepThread.h"
 #include "voxigen/renderCube.h"
+#include "voxigen/gltext.h"
 
 #include <string>
 #include <algorithm>
@@ -20,7 +22,7 @@
 #include <opengl_util/program.h>
 #include <deque>
 
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
 #include "windows.h"
 #else
 #include <GL/glx.h>
@@ -29,20 +31,20 @@
 namespace voxigen
 {
 
-template<typename _ChunkRenderer>
-struct RegionRenderer
-{
-    typedef std::unordered_map<ChunkHash, _ChunkRenderer *> ChunkRendererMap;
-
-    RegionRenderer() {}
-    RegionRenderer(RegionHash hash, const glm::ivec3 &index, const glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
-//    RegionRenderer(RegionRenderer<_ChunkRenderer> &renderer):hash(renderer.hash), offset(renderer.offset) {}
-
-    RegionHash hash;
-    glm::ivec3 index;
-    glm::vec3 offset;
-    ChunkRendererMap chunkRenderers;
-};
+//template<typename _ChunkRenderer>
+//struct RegionRenderer
+//{
+//    typedef std::unordered_map<ChunkHash, _ChunkRenderer *> ChunkRendererMap;
+//
+//    RegionRenderer() {}
+//    RegionRenderer(RegionHash hash, const glm::ivec3 &index, const glm::vec3 &offset):hash(hash), index(index), offset(offset) {}
+////    RegionRenderer(RegionRenderer<_ChunkRenderer> &renderer):hash(renderer.hash), offset(renderer.offset) {}
+//
+//    RegionHash hash;
+//    glm::ivec3 index;
+//    glm::vec3 offset;
+//    ChunkRendererMap chunkRenderers;
+//};
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -54,22 +56,27 @@ class SimpleRenderer//:public RegularGridTypes<_Grid>
 public:
     typedef typename _Grid::GridType GridType;
     typedef typename _Grid::DescriptorType DescriptorType;
+    typedef typename _Grid::RegionType Region;
+    typedef typename _Grid::RegionHandleType RegionHandle;
     typedef typename _Grid::ChunkType ChunkType;
     typedef typename _Grid::ChunkHandleType ChunkHandleType;
     typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
 
-    typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRenderType;
-    typedef SimpleChunkRenderer<SimpleRenderer, typename _Grid::ChunkType> ChunkRendererType;
+    typedef SimpleChunkRenderer<Region, typename _Grid::ChunkType> ChunkRenderType;
+    typedef SimpleChunkRenderer<Region, typename _Grid::ChunkType> ChunkRendererType;
     typedef std::unique_ptr<ChunkRenderType> UniqueChunkRenderer;
 
-    typedef RegionRenderer<ChunkRenderType> RegionRendererType;
-    typedef typename RegionRendererType::ChunkRendererMap ChunkRendererMap;
-    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
+    typedef RegionRenderer<RegionHandle> RegionRendererType;
+//    typedef typename RegionRendererType::ChunkRendererMap ChunkRendererMap;
+//    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
 
-    typedef RenderPrepThread<_Grid, ChunkRenderType> RenderPrepThreadType;
+    typedef RegionChunkIndex<typename _Grid::RegionType, typename _Grid::ChunkType> RegionChunkIndexType;
+    typedef RenderCube<GridType, ChunkRendererType, RegionChunkIndexType> RenderCubeType;
+    typedef RegionIndex<typename _Grid::RegionType> RegionIndexType;
+    typedef RenderCube<GridType, RegionRendererType, RegionIndexType> RegionRenderCubeType;
 
-    typedef RenderCube<GridType, ChunkRendererType> RenderCubeType;
-    typedef RenderCube<GridType, RegionRendererType> RegionRenderCubeType;
+    typedef prep::RequestMesh<_Grid, ChunkRendererType> ChunkRequestMesh;
+    typedef prep::RequestMesh<_Grid, RegionRendererType> RegionRequestMesh;
 
     SimpleRenderer(GridType *grid);
     ~SimpleRenderer();
@@ -104,18 +111,32 @@ public:
 //    ChunkRenderType *createRenderNode(Key key);
 //
 //    bool updateCallback(SharedChunkHandle chunkHandle);
-    void displayOutline(bool display) { m_displayOutline=display; }
+    void showRegions(bool show) { m_showRegions=show;  m_forceUpdate=true; };
+    void showChunks(bool show) { m_showChunks=show;  m_forceUpdate=true; };
+    void displayOutline(bool display) { m_displayOutline=display; m_forceUpdate=true; }
     bool isDisplayOutline() { return m_displayOutline; }
+
+    void displayInfo(bool display)
+    {
+        if(m_displayOutline)
+        {
+            m_displayInfo=display;
+            m_forceUpdate=true;
+        }
+    }
+    bool isDisplayInfo() { return m_displayInfo; }
 
 private:
     void updateChunkHandles();
     void updatePrepChunks();
 
-//    void processAdd(typename RenderPrepThreadType::RequestAdd *request);
-//    void processRemove(typename RenderPrepThreadType::RequestRemove *request);
-    void processMesh(typename RenderPrepThreadType::RequestMesh *request);
+//    void processAdd(typename RenderPrepThread::RequestAdd *request);
+//    void processRemove(typename RenderPrepThread::RequestRemove *request);
+    void processMesh(typename RenderPrepThread::Request *request);
+    void processChunkMesh(ChunkRequestMesh *request);
+    void processRegionMesh(RegionRequestMesh *request);
 
-    RenderPrepThreadType m_renderPrepThread;
+    RenderPrepThread m_renderPrepThread;
 //    void rendererUpdateChunks();
 //    void prepUpdateChunks(std::vector<ChunkRendererType *> &addRenderers, std::vector<ChunkRendererType *> &updateRenderers, std::vector<ChunkRendererType *> &removeRenderers);
 //    void updateOcclusionQueries();
@@ -138,11 +159,12 @@ private:
     SimpleFpsCamera *m_camera;
     Object m_playerPos;
     glm::vec3 m_lastUpdatePosition;
-    glm::ivec3 m_playerRegionIndex;
-    glm::ivec3 m_playerChunkIndex;
+//    glm::ivec3 m_playerRegionIndex;
+//    glm::ivec3 m_playerChunkIndex;
+    RegionChunkIndexType m_playerIndex;
 
     RenderCubeType m_renderCube;
-//    RegionRenderCubeType m_regionRenderCube;
+    RegionRenderCubeType m_regionRenderCube;
 
     GLuint m_textureAtlasId;
     SharedTextureAtlas m_textureAtlas;
@@ -160,7 +182,11 @@ private:
     std::vector<ChunkRenderType *> m_updatedChunkRenderers;
     std::vector<ChunkRenderType *> m_removedChunkRenderers;
 
+    bool m_forceUpdate;
+    bool m_showRegions;
+    bool m_showChunks;
     bool m_displayOutline;
+    bool m_displayInfo;
 
     GridType *m_grid;
 
@@ -181,7 +207,7 @@ private:
     std::vector<ChunkRenderType *> m_addChunkRenderer;
     std::vector<ChunkRenderType *> m_removeChunkRenderer;
 
-    RegionRendererMap m_regionRenderers;
+//    RegionRendererMap m_regionRenderers;
 //    std::vector<ChunkRenderType *> m_freeChunkRenderers; //renderers available for re-use
 
     //    RegionRendererMap m_rendererMap;
@@ -209,7 +235,7 @@ private:
     unsigned int m_instanceTexCoords;
 
     //render prep thread/queue
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
     HDC m_prepDC;
     HGLRC m_prepGlContext;
 #else
@@ -217,6 +243,8 @@ private:
     GLXDrawable m_prepDrawable;
     GLXContext m_prepGlContext;
 #endif
+
+    GLTtext *m_cameraInfo;
 //    std::mutex m_prepMutex;
 //    std::thread m_prepThread;
 //    

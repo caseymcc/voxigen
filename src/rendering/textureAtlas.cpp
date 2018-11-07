@@ -325,7 +325,7 @@ bool TextureAtlas::build(const std::vector<std::string> &blocks, const TexturePa
     return false;
 }
 
-const TextureAtlas::BlockEntry &TextureAtlas::getBlockEntry(size_t index)
+const TextureAtlas::BlockEntry &TextureAtlas::getBlockEntry(size_t index) const
 {
     assert(index<m_blockEntries.size());
 

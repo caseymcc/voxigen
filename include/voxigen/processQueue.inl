@@ -46,6 +46,23 @@ void ProcessQueue<_Grid>::updatePosition(const glm::ivec3 &region, const glm::iv
 }
 
 template<typename _Grid>
+void ProcessQueue<_Grid>::addGenerateRegion(SharedRegionHandle handle, size_t lod)
+{
+    std::shared_ptr<GenerateRegionRequestType> request=std::make_shared<GenerateRegionRequestType>(handle, lod);
+
+#ifdef LOG_PROCESS_QUEUE
+    if(handle)
+    {
+        glm::ivec3 regionIndex=handle->regionIndex();
+
+        LOG(INFO)<<"Adding generate region ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<")";
+    }
+#endif
+    checkInputThread();
+    m_cacheQueue.push_back(request);
+}
+
+template<typename _Grid>
 void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle, size_t lod)
 {
     std::shared_ptr<GenerateRequestType> request=std::make_shared<GenerateRequestType>(chunkHandle, lod);
@@ -104,7 +121,7 @@ void ProcessQueue<_Grid>::addCancel(SharedChunkHandle chunkHandle)
 template<typename _Grid>
 void ProcessQueue<_Grid>::addRelease(SharedChunkHandle chunkHandle)
 {
-    chunkHandle->setAction(ChunkAction::Releasing);
+    chunkHandle->setAction(HandleAction::Releasing);
     std::shared_ptr<ReleaseRequestType> request=std::make_shared<ReleaseRequestType>(chunkHandle);
 
     checkInputThread();
@@ -168,7 +185,7 @@ void ProcessQueue<_Grid>::wait(std::unique_lock<std::mutex> &lock)
 
 template<typename _Grid>
 //typename ProcessQueue<_Grid>::SharedChunkHandle ProcessQueue<_Grid>::getNextProcessRequest(std::unique_lock<std::mutex> &lock, Process::Type &type, size_t &data)
-typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessRequest(SharedChunkHandle &chunkHandle, size_t &data)
+typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessRequest()
 {
     SharedRequest request;
     RequestQueue cancelRequests;
@@ -198,54 +215,58 @@ typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessR
         {
         case Process::Type::UpdateQueue:
             {
+                UpdateQueueRequest *updateRequest=dynamic_cast<UpdateQueueRequest *>(request.get());
+
                 //position changed so update queue priority
-                ProcessCompare<ChunkType>::currentRegion=request->regionIndex;
-                ProcessCompare<ChunkType>::currentChunk=request->chunkIndex;
+                ProcessCompare<ChunkType>::currentRegion=updateRequest->regionIndex;
+                ProcessCompare<ChunkType>::currentChunk=updateRequest->chunkIndex;
 
 #ifdef LOG_PROCESS_QUEUE
-                LOG(INFO)<<"Updating queue pos ("<<request->regionIndex.x<<", "<<request->regionIndex.y<<", "<<request->regionIndex.z<<"  "<<request->chunkIndex.x<<", "<<request->chunkIndex.y<<", "<<request->chunkIndex.z<<")";
+                LOG(INFO)<<"Updating queue pos ("<<updateRequest->regionIndex.x<<", "<<updateRequest->regionIndex.y<<", "<<updateRequest->regionIndex.z<<"  "<<updateRequest->chunkIndex.x<<", "<<updateRequest->chunkIndex.y<<", "<<updateRequest->chunkIndex.z<<")";
 //                LOG(INFO)<<"Setting chunk pos ("<<request->regionIndex.x<<", "<<request->regionIndex.y<<", "<<request->regionIndex.z<<"  "<<request->chunkIndex.x<<", "<<request->chunkIndex.y<<", "<<request->chunkIndex.z<<")";
 #endif//LOG_PROCESS_QUEUE
                 std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
-            }
-            break;
-        case Process::Type::Generate:
-            {
-                GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
 
-                chunkHandle=generateRequest->chunkHandle.lock();
-                data=generateRequest->lod;
+                continue;
             }
             break;
-        case Process::Type::Read:
-            {
-                ReadRequest<ChunkType> *readRequest=(ReadRequest<ChunkType> *)request.get();
-
-                chunkHandle=readRequest->chunkHandle.lock();
-                data=readRequest->lod;
-            }
-            break;
-        case Process::Type::Write:
-            {
-                WriteRequest<ChunkType> *writeRequest=(WriteRequest<ChunkType> *)request.get();
-
-                chunkHandle=writeRequest->chunkHandle;
-            }
-            break;
-        case Process::Type::Update:
-            {
-                UpdateRequestType *updateRequest=(UpdateRequestType *)request.get();
-
-                chunkHandle=updateRequest->chunkHandle.lock();
-            }
-            break;
-        case Process::Type::Release:
-            {
-                ReleaseRequestType *releaseRequest=(ReleaseRequestType *)request.get();
-
-                chunkHandle=releaseRequest->chunkHandle.lock();
-            }
-            break;
+//        case Process::Type::Generate:
+//            {
+//                GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
+//
+//                chunkHandle=generateRequest->chunkHandle.lock();
+//                data=generateRequest->lod;
+//            }
+//            break;
+//        case Process::Type::Read:
+//            {
+//                ReadRequest<ChunkType> *readRequest=(ReadRequest<ChunkType> *)request.get();
+//
+//                chunkHandle=readRequest->chunkHandle.lock();
+//                data=readRequest->lod;
+//            }
+//            break;
+//        case Process::Type::Write:
+//            {
+//                WriteRequest<ChunkType> *writeRequest=(WriteRequest<ChunkType> *)request.get();
+//
+//                chunkHandle=writeRequest->chunkHandle;
+//            }
+//            break;
+//        case Process::Type::Update:
+//            {
+//                UpdateRequestType *updateRequest=(UpdateRequestType *)request.get();
+//
+//                chunkHandle=updateRequest->chunkHandle.lock();
+//            }
+//            break;
+//        case Process::Type::Release:
+//            {
+//                ReleaseRequestType *releaseRequest=(ReleaseRequestType *)request.get();
+//
+//                chunkHandle=releaseRequest->chunkHandle.lock();
+//            }
+//            break;
         }
 
         break;
@@ -296,14 +317,14 @@ void ProcessQueue<_Grid>::removeRequests(RequestQueue &cancelRequests)
             break;
         case Process::Type::Generate:
             {
-                GenerateRequest<ChunkType> *generateRequest=(GenerateRequest<ChunkType> *)request.get();
+            GenerateRequestType *generateRequest=(GenerateRequestType *)request.get();
 
                 requestChunkHandle=generateRequest->chunkHandle.lock();
             }
             break;
         case Process::Type::Read:
             {
-                ReadRequest<ChunkType> *readRequest=(ReadRequest<ChunkType> *)request.get();
+                ReadRequestType *readRequest=(ReadRequestType *)request.get();
 
                 requestChunkHandle=readRequest->chunkHandle.lock();
             }
@@ -355,7 +376,7 @@ void ProcessQueue<_Grid>::removeRequests(RequestQueue &cancelRequests)
 
             if(!request)
             {
-                while(!m_priorityQueue.back() && (i+1<m_priorityQueue.size()))
+                while((i+1<m_priorityQueue.size()) && !m_priorityQueue.back())
                     m_priorityQueue.pop_back();
 
                 m_priorityQueue[i]=m_priorityQueue.back();
@@ -363,7 +384,7 @@ void ProcessQueue<_Grid>::removeRequests(RequestQueue &cancelRequests)
             }
         }
 
-        while(!m_priorityQueue.back())
+        while(!m_priorityQueue.empty() && !m_priorityQueue.back())
             m_priorityQueue.pop_back();
 
         std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());

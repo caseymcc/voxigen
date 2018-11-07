@@ -21,6 +21,7 @@
 namespace voxigen
 {
 
+
 template<typename _Chunk>
 struct IORequest
 {
@@ -70,18 +71,18 @@ struct IOWriteRequest:public IORequest<_Chunk>
 };
 
 template<typename _Grid>
-class DataStore:public DataHandler<RegionHash, RegionHandle<_Grid>, typename _Grid::RegionType>
+class DataStore:public DataHandler<RegionHash, RegionHandle<typename _Grid::RegionType>, typename _Grid::RegionType>
 {
 public:
 //DataHandler typdefs
-    typedef DataHandler<RegionHash, RegionHandle<_Grid>, typename _Grid::RegionType> DataHandlerType;
+    typedef DataHandler<RegionHash, RegionHandle<typename _Grid::RegionType>, typename _Grid::RegionType> DataHandlerType;
     typedef typename DataHandlerType::HashType HashType;
     typedef typename DataHandlerType::DataHandle DataHandle;
     typedef typename DataHandlerType::SharedDataHandle SharedDataHandle;
     typedef typename DataHandlerType::SharedDataHandleMap SharedDataHandleMap;
 
     typedef typename _Grid::RegionType RegionType;
-    typedef RegionHandle<_Grid> RegionHandleType;
+    typedef RegionHandle<RegionType> RegionHandleType;
     typedef std::shared_ptr<RegionHandleType> SharedRegionHandle;
 
     typedef typename _Grid::ChunkType ChunkType;
@@ -107,6 +108,9 @@ public:
     void generatorThread();
 
     SharedRegionHandle getRegion(RegionHash regionHash);
+    void loadRegion(SharedRegionHandle handle, size_t lod, bool force);
+    void cancelLoadRegion(SharedRegionHandle handle);
+
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
 
     void loadChunk(SharedChunkHandle handle, size_t lod, bool force=false);
@@ -115,6 +119,8 @@ public:
 
     void addUpdated(Key hash);
     std::vector<Key> getUpdated();
+
+    void generateRegion(SharedRegionHandle handle, size_t lod);
 
     void generate(SharedChunkHandle chunkHandle, size_t lod);
     void read(SharedChunkHandle chunkHandle, size_t lod);
@@ -196,7 +202,8 @@ void DataStore<_Grid>::terminate()
 template<typename _Grid>
 typename DataStore<_Grid>::DataHandle *DataStore<_Grid>::newHandle(HashType hash)
 {
-    return new RegionHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
+//    return new RegionHandleType(hash, m_descriptors, m_generatorQueue, this, m_updateQueue);
+    return new RegionHandleType(hash, m_descriptors, m_updateQueue);
 }
 
 template<typename _Grid>
@@ -421,16 +428,41 @@ typename DataStore<_Grid>::SharedRegionHandle DataStore<_Grid>::getRegion(Region
 {
     SharedRegionHandle regionHandle=this->getDataHandle(hash);
 
-    if(regionHandle->getStatus()!=RegionHandleType::Loaded)
-    {
-        std::ostringstream directoryName;
-
-        directoryName<<std::hex<<hash;
-        std::string directory=m_directory+"/"+directoryName.str();
-
-        regionHandle->load(directory);
-    }
+//    if(regionHandle->state()!=HandleState::Memory)
+//    {
+//        std::ostringstream directoryName;
+//
+//        directoryName<<std::hex<<hash;
+//        std::string directory=m_directory+"/"+directoryName.str();
+//
+//        regionHandle->load(directory);
+//    }
     return regionHandle;
+}
+
+template<typename _Grid>
+void DataStore<_Grid>::loadRegion(SharedRegionHandle handle, size_t lod, bool force)
+{
+    if(force||(handle->state()!=HandleState::Memory))
+    {
+        //an action is in process lets not start something else as well
+        if(handle->action()!=HandleAction::Idle)
+            return;
+
+        if(!handle->empty())
+        {
+            generateRegion(handle, lod);
+        }
+    }
+}
+
+template<typename _Grid>
+void DataStore<_Grid>::cancelLoadRegion(SharedRegionHandle handle)
+{
+    if(handle->action()==HandleAction::Idle)
+        return;
+
+//    cancelRegion(handle);
 }
 
 template<typename _Grid>
@@ -440,15 +472,35 @@ typename DataStore<_Grid>::SharedChunkHandle DataStore<_Grid>::getChunk(RegionHa
 }
 
 template<typename _Grid>
-void DataStore<_Grid>::loadChunk(SharedChunkHandle handle, size_t lod, bool force)
+void DataStore<_Grid>::loadChunk(SharedChunkHandle chunkHandle, size_t lod, bool force)
 {
-    return getRegion(handle->regionHash())->loadChunk(handle, lod, force);
+//    return getRegion(handle->regionHash())->loadChunk(handle, lod, force);
+    if(force||(chunkHandle->state()!=HandleState::Memory))
+    {
+        //an action is in process lets not start something else as well
+        if(chunkHandle->action()!=HandleAction::Idle)
+            return;
+
+        if(!chunkHandle->empty())
+        {
+            //we dont have it in memory so we need to load or generate it
+            if(!chunkHandle->cachedOnDisk())
+                generate(chunkHandle, lod);
+            else
+                read(chunkHandle, lod);
+        }
+    }
 }
 
 template<typename _Grid>
-void DataStore<_Grid>::cancelLoadChunk(SharedChunkHandle handle)
+void DataStore<_Grid>::cancelLoadChunk(SharedChunkHandle chunkHandle)
 {
-    return getRegion(handle->regionHash())->cancelLoadChunk(handle);
+//    return getRegion(handle->regionHash())->cancelLoadChunk(handle);
+    //if we are not doing anything ignore
+    if(chunkHandle->action()==HandleAction::Idle)
+        return;
+
+    cancel(chunkHandle);
 }
 
 template<typename _Grid>
@@ -606,13 +658,24 @@ void DataStore<_Grid>::writeChunk(SharedChunkHandle chunkHandle)
 
 
 template<typename _Grid>
+void DataStore<_Grid>::generateRegion(SharedRegionHandle handle, size_t lod)
+{
+#ifdef LOG_PROCESS_QUEUE
+    LOG(INFO)<<"MainThread - RegionHandle "<<handle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generating";
+#endif//LOG_PROCESS_QUEUE
+
+    handle->setAction(HandleAction::Generating);
+    m_processQueue->addGenerateRegion(handle, lod);
+}
+
+template<typename _Grid>
 void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle, size_t lod)
 {
 #ifdef LOG_PROCESS_QUEUE
     LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generating";
 #endif//LOG_PROCESS_QUEUE
 
-    chunkHandle->setAction(ChunkAction::Generating);
+    chunkHandle->setAction(HandleAction::Generating);
     m_processQueue->addGenerate(chunkHandle, lod);
 }
 
@@ -622,7 +685,7 @@ void DataStore<_Grid>::read(SharedChunkHandle chunkHandle, size_t lod)
 #ifdef LOG_PROCESS_QUEUE
     LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") reading";
 #endif//LOG_PROCESS_QUEUE
-    chunkHandle->setAction(ChunkAction::Reading);
+    chunkHandle->setAction(HandleAction::Reading);
     m_processQueue->addRead(chunkHandle, lod);
 }
 
@@ -632,14 +695,14 @@ void DataStore<_Grid>::write(SharedChunkHandle chunkHandle)
 #ifdef LOG_PROCESS_QUEUE
     LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") writing";
 #endif//LOG_PROCESS_QUEUE
-    chunkHandle->setAction(ChunkAction::Writing);
+    chunkHandle->setAction(HandleAction::Writing);
     m_processQueue->addWrite(chunkHandle);
 }
 
 template<typename _Grid>
 void DataStore<_Grid>::empty(SharedChunkHandle chunkHandle)
 {
-//    chunkHandle->setAction(ChunkAction::Updating);
+//    chunkHandle->setAction(HandleAction::Updating);
 //    m_processQueue->addUpdate(chunkHandle);
 }
 

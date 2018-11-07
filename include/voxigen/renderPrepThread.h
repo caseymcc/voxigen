@@ -9,7 +9,7 @@
 #include <string>
 #include <deque>
 
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
 #include "windows.h"
 #else
 #include <GL/glx.h>
@@ -23,8 +23,6 @@ namespace prep
 
 enum Type
 {
-    Add,
-    Remove,
     Mesh,
     ReleaseMesh
 };
@@ -32,39 +30,23 @@ enum Type
 struct Request
 {
     Request(Type type):type(type) {}
+    virtual ~Request(){}
+
+    virtual void process()=0;
 
     Type type;
 };
 
-template<typename _ChunkHandle, typename _ChunkRenderer>
-struct RequestAdd:public Request
-{
-    RequestAdd(_ChunkHandle chunkHandle):Request(Add), chunkHandle(chunkHandle){}
-
-//input
-    _ChunkHandle chunkHandle;
-
-//output
-    _ChunkRenderer *renderer;
-};
-
-template<typename _ChunkRenderer>
-struct RequestRemove:public Request
-{
-    RequestRemove(_ChunkRenderer *renderer):Request(Remove), renderer(renderer){}
-
-//input
-    _ChunkRenderer *renderer;
-    
-};
-
-template<typename _ChunkRenderer>
+template<typename _Grid, typename _Renderer>
 struct RequestMesh:public Request
 {
-    RequestMesh(_ChunkRenderer *renderer, TextureAtlas *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
+    RequestMesh(_Renderer *renderer, TextureAtlas *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
+    virtual ~RequestMesh() {}
+
+    void process() override { assert(false); }
 
 //input
-    _ChunkRenderer *renderer;
+    _Renderer *renderer;
     TextureAtlas *textureAtlas;
 
 //output
@@ -74,6 +56,9 @@ struct RequestMesh:public Request
 struct RequestReleaseMesh:public Request
 {
     RequestReleaseMesh(MeshBuffer &mesh):Request(ReleaseMesh), mesh(mesh){}
+    virtual ~RequestReleaseMesh() {}
+
+    void process() override;
 
     //input
     MeshBuffer mesh;
@@ -84,52 +69,26 @@ struct RequestReleaseMesh:public Request
 /////////////////////////////////////////////////////////////////////////////////////////
 //RenderPrepThread
 /////////////////////////////////////////////////////////////////////////////////////////
-template<typename _Grid, typename _ChunkRenderer>
-class RenderPrepThread//:public RegularGridTypes<_Grid>
+class RenderPrepThread
 {
 public:
-    typedef typename _Grid::GridType GridType;
-    typedef typename _Grid::DescriptorType DescriptorType;
-    typedef typename _Grid::ChunkType ChunkType;
-    typedef typename _Grid::ChunkHandleType ChunkHandleType;
-    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
-
-    typedef std::vector<SharedChunkHandle> SharedChunkHandles;
-    typedef std::deque<SharedChunkHandle> SharedChunkHandleQueue;
-
-    typedef _ChunkRenderer ChunkRendererType;
-    typedef std::vector<ChunkRendererType *> ChunkRenderers;
-    typedef std::deque<ChunkRendererType *> ChunkRendererQueue;
-
-    typedef std::vector<prep::Request *> Requests;
-    typedef std::deque<prep::Request *> RequestQueue;
-
     typedef prep::Request Request;
-//    typedef prep::RequestAdd<SharedChunkHandle, _ChunkRenderer> RequestAdd;
-//    typedef prep::RequestRemove<_ChunkRenderer> RequestRemove;
-    typedef prep::RequestMesh<_ChunkRenderer> RequestMesh;
-    typedef prep::RequestReleaseMesh RequestReleaseMesh;
+    typedef std::vector<Request *> Requests;
+    typedef std::deque<Request *> RequestQueue;
 
     RenderPrepThread();
     ~RenderPrepThread();
 
     void requestSearchUpdate();
     void requestSearchUpdate(const SearchSettings &settings);
-//    void add(const ChunkRenderers &chunkRenderers);
-//    void requestRenderer(SharedChunkHandle &chunkHandle);
-//    void requestRemove(ChunkRendererType *chunkRenderer);
-    void requestMesh(ChunkRendererType *chunkRenderer, TextureAtlas *textureAtlas);
-    void requestReleaseMesh(MeshBuffer &mesh);
 
-//    bool hasUpdates(); //this reads a non mutex'd variable so it is undefined behavior
-//    void getUpdates(ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed);
-//    void getAdded(const ChunkRenderers &chunkRenderers);
-//    void getUpdated(const ChunkRenderers &chunkRenderers);
-//    void getRemoved(const ChunkRenderers &chunkRenderers);
+    template<typename _Grid, typename _Renderer>
+    void requestMesh(_Renderer *chunkRenderer, TextureAtlas *textureAtlas);
+    void requestReleaseMesh(MeshBuffer &mesh);
 
     void updateQueues(Requests &completedQueue);// ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed);
 
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
     void start(HDC dc, HGLRC glContext);
 #else
     void start(Display *display, GLXDrawable drawable, GLXContext glContext);
@@ -139,15 +98,7 @@ public:
     void processThread();
 
 private:
-//    void rendererUpdateChunks();
-//    void updateChunks(ChunkRenderers &addRenderers, ChunkRenderers &updateRenderers, ChunkRenderers &removeRenderers);
-//    void updateOcclusionQueries();
-//    void processAdd(RequestAdd *request);
-//    void processRemove(RequestRemove *request);
-    void processMesh(RequestMesh *request);
-    void processReleaseMesh(RequestReleaseMesh *request);
-
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
     HDC m_dc;
     HGLRC m_glContext;
 #else
@@ -163,10 +114,6 @@ private:
 
 ///////////////////////////////////////////////////////
 //all this data should be accessed by only one thread, allows cache all request before pushing to thread
-//    SharedChunkHandles m_addCache;
-//    ChunkRenderers m_updateCache;
-//    ChunkRenderers m_removeCache;
-
     Requests m_requestCache;
 ///////////////////////////////////////////////////////
 
@@ -177,42 +124,13 @@ private:
     bool m_run;
     bool m_updateSearch;
     SearchSettings m_settings;
-//    SharedChunkHandles m_addQueue;
-//    ChunkRenderers m_updateQueue;
-//    ChunkRenderers m_removeQueue;
-//
-//    ChunkRenderers m_addedQueue;
-//    ChunkRenderers m_updatedQueue;
-//    ChunkRenderers m_removedQueue;
 
     Requests m_requestQueue;
     Requests m_completedQueue;
 ///////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////
-//all this data is owned by the thread an should never be acessed by anything else
-//    SharedChunkHandleQueue m_threadOwned_addQueue;
-//    ChunkRendererQueue m_threadOwned_updateQueue;
-//    ChunkRenderers m_threadOwned_removeQueue;
-//
-//    void updateOutputQueues();
-//
-//    ChunkRenderers m_threadOwned_addedQueue;
-//    ChunkRenderers m_threadOwned_updatedQueue;
-//    ChunkRenderers m_threadOwned_removedQueue;
-//
-//    ChunkRendererQueue m_threadOwned_requestQueue;
-//    ChunkRenderers m_threadOwned_completedQueue;
-
-//    ChunkRenderers m_chunkRenderers; //all renderers in use
-//    ChunkRendererType *getFreeRenderer();
-//    ChunkRenderers m_freeChunkRenderers; //renderers available for re-use
-
-//    typedef std::unordered_map<Key::Type, ChunkRendererType *> ChunkRenderMap;
-//    ChunkRenderMap m_chunkRendererMap; 
-
-    //temporary mesh used for generating
-    ChunkTextureMesh m_mesh;
+//all this data is owned by the thread an should never be accessed by anything else
 ///////////////////////////////////////////////////////
 };
 

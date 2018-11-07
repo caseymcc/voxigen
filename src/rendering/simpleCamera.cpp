@@ -1,5 +1,6 @@
 #include "voxigen/simpleCamera.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -16,7 +17,7 @@ m_projectionDirty(true),
 m_viewDirty(true),
 m_fov(glm::radians(60.0f)),
 m_near(0.1f),
-m_far(1000.0f),
+m_far(10000.0f),
 m_width(640),
 m_height(480),
 m_worldUp(0.0f, 0.0f, 1.0f)

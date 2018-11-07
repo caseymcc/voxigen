@@ -1,1 +1,6 @@
 /_buildx64
+/_build
+/build
+/buildx64
+/worlds
+/.vscode

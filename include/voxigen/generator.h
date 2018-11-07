@@ -4,7 +4,6 @@
 #include "voxigen/voxigen_export.h"
 #include "voxigen/classFactory.h"
 #include "voxigen/updateQueue.h"
-#include "voxigen/chunkHandle.h"
 
 #include <memory>
 #include <thread>
@@ -15,6 +14,9 @@
 namespace voxigen
 {
 
+template<typename _Chunk>
+class ChunkHandle;
+
 class Generator
 {
 public:
@@ -23,10 +25,11 @@ public:
 
     virtual void initialize(IGridDescriptors *descriptors)=0;
     virtual void save(IGridDescriptors *descriptors)=0;
-//    virtual void terminate()=0;
+    //    virtual void terminate()=0;
 
-//    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
+    //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
     virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod)=0;
+    virtual unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod)=0;
 };
 typedef std::shared_ptr<Generator> SharedGenerator;
 
@@ -39,16 +42,24 @@ public:
 
     static char *typeName() { return _Generator::typeName(); }
 
-    virtual void initialize(IGridDescriptors *descriptors){ m_generator->initialize(descriptors); }
+    virtual void initialize(IGridDescriptors *descriptors) { m_generator->initialize(descriptors); }
     virtual void save(IGridDescriptors *descriptors) { m_generator->save(descriptors); }
-//    virtual void terminate() { m_generator->terminate(); }
+    //    virtual void terminate() { m_generator->terminate(); }
 
-//    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
+    //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
     virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
+    virtual unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateRegion(startPos, size, buffer, bufferSize, lod); };
 
 private:
     std::unique_ptr<_Generator> m_generator;
 };
+
+}//namespace voxigen
+
+#include "voxigen/chunkHandle.h"
+
+namespace voxigen
+{
 
 template<typename _Grid>
 class GeneratorQueue

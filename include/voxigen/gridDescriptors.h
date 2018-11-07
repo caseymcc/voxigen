@@ -3,6 +3,7 @@
 
 #include "voxigen/defines.h"
 #include "voxigen/voxigen_export.h"
+#include "voxigen/gridFunctions.h"
 #include "voxigen/chunkFunctions.h"
 
 #include <glm/glm.hpp>
@@ -18,6 +19,37 @@
 
 namespace voxigen
 {
+
+//TODO make hash calculation based on compile time constants
+//namespace details
+//{
+////these values are used to calculate the grid hashes based on a max
+//template<typename _Grid>
+//struct GridDetails
+//{
+//    //this is based roughly on earth diminesion
+//    constexpr glm::ivec3 regionRatio()
+//    {
+//        return glm::ivec3(40, 20, 1);
+//    }
+//
+//    //region hash is based on a unsigned 32 bit int, providing a maximum of 4,294,967,295 regions
+//    constexpr glm::ivec3 regionMax()
+//    {
+//        uint32_t maxRegions=std::numeric_limits<RedionHash::max();
+//        uint32_t multiplier=regionRatio
+//
+//        return glm::ivec3(6553, 3276, 200);
+//    }
+//
+//    //region hash is based on a unsigned 32 bit int, providing a maximum of 4,294,967,295 chunks
+//    constexpr glm::ivec3 chunkMax()
+//    {
+//        return glm::ivec3(6553, 3276, 200);
+//    }
+//}
+//
+//}//namespace details
 
 struct IGridDescriptors
 {
@@ -37,7 +69,7 @@ struct IGridDescriptors
     virtual void setRegionSize(const glm::ivec3 &value)=0;
 
     virtual glm::ivec3 getRegionCellSize() const=0;
-    
+
     virtual glm::ivec3 getRegionCount() const=0;
 
     virtual RegionHash getRegionHash(const glm::ivec3 &index) const=0;
@@ -72,7 +104,7 @@ struct GridDescriptors:IGridDescriptors
 {
     GridDescriptors();
     virtual ~GridDescriptors() {}
-    
+
     void create(std::string name, int seed, const glm::ivec3 &size);
     bool load(std::string fileName);
     bool save(std::string fileName);
@@ -152,18 +184,18 @@ struct GridDescriptors:IGridDescriptors
     virtual void setGeneratorDescriptors(const char *value) { m_generatorDescriptors=value; }
 
     virtual float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const { return distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2); }
-    void getIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
-    
+    void offsetIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
+
 };
 
 template<typename _Grid>
-glm::ivec3 GridDescriptors<_Grid>::m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
+glm::ivec3 GridDescriptors<_Grid>::m_regionSize=details::regionSize<typename _Grid::RegionType>();
 
 template<typename _Grid>
-glm::ivec3 GridDescriptors<_Grid>::m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
+glm::ivec3 GridDescriptors<_Grid>::m_chunkSize=details::chunkSize<typename _Grid::ChunkType>();
 
 template<typename _Grid>
-glm::ivec3 GridDescriptors<_Grid>::m_regionCellSize=GridDescriptors<_Grid>::m_regionSize*GridDescriptors<_Grid>::m_chunkSize;
+glm::ivec3 GridDescriptors<_Grid>::m_regionCellSize=details::regionCellSize<typename _Grid::RegionType, typename _Grid::ChunkType>();
 
 template<typename _Grid>
 GridDescriptors<_Grid>::GridDescriptors()
@@ -171,17 +203,17 @@ GridDescriptors<_Grid>::GridDescriptors()
     m_seed=0;
 
     m_size=glm::ivec3(1024, 1024, 256);
-//    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
-//    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
+    //    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
+    //    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
 
-//    m_noiseScale=0.001;
-//
-//    //    contientFrequency=1.0;
-//    m_contientFrequency=0.005;
-//    m_contientOctaves=2;
-//    m_contientLacunarity=2.2;
-//
-//    m_seaLevel=0.0f;
+    //    m_noiseScale=0.001;
+    //
+    //    //    contientFrequency=1.0;
+    //    m_contientFrequency=0.005;
+    //    m_contientOctaves=2;
+    //    m_contientLacunarity=2.2;
+    //
+    //    m_seaLevel=0.0f;
 }
 
 template<typename _Grid>
@@ -252,7 +284,7 @@ template<typename _Grid>
 glm::vec3 GridDescriptors<_Grid>::regionOffset(RegionHash hash) const
 {
     glm::ivec3 index=regionIndex(hash);
-    glm::vec3 offset=m_regionCellSize*index;
+    glm::vec3 offset=glm::vec3(m_regionCellSize*index);
 
     return offset;
 }
@@ -301,14 +333,14 @@ template<typename _Grid>
 float GridDescriptors<_Grid>::distance(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2) const
 {
     return voxigen::distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2, m_regionSize, m_chunkSize);
-//    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
-//
-//    if(regionIndex1!=regionIndex2)
-//        offset=(regionIndex2-regionIndex1)*m_regionSize;
-//
-//    glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
-//    glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
-//    return glm::length(glm::vec3(chunkPos2-chunkPos1));
+    //    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
+    //
+    //    if(regionIndex1!=regionIndex2)
+    //        offset=(regionIndex2-regionIndex1)*m_regionSize;
+    //
+    //    glm::ivec3 chunkPos1=chunkIndex1*m_chunkSize;
+    //    glm::ivec3 chunkPos2=(chunkIndex2+offset)*m_chunkSize;
+    //    return glm::length(glm::vec3(chunkPos2-chunkPos1));
 }
 
 template<typename _Grid>
@@ -335,37 +367,15 @@ template<typename _Grid>
 glm::vec3 GridDescriptors<_Grid>::chunkOffset(ChunkHash chunkHash) const
 {
     glm::ivec3 index=chunkIndex(chunkHash);
-    glm::vec3 offset=m_chunkSize*index;
+    glm::vec3 offset=glm::vec3(m_chunkSize*index);
 
     return offset;
 }
 
 template<typename _Grid>
-void GridDescriptors<_Grid>::getIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const
+void GridDescriptors<_Grid>::offsetIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const
 {
-    regionIndex=startRegionIndex;
-    chunkIndex=startChunkIndex+delta;
-
-    glm::ivec3 regionDelta=chunkIndex/m_regionSize;
-
-    regionIndex+=regionDelta;
-    chunkIndex-=regionDelta*m_regionSize;
-
-    if(chunkIndex.x<0)
-    {
-        regionIndex.x--;
-        chunkIndex.x+=m_regionSize.x;
-    }
-    if(chunkIndex.y<0)
-    {
-        regionIndex.y--;
-        chunkIndex.y+=m_regionSize.y;
-    }
-    if(chunkIndex.z<0)
-    {
-        regionIndex.z--;
-        chunkIndex.z+=m_regionSize.z;
-    }
+    return details::offsetIndexes<typename _Grid::RegionType>(startRegionIndex, startChunkIndex, delta, regionIndex, chunkIndex);
 }
 #pragma warning(pop)
 

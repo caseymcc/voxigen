@@ -1,4 +1,4 @@
-#ifdef _WINDOWS
+#if defined(_WIN32) || defined(_WIN64)
 #   ifndef VOXIGEN_EXPORT
 #     ifdef voxigen_EXPORTS
 #       define VOXIGEN_EXPORT __declspec(dllexport)
