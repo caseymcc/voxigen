@@ -1,4 +1,6 @@
 [![discord](https://img.shields.io/discord/495955797872869376.svg?logo=discord "Discord")](https://discord.gg/BfceAsX)
+[![travis](https://img.shields.io/travis/caseymcc/voxigen/master.svg?logo=travis&style=flat-square&label=Linux "Travis CI")](https://travis-ci.org/caseymcc/voxigen)
+[![appveyor](https://img.shields.io/appveyor/ci/caseymcc/voxigen/master.svg?logo=appveyor&style=flat-square&label=Windows "AppVeyor CI")](https://ci.appveyor.com/project/caseymcc/voxigen)
 
 # voxigen
 Voxel handling library, generating/loading/saving/meshing/memory managment. Video of current version - https://youtu.be/urhNRiDqqWE

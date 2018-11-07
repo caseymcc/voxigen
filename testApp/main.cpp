@@ -34,6 +34,10 @@ bool key_left_shift=false;
 bool key_caps_on=false;
 bool resetCamera=false;
 bool showPlayer=false;
+bool move_player=true;
+bool show_chunks=true;
+bool show_regions=true;
+
 
 voxigen::SimpleFpsCamera camera;
 voxigen::Position player;
@@ -120,8 +124,8 @@ int main(int argc, char ** argv)
     if(!glfwInit())
         return -1;
 
-    size_t width=640;
-    size_t height=480;
+    size_t width=1600;
+    size_t height=1200;
 
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -153,7 +157,8 @@ int main(int argc, char ** argv)
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     
     glewInit();
@@ -214,7 +219,8 @@ int main(int argc, char ** argv)
     size_t markerOffsetId=markerProgram.getUniformId("regionOffset");
 //end player marker
 
-    glViewport(0, 0, width, height);
+//    glViewport(0, 0, width, height);
+    framebuffer_size_callback(window, width, height);
 
     World world;
 
@@ -242,12 +248,13 @@ int main(int argc, char ** argv)
     glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
-//    worldMiddle.z+=worldMiddle.z/2;
-    
+    worldMiddle.z+=worldMiddle.z/2;
+//    worldMiddle=glm::ivec3(1536, 1536, 384);
+
     camera.setYaw(0.0f);
     camera.setPitch(0.0f);
     
-    voxigen::Key hashes=world.getHashes(worldMiddle);
+    voxigen::Key hashes=world.getHashes(glm::vec3(worldMiddle));
 
     playerRegion=hashes.regionHash;
     playerChunk=hashes.chunkHash;
@@ -255,7 +262,7 @@ int main(int argc, char ** argv)
     playerChunkIndex=world.getChunkIndex(playerChunk);
     
     //set player position to local region
-    glm::vec3 regionPos=world.gridPosToRegionPos(playerRegion, worldMiddle)+glm::vec3(32.0f, 32.0f, 0.0f);
+    glm::vec3 regionPos=world.gridPosToRegionPos(playerRegion, glm::vec3(worldMiddle))+glm::vec3(32.0f, 32.0f, 0.0f);
     
     camera.setPosition(playerRegion, regionPos);
     player.setPosition(playerRegionIndex, regionPos);
@@ -269,7 +276,7 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&camera);
     renderer.build();
-    renderer.setViewRadius(glm::ivec3(1024, 1024, 256));
+    renderer.setViewRadius(glm::ivec3(128, 128, 128));
 
     renderer.setCameraChunk(playerRegionIndex, playerChunkIndex);
     renderer.setPlayerChunk(playerRegionIndex, playerChunkIndex);
@@ -361,7 +368,7 @@ int main(int argc, char ** argv)
                 g_renderer->setCameraChunk(cameraRegionIndex, world.getChunkIndex(cameraPosition));
             }
 
-            if(!key_caps_on)
+            if(move_player)
             {
                 player.move(deltaPosition);
 
@@ -416,7 +423,7 @@ int main(int argc, char ** argv)
             glm::ivec3 regionIndex=player.getRegionIndex();
             glm::vec3 position=player.getPosition();
 
-            glm::vec3 regionOffset=regionIndex-cameraRegionIndex;
+            glm::vec3 regionOffset=glm::vec3(regionIndex-cameraRegionIndex);
             glm::vec3 offset=regionOffset*glm::vec3(world.getDescriptors().m_regionCellSize)+position;
 
             markerProgram.uniform(markerOffsetId)=offset;
@@ -449,6 +456,7 @@ int main(int argc, char ** argv)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    gltViewport(width, height);
     camera.setView(width, height);
 }
 
@@ -546,10 +554,31 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         if(action==GLFW_RELEASE)
             g_renderer->displayOutline(!g_renderer->isDisplayOutline());
     }
-    else if(key==GLFW_KEY_CAPS_LOCK)
+    else if(key==GLFW_KEY_I)
     {
         if(action==GLFW_RELEASE)
-            key_caps_on=!key_caps_on;
+            g_renderer->displayInfo(!g_renderer->isDisplayInfo());
+    }
+    else if(key==GLFW_KEY_Q)
+    {
+        if(action==GLFW_RELEASE)
+            move_player=!move_player;
+    }
+    else if(key==GLFW_KEY_E)
+    {
+        if(action==GLFW_RELEASE)
+        {
+            show_chunks=!show_chunks;
+            g_renderer->showChunks(show_chunks);
+        }
+    }
+    else if(key==GLFW_KEY_C)
+    {
+        if(action==GLFW_RELEASE)
+        {
+            show_regions=!show_regions;
+            g_renderer->showRegions(show_regions);
+        }
     }
     else if(key==GLFW_KEY_R)
     {

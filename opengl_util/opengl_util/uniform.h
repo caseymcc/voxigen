@@ -12,6 +12,8 @@
 
 #include <GL/glew.h>
 
+#undef Bool
+
 namespace opengl_util
 {
 

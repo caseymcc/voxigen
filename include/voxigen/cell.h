@@ -22,8 +22,17 @@ struct Cell
     unsigned int age;
 };
 
-inline bool empty(Cell &cell) { return (cell.type==0); }
-inline unsigned int type(Cell &cell) { return cell.type; }
+inline bool empty(const Cell &cell) { return (cell.type==0); }
+inline unsigned int type(Cell const &cell) { return cell.type; }
+inline unsigned int &type(Cell &cell) { return cell.type; }
+
+struct CellHeight:Cell
+{
+    int height;
+};
+
+inline int height(CellHeight const &cell) { return cell.height; }
+inline int &height(CellHeight &cell) { return cell.height; }
 
 }//namesapce voxigen
 

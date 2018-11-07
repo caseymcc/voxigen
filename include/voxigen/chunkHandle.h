@@ -2,6 +2,7 @@
 #define _voxigen_chunkHandle_h_
 
 #include "voxigen/chunk.h"
+#include "voxigen/handleState.h"
 #include <memory>
 
 #ifdef DEBUG_ALLOCATION
@@ -25,23 +26,6 @@ class RegularGrid;
 std::atomic<int> allocated=0;
 #endif
 
-enum class ChunkState
-{
-    Unknown,
-    Cached,
-    Memory
-};
-
-enum class ChunkAction
-{
-    Idle,
-    Reading,
-    Writing,
-    Generating,
-    Updating,
-    Releasing
-};
-
 template<typename _Chunk>
 class ChunkHandle
 {
@@ -55,8 +39,8 @@ public:
         m_regionIndex(regionIndex), 
         m_hash(chunkHash), 
         m_chunkIndex(chunkIndex), 
-        m_state(ChunkState::Unknown),
-        m_action(ChunkAction::Idle),
+        m_state(HandleState::Unknown),
+        m_action(HandleAction::Idle),
         m_cachedOnDisk(false), 
         m_empty(false), 
 #ifndef NDEBUG
@@ -76,8 +60,8 @@ public:
 
     glm::ivec3 size() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
-    ChunkState state(){ return m_state; }
-    void setState(ChunkState state)
+    HandleState state(){ return m_state; }
+    void setState(HandleState state)
     {
 #ifndef NDEBUG
         //lets make sure only one thread is changing the state
@@ -91,15 +75,9 @@ public:
 #endif
         m_state=state;
     }
-//    void setUnknown() { setState(Unknown); }
-//    bool isUnknown() { return state()==Unknown; }
-//    void setCached() { setState(Cached); }
-//    bool isCached() { return state()==Cached; }
-//    void setMemory() { setState(Memory); }
-//    bool isMemory() { return state()==Memory; }
 
-    ChunkAction action() { return m_action; }
-    void setAction(ChunkAction action)
+    HandleAction action() { return m_action; }
+    void setAction(HandleAction action)
     {
 #ifndef NDEBUG
         //lets make sure only one thread is changing the action
@@ -114,32 +92,19 @@ public:
         m_action=action;
     }
 
-//    void setIdle() { setAction(ChunkAction::Idle); }
-//    bool isIdle() { return action()==ChunkAction::Idle; }
-//    void setReading() { setAction(ChunkAction::Reading); }
-//    bool isReading() { return action()==ChunkAction::Reading; }
-//    void setWriting() { setAction(ChunkAction::Writing); }
-//    bool isWriting() { return action()==ChunkAction::Writing; }
-//    void setGenerating() { setAction(ChunkAction::Generating); }
-//    bool isGenerating() { return action()==ChunkAction::Generating; }
-//    void setUpdating() { setAction(ChunkAction::Updating); }
-//    bool isUpdating() { return action()==ChunkAction::Updating; }
-//    void setReleasing() { setAction(ChunkAction::Releasing); }
-//    bool isReleasing() { return action()==ChunkAction::Releasing; }
-
     bool cachedOnDisk() { return m_cachedOnDisk; }
     void setCachedOnDisk(bool cached) { m_cachedOnDisk=cached; }
     bool empty() { return m_empty; }
-    void setEmpty(bool empty=true) { m_empty=empty; if(empty) { m_memoryUsed=0; /*setState(ChunkState::Memory);*/ } }
+    void setEmpty(bool empty=true) { m_empty=empty; if(empty) { m_memoryUsed=0; /*setState(HandleState::Memory);*/ } }
 
     Key &key() { return m_key; }
 
     ChunkHash hash() { return m_hash; }
-    glm::ivec3 chunkIndex() { return m_chunkIndex; }
+    const glm::ivec3 &chunkIndex() { return m_chunkIndex; }
 
     RegionHash regionHash() { return m_regionHash; }
-    glm::ivec3 regionIndex() { return m_regionIndex; }
-    glm::ivec3 regionOffset() { return m_regionOffset; }
+    const glm::ivec3 &regionIndex() { return m_regionIndex; }
+    const glm::ivec3 &regionOffset() { return m_regionOffset; }
     void setRegionOffset(const glm::ivec3 &offset) { m_regionOffset=offset; }
 
     ChunkType *chunk() { return m_chunk.get(); }
@@ -154,8 +119,8 @@ private:
     
 /////////////////////////////////////////////////////////
 //status and action are to be only updated by one thread
-    ChunkState m_state;
-    ChunkAction m_action;
+    HandleState m_state;
+    HandleAction m_action;
 /////////////////////////////////////////////////////////
 
     Key m_key;
@@ -180,98 +145,8 @@ private:
 #endif
 };
 
-template<typename _Chunk>
-void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *generator, size_t lod)
-{
-    glm::ivec3 chunkIndex=descriptors->getChunkIndex(m_hash);
-    glm::vec3 startPos=descriptors->getRegionOffset(m_regionHash);
-    glm::vec3 chunkOffset=descriptors->getChunkOffset(m_hash);
-
-    startPos+=chunkOffset;
-
-#ifdef DEBUG_ALLOCATION
-    allocated++;
-    LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") allocating by generate\n";
-#endif
-    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, chunkOffset, lod);
-
-    if(!m_chunk)
-        return;
-
-    typename ChunkType::Cells &cells=m_chunk->getCells();
-
-    unsigned int validCells=generator->generateChunk(startPos, glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value), cells.data(), cells.size()*sizeof(typename ChunkType::CellType), lod);
-
-    m_chunk->setValidCellCount(validCells);
-//    setState(ChunkState::Memory);
-
-    if(validCells<=0)
-    {
-#ifdef DEBUG_ALLOCATION
-        allocated++;
-        LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") deleting by generate\n";
-#endif
-        m_chunk.reset(nullptr);//drop chunks that are empty
-        setEmpty(true);
-    }
-    else
-    {
-        m_memoryUsed=cells.size()*sizeof(typename ChunkType::CellType);
-        setEmpty(false);
-    }
-}
-
-template<typename _Chunk>
-void ChunkHandle<_Chunk>::release()
-{
-    if(m_chunk)
-    {
-#ifdef DEBUG_ALLOCATION
-        allocated--;
-        LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") freeing ("<<allocated<<")\n";
-#endif
-    }
-    m_chunk.reset(nullptr); 
-    m_memoryUsed=0;  
-//    setState(ChunkState::Unknown);
-}
-
-template<typename _Chunk>
-void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string &fileName, size_t lod)
-{
-    glm::ivec3 chunkIndex=descriptors->getChunkIndex(m_hash);
-    glm::vec3 offset=glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value)*chunkIndex;
-
-#ifdef DEBUG_ALLOCATION
-    allocated++;
-    LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") allocating by read\n";
-#endif
-    m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, offset, lod);
-
-    auto &cells=m_chunk->getCells();
-    std::ifstream file;
-
-    file.open(fileName, std::ofstream::in|std::ofstream::binary);
-    file.read((char *)cells.data(), cells.size()*sizeof(typename ChunkType::CellType));
-    file.close();
-
-    m_memoryUsed=cells.size()*sizeof(typename ChunkType::CellType);
-//    setState(ChunkState::Memory);
-}
-
-template<typename _Chunk>
-void ChunkHandle<_Chunk>::write(IGridDescriptors *descriptors, const std::string &fileName, size_t lod)
-{
-    auto &cells=m_chunk->getCells();
-    std::ofstream file;
-
-    file.open(fileName, std::ofstream::out|std::ofstream::trunc|std::ofstream::binary);
-    file.write((char *)cells.data(), cells.size()*sizeof(typename ChunkType::CellType));
-    file.close();
-
-    m_cachedOnDisk=true;
-}
-
 } //namespace voxigen
+
+#include "voxigen/chunkHandle.inl"
 
 #endif //_voxigen_chunkHandler_h_

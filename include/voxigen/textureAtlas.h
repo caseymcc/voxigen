@@ -53,11 +53,11 @@ public:
 
     bool build(const std::vector<std::string> &blocks , const TexturePack &pack);
 
-    const BlockEntry &getBlockEntry(size_t index);
+    const BlockEntry &getBlockEntry(size_t index) const;
 
-    const imglib::SimpleImage &getImage() { return m_image; }
+    const imglib::SimpleImage &getImage() const { return m_image; }
 
-    size_t resolution() { return m_textureResolution; }
+    size_t resolution() const { return m_textureResolution; }
 
 private:
     size_t m_version;

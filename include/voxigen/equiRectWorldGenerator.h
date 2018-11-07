@@ -5,10 +5,11 @@
 #include "voxigen/chunk.h"
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/coords.h"
+#include "voxigen/heightMap.h"
 
 //#include <noise/noise.h>
 #undef None
-#include <FastNoiseSIMD.h>
+#include <FastNoiseSIMD/FastNoiseSIMD.h>
 
 namespace voxigen
 {
@@ -43,6 +44,8 @@ template<typename _Grid>
 class EquiRectWorldGenerator
 {
 public:
+    typedef typename _Grid::RegionType Region;
+
     typedef typename _Grid::ChunkType ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunkType;
 
@@ -67,11 +70,13 @@ public:
     unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod);
 
 private:
+    void buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride);
+
     GridDescriptors<_Grid> *m_descriptors;
     EquiRectDescriptors m_descriptorValues;
 
-    std::unique_ptr<FastNoiseSIMD> m_continentPerlin;
-    std::unique_ptr<FastNoiseSIMD> m_layersPerlin;
+    std::unique_ptr<FastNoise::NoiseSIMD> m_continentPerlin;
+    std::unique_ptr<FastNoise::NoiseSIMD> m_layersPerlin;
 
 //    noise::module::Perlin m_perlin;
 //    noise::module::Perlin m_continentPerlin;
@@ -85,6 +90,10 @@ private:
     static std::vector<float> yMap;
     static std::vector<float> zMap;
     static std::vector<float> layerMap;
+    static FastNoise::VectorSet vectorSet;
+
+    static std::vector<float> regionHeightMap;
+    static FastNoise::VectorSet regionVectorSet;
 };
 
 template<typename _Grid>
@@ -97,6 +106,13 @@ template<typename _Grid>
 std::vector<float> EquiRectWorldGenerator<_Grid>::zMap;
 template<typename _Grid>
 std::vector<float> EquiRectWorldGenerator<_Grid>::layerMap;
+template<typename _Grid>
+FastNoise::VectorSet EquiRectWorldGenerator<_Grid>::vectorSet;
+
+template<typename _Grid>
+std::vector<float> EquiRectWorldGenerator<_Grid>::regionHeightMap;
+template<typename _Grid>
+FastNoise::VectorSet EquiRectWorldGenerator<_Grid>::regionVectorSet;
 
 template<typename _Grid>
 EquiRectWorldGenerator<_Grid>::EquiRectWorldGenerator()
@@ -123,17 +139,17 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     assert(m_descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     int seed=m_descriptors->m_seed;
 
-    m_continentPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed));
+    m_continentPerlin.reset(FastNoise::NoiseSIMD::New(seed));
 
-    m_continentPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
+    m_continentPerlin->SetNoiseType(FastNoise::NoiseType::PerlinFractal);
     m_continentPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
     m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 
 
-    m_layersPerlin.reset(FastNoiseSIMD::NewFastNoiseSIMD(seed+1));
+    m_layersPerlin.reset(FastNoise::NoiseSIMD::New(seed+1));
 
-    m_layersPerlin->SetNoiseType(FastNoiseSIMD::PerlinFractal);
+    m_layersPerlin->SetNoiseType(FastNoise::NoiseType::PerlinFractal);
     m_layersPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
     m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
@@ -233,54 +249,56 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
     //assert(bufferSize>=(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value)*sizeof(ChunkType::CellType));
     assert(bufferSize>=(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z)*sizeof(typename ChunkType::CellType));
 
-    int heightMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y);
+//    int heightMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y);
+//
+////    std::vector<float> heightMap(heightMapSize);
+////    std::vector<float> xMap(heightMapSize);
+////    std::vector<float> yMap(heightMapSize);
+////    std::vector<float> zMap(heightMapSize);
+//    heightMap.resize(heightMapSize);
+//    xMap.resize(heightMapSize);
+//    yMap.resize(heightMapSize);
+//    zMap.resize(heightMapSize);
+//
+//    size_t index=0;
+//    glm::vec3 mapPos;
+//    glm::ivec3 size=m_descriptors->m_size;
+//
+//    mapPos.z=(float)size.x/2.0f;
+//    for(int y=0; y<ChunkType::sizeY::value; y+=stride)
+//    {
+//        mapPos.y=startPos.y+y;
+//        for(int x=0; x<ChunkType::sizeX::value; x+=stride)
+//        {
+//            mapPos.x=startPos.x+x;
+//
+//            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
+//
+////            pos*=m_descriptors.noiseScale;
+//            xMap[index]=pos.x;
+//            yMap[index]=pos.y;
+//            zMap[index]=pos.z;
+//            index++;
+//        }
+//    }
+//
+//    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodChunkSize.x, lodChunkSize.y, 1);
+    buildHeightMap(startPos, lodChunkSize, stride);
 
-//    std::vector<float> heightMap(heightMapSize);
-//    std::vector<float> xMap(heightMapSize);
-//    std::vector<float> yMap(heightMapSize);
-//    std::vector<float> zMap(heightMapSize);
-    heightMap.resize(heightMapSize);
-    xMap.resize(heightMapSize);
-    yMap.resize(heightMapSize);
-    zMap.resize(heightMapSize);
-
-    size_t index=0;
-    glm::vec3 mapPos;
-    glm::ivec3 size=m_descriptors->m_size;
-
-    mapPos.z=(float)size.x/2.0f;
-    for(int y=0; y<ChunkType::sizeY::value; y+=stride)
-    {
-        mapPos.y=startPos.y+y;
-        for(int x=0; x<ChunkType::sizeX::value; x+=stride)
-        {
-            mapPos.x=startPos.x+x;
-
-            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
-
-//            pos*=m_descriptors.noiseScale;
-            xMap[index]=pos.x;
-            yMap[index]=pos.y;
-            zMap[index]=pos.z;
-            index++;
-        }
-    }
-
-    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodChunkSize.x, lodChunkSize.y, 1);
-
-    int chunkMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z);
+    int chunkMapSize=FastNoise::NoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z);
 
 //    std::vector<float> layerMap(chunkMapSize);
     layerMap.resize(chunkMapSize);
 
 //    m_layersPerlin->FillNoiseSet(layerMap.data(), offset.x, offset.y, offset.z, _Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value);
 
+    glm::ivec3 size=m_descriptors->m_size;
     int seaLevel=(size.z/2);
     float heightScale=((float)size.z/2.0f);
     unsigned int validCells=0;
     glm::ivec3 blockIndex;
 
-    index=0;
+    size_t index=0;
     size_t heightIndex=0;
     position.z=scaledOffset.z;
     for(int z=0; z<ChunkType::sizeZ::value; z+=stride)
@@ -314,7 +332,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
                         validCells++;
                 }
 
-                cells[index].type=blockType;
+                type(cells[index])=blockType;
                 index++;
                 heightIndex++;
                 position.x+=noiseScale;
@@ -332,25 +350,163 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 template<typename _Grid>
 unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod)
 {
+    size_t stride=glm::pow(2, lod);
+    glm::ivec2 lodSize=glm::ivec2(regionSize.x, regionSize.y)/(int)stride;
+
+    typename _Grid::RegionHandleType::Cell *cells=(typename _Grid::RegionHandleType::Cell *)buffer;
+    assert(bufferSize>=(lodSize.x*lodSize.y)*sizeof(typename _Grid::RegionHandleType::Cell));
+
+    int heightMapSize=FastNoise::NoiseSIMD::AlignedSize(lodSize.x*lodSize.y);
+
+    regionHeightMap.resize(heightMapSize);
+    regionVectorSet.SetSize(heightMapSize);
+
+    size_t index=0;
+    glm::vec3 mapPos;
+    glm::ivec3 size=m_descriptors->m_size;
+    float heightScale=((float)size.z/2.0f);
+    int seaLevel=(size.z/2);
+    unsigned int validCells=0;
+
+    mapPos.z=(float)size.x/2.0f;
+    for(int y=0; y<regionSize.y; y+=stride)
+    {
+        mapPos.y=startPos.y+y;
+        for(int x=0; x<regionSize.x; x+=stride)
+        {
+            mapPos.x=startPos.x+x;
+
+            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
+
+            regionVectorSet.xSet[index]=pos.x;
+            regionVectorSet.ySet[index]=pos.y;
+            regionVectorSet.zSet[index]=pos.z;
+            index++;
+        }
+    }
+
+    m_continentPerlin->FillSet(regionHeightMap.data(), &regionVectorSet);
+
+    index=0;
+    for(int y=0; y<regionSize.y; y+=stride)
+    {
+        for(int x=0; x<regionSize.x; x+=stride)
+        {
+            unsigned int blockType;
+            int blockHeight=(int)(regionHeightMap[index]*heightScale)+seaLevel;
+
+            if((blockHeight<startPos.z)||(blockHeight>startPos.z+regionSize.z))
+                blockType=0;
+            else
+            {
+                if(stride==1)
+                    blockType=getBlockType<false>(blockHeight, 0, stride);
+                else
+                    blockType=getBlockType<true>(blockHeight, 0, stride);
+            }
+
+            if(blockType!=0)
+                validCells++;
+
+            type(cells[index])=blockType;
+            height(cells[index])=blockHeight;
+
+            index++;
+        }
+    }
+
+    return validCells;
+}
+
+//template<typename _Grid>
+//unsigned int EquiRectWorldGenerator<_Grid>::generateHeightMap(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod)
+//{
 //    glm::vec3 scaledOffset=startPos*m_descriptorValues.m_noiseScale;
 //    glm::vec3 position=scaledOffset;
 //
-//    //    UniqueChunkType chunk=std::make_unique<ChunkType>(hash, 0, chunkIndex, startPos);
-//    //    ChunkType::Cells &cells=chunk->getCells();
+//    HeightMapCell *cells=(HeightMapCell *)buffer;
 //
-//    typename ChunkType::CellType *cells=(typename ChunkType::CellType *)buffer;
 //    size_t stride=glm::pow(2, lod);
-//    glm::ivec3 lodChunkSize=chunkSize/(int)stride;
+//    glm::ivec3 lodSize=regionSize/(int)stride;
 //    float noiseScale=m_descriptorValues.m_noiseScale/stride;
 //
 //    //verify chunkSize matches template chunk size
 //    assert(chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
 //
 //    //verify buffer is large enough for data
-//    assert(bufferSize>=(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z)*sizeof(ChunkType::CellType));
+//    assert(bufferSize>=(lodSize.x*lodSize.y*lodSize.z)*sizeof(HeightMapCell));
 //
-//    int heightMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y);
+//    buildHeightMap(startPos, lodSize, stride);
+//
+//    size_t index=0;
+//    int heightIndex=0;
+//    position.y=scaledOffset.y;
+//
+//    int blockZ=(int)startPos.z+z;
+//    for(int y=0; y<ChunkType::sizeY::value; y+=stride)
+//    {
+//        position.x=scaledOffset.x;
+//        for(int x=0; x<ChunkType::sizeX::value; x+=stride)
+//        {
+//            unsigned int blockType;
+//            int blockHeight=(int)(heightMap[heightIndex]*heightScale)+seaLevel;
+//
+//            if(stride==1)
+//                blockType=getBlockType<false>(blockHeight, 0, stride);
+//            else
+//                blockType=getBlockType<true>(blockHeight, 0, stride);
+//
+//            if(blockType!=0)
+//                validCells++;
+//
+//            cells[index].type=blockType;
+//            cells[index].height=blockHeight;
+//
+//            index++;
+//            heightIndex++;
+//            position.x+=noiseScale;
+//        }
+//        position.y+=noiseScale;
+//    }
+//}
+
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride)
+{
+    int heightMapSize=FastNoise::NoiseSIMD::AlignedSize(lodSize.x*lodSize.y);
+
+    heightMap.resize(heightMapSize);
+    xMap.resize(heightMapSize);
+    yMap.resize(heightMapSize);
+    zMap.resize(heightMapSize);
+
+    vectorSet.SetSize(heightMapSize);
+
+    size_t index=0;
+    glm::vec3 mapPos;
+    glm::ivec3 size=m_descriptors->m_size;
+
+    mapPos.z=(float)size.x/2.0f;
+    for(int y=0; y<ChunkType::sizeY::value; y+=stride)
+    {
+        mapPos.y=startPos.y+y;
+        for(int x=0; x<ChunkType::sizeX::value; x+=stride)
+        {
+            mapPos.x=startPos.x+x;
+
+            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
+
+            vectorSet.xSet[index]=pos.x;
+            vectorSet.ySet[index]=pos.y;
+            vectorSet.zSet[index]=pos.z;
+            index++;
+        }
+    }
+
+    m_continentPerlin->FillSet(heightMap.data(), &vectorSet);
+//    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodSize.x, lodSize.y, 1);
 }
+
 
 }//namespace voxigen
 

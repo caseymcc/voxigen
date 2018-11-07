@@ -1,0 +1,162 @@
+# OSX/Linux (https://github.com/travis-ci-tester/toolchain-table)
+
+language:
+  - cpp
+
+# Container-based infrastructure (Linux)
+# * https://docs.travis-ci.com/user/migrating-from-legacy/#How-can-I-use-container-based-infrastructure%3F
+sudo:
+  - false
+
+# Install packages differs for container-based infrastructure
+# * https://docs.travis-ci.com/user/migrating-from-legacy/#How-do-I-install-APT-sources-and-packages%3F
+# List of available packages:
+# * https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
+# List of available sources:
+# * https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - python3-pip
+      - g++-7
+
+dist:
+  - trusty
+
+env:
+  global:
+    - secure: "n3rkI7uJHsJG6UldLClk4sOAXUF/zhVrU04Kgl5YxT9XZn8HZHyyrh6anWIpTolu1omSTKVoAPg/C1B0TqzvOE97cel9tCXPhfShbUmijmdMAY81dg6pIuOzc+p4M31R5oB8TUJs5nnkdCxB/lzmn3lMTePnqLHw8zGxnybHLsf3QDAm1jjIRR0by0LJ1HKP3HExyuaD9kh/m3YwUhJ6ZUPuNdk+HevvMN+zxY5e+kVdnj5krRbMppZDH5TvD96QifIO9ykt+i8UemfnTUXW07nvha6UxCH1ByueKfaSl7rT7Ng/l72N36rJG2wTiXy26NoL6SiTdobt6HweQPOiIj8IRWaw6PZ7LDlaC+0ppBo9HiCZ6iom7UpNEQ30MZN1JwLuZBC2GXJHfEGUn2Kda2c56AHMqd/ZOADHSNbr+PtoMBNvT+5ShUq3oyd+/eC82i4w7z2hH0L72RT5Scbt51fb8nS39tW+/2Jvp/zoV3XTE9TT8rs+M4wzplkVy6F/b5L0h06Kq5kfLvpc1IxelzVd/5tevEtAmkVDy+5BxinAhI/hYOpsYwvgMcYZSytzRjhwIxKcwKqsk+cqXR7nAMr0ciPQ7T3MADfy/h7kBUggOyO06xdWjfue100rNVrlyY/zSIixIEq2FaMVYKZZyGkH8FnXDcmaTVZPFmH4B/k="
+
+
+matrix:
+  include:
+    # Linux {
+
+    - os: linux
+      env: >
+        TOOLCHAIN=clang-cxx17
+        PROJECT_DIR=./
+
+#glm issue
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=gcc-7-cxx17
+#        PROJECT_DIR=./
+
+    - os: linux
+      env: >
+        TOOLCHAIN=gcc-7-cxx14
+        PROJECT_DIR=./
+
+    #cant find opengl
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=android-ndk-r17-api-21-arm64-v8a-neon-clang-libcxx14
+#        PROJECT_DIR=./
+
+    #error compiling xproto
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=analyze-cxx17
+#        PROJECT_DIR=./
+
+    #error compiling xproto
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=sanitize-address-cxx17
+#        PROJECT_DIR=./
+
+    #error compiling xproto
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=sanitize-leak-cxx17
+#        PROJECT_DIR=./
+
+    #error compiling xproto
+#    - os: linux
+#      env: >
+#        TOOLCHAIN=sanitize-thread-cxx17
+#        PROJECT_DIR=./
+
+    # }
+
+    # OSX {
+
+#    - os: osx
+#      osx_image: xcode9.4
+#      env: >
+#        TOOLCHAIN=osx-10-13-make-cxx14
+#        PROJECT_DIR=./
+#
+#    - os: osx
+#      osx_image: xcode9.4
+#      env: >
+#        TOOLCHAIN=osx-10-13-cxx14
+#        PROJECT_DIR=./
+
+    #glfw fails
+#    - os: osx
+#      osx_image: xcode9.4
+#      env: >
+#        TOOLCHAIN=ios-nocodesign-11-4-dep-9-3
+#        PROJECT_DIR=./
+
+    # }
+
+install:
+  # Info about OS
+  - uname -a
+
+  # Info about available disk space
+  - df -h $HOME
+
+  # Disable autoupdate
+  # * https://github.com/Homebrew/brew/blob/7d31a70373edae4d8e78d91a4cbc05324bebc3ba/Library/Homebrew/manpages/brew.1.md.erb#L202
+  - export HOMEBREW_NO_AUTO_UPDATE=1
+
+  # Install Python 3
+  - if [[ "`uname`" == "Darwin" ]]; then travis_retry brew upgrade python || echo "Ignoring failure..."; fi
+  - if [[ "`uname`" == "Darwin" ]]; then travis_retry brew install python3; fi
+
+  # Install Python package 'requests'
+  # 'easy_install3' is not installed by 'brew install python3' on OS X 10.9 Maverick
+  - if [[ "`uname`" == "Darwin" ]]; then pip3 install requests; fi
+  - if [[ "`uname`" == "Darwin" ]]; then pip3 install gitpython; fi
+  - if [[ "`uname`" == "Linux" ]]; then travis_retry pip3 install --user requests; fi
+  - if [[ "`uname`" == "Linux" ]]; then travis_retry pip3 install --user gitpython; fi
+
+  # Install latest Polly toolchains and scripts
+  - wget https://github.com/ruslo/polly/archive/master.zip
+  - unzip master.zip
+  - POLLY_ROOT="`pwd`/polly-master"
+  - export PATH="${POLLY_ROOT}/bin:${PATH}"
+
+  # Install dependencies (CMake, Android NDK)
+  - install-ci-dependencies.py --prune-archives
+
+  # Tune locations
+  - export PATH="`pwd`/_ci/cmake/bin:${PATH}"
+
+  # Installed if toolchain is Android (otherwise directory doesn't exist)
+  - export ANDROID_NDK_r10e="`pwd`/_ci/android-ndk-r10e"
+  - export ANDROID_NDK_r11c="`pwd`/_ci/android-ndk-r11c"
+  - export ANDROID_NDK_r15c="`pwd`/_ci/android-ndk-r15c"
+  - export ANDROID_NDK_r16b="`pwd`/_ci/android-ndk-r16b"
+  - export ANDROID_NDK_r17="`pwd`/_ci/android-ndk-r17"
+
+script:
+  - python3 ./jenkins.py
+
+# https://docs.travis-ci.com/user/customizing-the-build/#Whitelisting-or-blacklisting-branches
+branches:
+  except:
+    - /^pr\..*/
+    - /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+git:
+  submodules: false
+
+#before_script:
+#  git submodule update --init {submodule} 

@@ -3,8 +3,8 @@
 namespace voxigen
 {
 
-template<typename _Grid, typename _ChunkRenderer>
-RenderCube<_Grid, _ChunkRenderer>::RenderCube(GridType *grid, DescriptorType *descriptors, RenderPrepThreadType *prepThread):
+template<typename _Grid, typename _Renderer, typename _Index>
+RenderCube<_Grid, _Renderer, _Index>::RenderCube(GridType *grid, DescriptorType *descriptors, RenderPrepThread *prepThread):
 m_grid(grid),
 m_descriptors(descriptors),
 m_renderPrepThread(prepThread),
@@ -15,14 +15,14 @@ m_viewRadius(64)
     m_rendererQueue.setGrowSize(512);
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-RenderCube<_Grid, _ChunkRenderer>::~RenderCube()
+template<typename _Grid, typename _Renderer, typename _Index>
+RenderCube<_Grid, _Renderer, _Index>::~RenderCube()
 {
 
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::setViewRadius(const glm::ivec3 &radius)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::setViewRadius(const glm::ivec3 &radius)
 {
     m_viewRadius=radius;
 
@@ -33,19 +33,27 @@ void RenderCube<_Grid, _ChunkRenderer>::setViewRadius(const glm::ivec3 &radius)
     m_rendererQueue.setMaxSize(rendererCount);
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::setOutlineInstance(unsigned int outlineInstanceId)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::setOutlineInstance(unsigned int outlineInstanceId)
 {
     m_outlineInstanceId=outlineInstanceId;
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-glm::ivec3 RenderCube<_Grid, _ChunkRenderer>::calcCubeSize(const glm::ivec3 &radius)
+template<typename _Grid, typename _Renderer, typename _Index>
+glm::ivec3 RenderCube<_Grid, _Renderer, _Index>::calcCubeSize(const glm::ivec3 &radius)
 {
     glm::ivec3 cubeSize;
-    glm::ivec3 chunkSize=m_descriptors->getChunkSize();
+//  glm::ivec3 chunkSize=m_descriptors->getChunkSize();
+    glm::ivec3 renderSize=_Renderer::getSize();
 
-    cubeSize=(radius)/chunkSize;
+    cubeSize=(radius)/renderSize;
+
+    if(cubeSize.x<=1)
+        cubeSize.x++;
+    if(cubeSize.y<=1)
+        cubeSize.y++;
+    if(cubeSize.z<=1)
+        cubeSize.z++;
 
     //make everything odd
     if(cubeSize.x%2==0)
@@ -58,8 +66,8 @@ glm::ivec3 RenderCube<_Grid, _ChunkRenderer>::calcCubeSize(const glm::ivec3 &rad
     return cubeSize;
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::init(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::init(const Index &index)
 {
     glm::ivec3 regionSize=m_descriptors->getRegionSize();
 //    glm::ivec3 chunkSize=m_descriptors->getChunkSize();
@@ -83,13 +91,15 @@ void RenderCube<_Grid, _ChunkRenderer>::init(const glm::ivec3 &regionIndex, cons
     std::fill(m_renderCube.begin(), m_renderCube.end(), nullptr);
 
     m_renderCubeCenterIndex=(m_renderCubeSize/2);
-    glm::ivec3 centerPos=chunkIndex;
+//    glm::ivec3 centerPos=chunkIndex;
 
-    glm::ivec3 startRegion;// =regionIndex;
-    glm::ivec3 startChunk;// =m_chunkIndex-m_renderCubeCenter+glm::ivec3(1, 1, 1);
+//    glm::ivec3 startRegion;// =regionIndex;
+//    glm::ivec3 startChunk;// =m_chunkIndex-m_renderCubeCenter+glm::ivec3(1, 1, 1);
+    Index startIndex;
     size_t renderPos=0;
 
-    m_descriptors->getIndexes(regionIndex, chunkIndex, -m_renderCubeCenterIndex, startRegion, startChunk);
+//    Index::offset(regionIndex, chunkIndex, -m_renderCubeCenterIndex, startRegion, startChunk);
+    startIndex=Index::offset(index, -m_renderCubeCenterIndex);
 
 //    while(startChunk.x<0)
 //    {
@@ -106,29 +116,33 @@ void RenderCube<_Grid, _ChunkRenderer>::init(const glm::ivec3 &regionIndex, cons
 //        startRegion.z--;
 //        startChunk.z+=regionSize.z;
 //    }
-    getRegion(glm::ivec3(0, 0, 0), startRegion, startChunk, m_renderCubeSize);
+//    getRegion(glm::ivec3(0, 0, 0), startRegion, startChunk, m_renderCubeSize);
+    getRegion(glm::ivec3(0, 0, 0), startIndex, m_renderCubeSize);
 //    updateRegion(startRegion, startChunk, m_renderCubeSize);
 
-    m_regionIndex=regionIndex;
-    m_chunkIndex=chunkIndex;
+    m_index=index;
+//    m_chunkIndex=chunkIndex;
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::updateCamera(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::updateCamera(const Index &index)
 {
-    m_cameraRegionIndex=regionIndex;
-    m_cameraChunkIndex=chunkIndex;
+//    m_cameraRegionIndex=regionIndex;
+//    m_cameraChunkIndex=chunkIndex;
+    m_cameraIndex=index;
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::update(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::update(const Index &index)
 {
     //no changes, skip update
-    if((regionIndex==m_regionIndex)&&(chunkIndex==m_chunkIndex))
+//    if((regionIndex==m_regionIndex)&&(chunkIndex==m_chunkIndex))
+//        return;
+    if(m_index==index)
         return;
 
-    glm::ivec3 gridRegionSize=m_descriptors->getRegionSize();
-    glm::ivec3 offset=difference(m_regionIndex, m_chunkIndex, regionIndex, chunkIndex, gridRegionSize);
+//    glm::ivec3 gridRegionSize=m_descriptors->getRegionSize();
+    glm::ivec3 offset=_Index::difference(m_index, index);
 
     bool rebuild=false;
     glm::ivec3 direction=glm::abs(offset);
@@ -142,7 +156,7 @@ void RenderCube<_Grid, _ChunkRenderer>::update(const glm::ivec3 &regionIndex, co
 
     if(rebuild)
     {
-        init(regionIndex, chunkIndex);
+        init(index);
         return;
     }
 
@@ -330,11 +344,10 @@ void RenderCube<_Grid, _ChunkRenderer>::update(const glm::ivec3 &regionIndex, co
     regionSize.y=m_renderCubeSize.y;
     regionSize.z=releaseSize.z;
 
-    glm::ivec3 updateRegionIndex;
-    glm::ivec3 updateChunkIndex;
-    
-    m_descriptors->getIndexes(regionIndex, chunkIndex, (regionStart-m_renderCubeCenterIndex), updateRegionIndex, updateChunkIndex);
-    getRegion(regionStart, updateRegionIndex, updateChunkIndex, regionSize);
+//    glm::ivec3 updateRegionIndex;
+//    glm::ivec3 updateChunkIndex;
+    Index updateIndex=Index::offset(index, (regionStart-m_renderCubeCenterIndex));
+    getRegion(regionStart, updateIndex, regionSize);
 
     if(copyTo.z <= copyFrom.z)
         regionStart.z=0;
@@ -349,8 +362,8 @@ void RenderCube<_Grid, _ChunkRenderer>::update(const glm::ivec3 &regionIndex, co
         regionStart.y=0;
     regionSize.y=releaseSize.y;
 
-    m_descriptors->getIndexes(regionIndex, chunkIndex, (regionStart-m_renderCubeCenterIndex), updateRegionIndex, updateChunkIndex);
-    getRegion(regionStart, updateRegionIndex, updateChunkIndex, regionSize);
+    updateIndex=Index::offset(index, (regionStart-m_renderCubeCenterIndex));
+    getRegion(regionStart, updateIndex, regionSize);
 
     if(copyTo.y <= copyFrom.y)
         regionStart.y=0;
@@ -365,18 +378,17 @@ void RenderCube<_Grid, _ChunkRenderer>::update(const glm::ivec3 &regionIndex, co
         regionStart.x=0;
     regionSize.x=releaseSize.x;
 
-    m_descriptors->getIndexes(regionIndex, chunkIndex, (regionStart-m_renderCubeCenterIndex), updateRegionIndex, updateChunkIndex);
-    getRegion(regionStart, updateRegionIndex, updateChunkIndex, regionSize);
+    updateIndex=Index::offset(index, (regionStart-m_renderCubeCenterIndex));
+    getRegion(regionStart, updateIndex, regionSize);
 
-    m_regionIndex=regionIndex;
-    m_chunkIndex=chunkIndex;
+    m_index=index;
 
 //    if(direction.x < 0)
 //        start.x=
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size)
 {
     size_t index=start.z*(m_renderCubeSize.y*m_renderCubeSize.x)+start.y*m_renderCubeSize.x+start.x;
     
@@ -390,12 +402,12 @@ void RenderCube<_Grid, _ChunkRenderer>::releaseRegion(const glm::ivec3 &start, c
             for(size_t x=0; x<size.x; x++)
             {
 //                releaseChunkInfo(m_renderCube[index]);
-                ChunkRendererType *renderer=m_renderCube[index];
+                RendererType *renderer=m_renderCube[index];
 
                 if(renderer)
                 {
                     renderer->refCount--;
-                    releaseChunkInfo(renderer);
+                    releaseInfo(renderer);
                 }
                 m_renderCube[index]=nullptr;
                 index++;
@@ -406,8 +418,8 @@ void RenderCube<_Grid, _ChunkRenderer>::releaseRegion(const glm::ivec3 &start, c
     }
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, const glm::ivec3 &size)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size)
 {
     glm::ivec3 regionSize=m_descriptors->getRegionSize();
     size_t index=start.z*(m_renderCubeSize.y*m_renderCubeSize.x)+start.y*m_renderCubeSize.x+start.x;
@@ -415,25 +427,29 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
     size_t strideX=m_renderCubeSize.x-size.x;
     size_t strideY=(m_renderCubeSize.y-size.y)*m_renderCubeSize.x;
 
-    glm::ivec3 regionIndex;
-    glm::ivec3 chunkIndex;
+//    glm::ivec3 regionIndex;
+//    glm::ivec3 chunkIndex;
+    Index renderIndex;
 
-    regionIndex.z=startRegionIndex.z;
-    chunkIndex.z=startChunkIndex.z;
+//    regionIndex.z=startRegionIndex.z;
+//    chunkIndex.z=startChunkIndex.z;
+    renderIndex.setZ(startIndex);
 
     for(size_t z=0; z<size.z; z++)
     {
-        regionIndex.y=startRegionIndex.y;
-        chunkIndex.y=startChunkIndex.y;
+//        regionIndex.y=startRegionIndex.y;
+//        chunkIndex.y=startChunkIndex.y;
+        renderIndex.setY(startIndex);
 
         for(size_t y=0; y<size.y; y++)
         {
-            regionIndex.x=startRegionIndex.x;
-            chunkIndex.x=startChunkIndex.x;
+//            regionIndex.x=startRegionIndex.x;
+//            chunkIndex.x=startChunkIndex.x;
+            renderIndex.setX(startIndex);
 
             for(size_t x=0; x<size.x; x++)
             {
-                ChunkRendererType *renderer=getFreeRenderer();
+                RendererType *renderer=getFreeRenderer();
 
                 assert(renderer);
 
@@ -448,12 +464,14 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
                     m_renderCube[index]=renderer;
                     renderer->refCount++;
 
+
                     //up    date chunk
-                    Key key(m_descriptors->getRegionHash(regionIndex), m_descriptors->getChunkHash(chunkIndex));
-                    SharedChunkHandle chunkHandle=m_grid->getChunk(key);
+//                    Key key(m_descriptors->getRegionHash(regionIndex), m_descriptors->getChunkHash(chunkIndex));
+//                    SharedChunkHandle chunkHandle=m_grid->getChunk(key);
+                    typename Index::Handle handle=Index::getHandle(m_grid, renderIndex);
 
                     renderer->setAction(RenderAction::Idle);
-                    renderer->setChunk(chunkHandle);
+                    renderer->setHandle(handle);
 #ifdef DEBUG_RENDERERS
                     LOG(INFO)<<"MainThread - ChunkRenderer "<<renderer<<"("<<renderer->getRegionHash()<<", "<<renderer->getChunkHash()<<") setChunk";
 #endif//DEBUG_RENDERERS
@@ -462,11 +480,11 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
                     //                    renderInfo.chunkHandle=chunkHandle;
 
                                         //if not loaded, load it
-                    if(chunkHandle->state()!=ChunkState::Memory)
+                    if(handle->state()!=HandleState::Memory)
                     {
                         //make sure we are not already requesting something from it
-                        if(chunkHandle->action()==ChunkAction::Idle)
-                            m_grid->loadChunk(chunkHandle, 0);
+                        if(handle->action()==HandleAction::Idle)
+                            Index::load(m_grid, handle, 0);
                     }
 
                     
@@ -475,35 +493,38 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
                     m_renderCube[index]=nullptr;
 
                 index++;
-                chunkIndex.x++;
-                if(chunkIndex.x>=regionSize.x)
-                {
-                    chunkIndex.x-=regionSize.x;
-                    regionIndex.x++;
-                }
+                renderIndex.incX();
+//                chunkIndex.x++;
+//                if(chunkIndex.x>=regionSize.x)
+//                {
+//                    chunkIndex.x-=regionSize.x;
+//                    regionIndex.x++;
+//                }
             }
 
             index+=strideX;
-            chunkIndex.y++;
-            if(chunkIndex.y>=regionSize.y)
-            {
-                chunkIndex.y-=regionSize.y;
-                regionIndex.y++;
-            }
+            renderIndex.incY();
+//            chunkIndex.y++;
+//            if(chunkIndex.y>=regionSize.y)
+//            {
+//                chunkIndex.y-=regionSize.y;
+//                regionIndex.y++;
+//            }
         }
 
         index+=strideY;
-        chunkIndex.z++;
-        if(chunkIndex.z>=regionSize.z)
-        {
-            chunkIndex.z-=regionSize.z;
-            regionIndex.z++;
-        }
+        renderIndex.incZ();
+//        chunkIndex.z++;
+//        if(chunkIndex.z>=regionSize.z)
+//        {
+//            chunkIndex.z-=regionSize.z;
+//            regionIndex.z++;
+//        }
     }
 }
 
-//template<typename _Grid, typename _ChunkRenderer>
-//void RenderCube<_Grid, _ChunkRenderer>::updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size)
+//template<typename _Grid, typename _Renderer, typename _Index>
+//void RenderCube<_Grid, _Renderer, _Index>::updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size)
 //{
 //    glm::ivec3 regionIndex;
 //    glm::ivec3 chunkIndex;
@@ -527,7 +548,7 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
 //
 //            for(size_t x=0; x<size.x; ++x)
 //            {
-//                ChunkRendererType *renderer=m_renderCube[renderPos];
+//                RendererType *renderer=m_renderCube[renderPos];
 //                
 //                //get rid of any existing info/chunks/renderers
 //                releaseChunkInfo(renderer);
@@ -540,10 +561,10 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
 //                renderInfo.chunkHandle=chunkHandle;
 //
 //                //if not loaded, load it
-//                if(chunkHandle->state()!=ChunkState::Memory)
+//                if(chunkHandle->state()!=HandleState::Memory)
 //                {
 //                    //make sure we are not already requesting something from it
-//                    if(chunkHandle->action()==ChunkAction::Idle)
+//                    if(chunkHandle->action()==HandleAction::Idle)
 //                        m_grid->loadChunk(chunkHandle, 0);
 //                }
 //
@@ -552,7 +573,7 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
 //                {
 ////                    renderInfo.state=RenderState::RequestRenderer;
 ////                    m_renderPrepThread->requestRenderer(renderInfo.chunkHandle);
-//                    renderInfo.renderer=m_rendererQueue.get([&](ChunkRendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId);});
+//                    renderInfo.renderer=m_rendererQueue.get([&](RendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId);});
 //
 //                    if(renderInfo.renderer)
 //                        renderInfo.renderer->setChunk(chunkHandle);
@@ -588,53 +609,65 @@ void RenderCube<_Grid, _ChunkRenderer>::getRegion(const glm::ivec3 &start, const
 //    }
 //}
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::draw(opengl_util::Program *program, size_t offsetId)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::draw(opengl_util::Program *program, size_t offsetId)
 {
-    glm::ivec3 regionIndex=m_regionIndex-(m_regionIndex-m_cameraRegionIndex);
+    glm::ivec3 regionIndex=m_index.regionIndex()-(m_index.regionIndex()-m_cameraIndex.regionIndex());
 
     for(auto renderer:m_renderCube)
     {
         if(renderer)
         {
-            glm::vec3 regionOffset=renderer->getRegionIndex()-regionIndex;
-            glm::vec3 offset=regionOffset*glm::vec3(m_grid->getDescriptors().m_regionCellSize);
+            glm::ivec3 regionOffset=renderer->getRegionIndex()-regionIndex;
+            glm::ivec3 offset=regionOffset*renderer->getRegionCellSize();
 
-            offset=offset+renderer->getGridOffset();
-            program->uniform(offsetId)=(offset);
-
-            renderer->draw();
+            renderer->draw(program, offsetId, offset);
         }
     }
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::drawOutline(opengl_util::Program *program, size_t offsetId, size_t colorId)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::drawInfo(const glm::mat4x4 &projectionViewMat)
 {
-    glm::ivec3 regionIndex=m_regionIndex-(m_regionIndex-m_cameraRegionIndex);
+    glm::ivec3 regionIndex=m_index.regionIndex()-(m_index.regionIndex()-m_cameraIndex.regionIndex());
 
     for(auto renderer:m_renderCube)
     {
         if(renderer)
         {
-            glm::vec3 regionOffset=renderer->getRegionIndex()-regionIndex;
-            glm::vec3 offset=regionOffset*glm::vec3(m_grid->getDescriptors().m_regionCellSize);
+            glm::ivec3 regionOffset=renderer->getRegionIndex()-regionIndex;
+            glm::ivec3 offset=regionOffset*renderer->getRegionCellSize();
 
-            offset=offset;// +renderer->getGridOffset();
-            program->uniform(offsetId)=(offset);
-
-            renderer->drawOutline(program, colorId);
+            renderer->drawInfo(projectionViewMat, offset);
         }
     }
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid, _ChunkRenderer>::getChunkRenderInfo(const Key &key)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::drawOutline(opengl_util::Program *program, size_t offsetId, size_t colorId)
 {
-    glm::ivec3 regionIndex=m_descriptors->getRegionIndex(key.regionHash);
-    glm::ivec3 chunkIndex=m_descriptors->getChunkIndex(key.chunkHash);
-    glm::ivec3 gridRegionSize=m_descriptors->getRegionSize();
-    glm::ivec3 offset=difference(m_regionIndex, m_chunkIndex, regionIndex, chunkIndex, gridRegionSize);
+    glm::ivec3 regionIndex=m_index.regionIndex()-(m_index.regionIndex()-m_cameraIndex.regionIndex());
+
+    for(auto renderer:m_renderCube)
+    {
+        if(renderer)
+        {
+            glm::ivec3 regionOffset=renderer->getRegionIndex()-regionIndex;
+            glm::ivec3 offset=regionOffset*renderer->getRegionCellSize();
+
+            renderer->drawOutline(program, offsetId, offset, colorId);
+        }
+    }
+}
+
+template<typename _Grid, typename _Renderer, typename _Index>
+typename RenderCube<_Grid, _Renderer, _Index>::RendererType *RenderCube<_Grid, _Renderer, _Index>::getRenderInfo(const Index &index)
+{
+//    glm::ivec3 regionIndex=m_descriptors->getRegionIndex(key.regionHash);
+//    glm::ivec3 chunkIndex=m_descriptors->getChunkIndex(key.chunkHash);
+//    glm::ivec3 gridRegionSize=m_descriptors->getRegionSize();
+//    glm::ivec3 offset=Index::difference(m_index, index, gridRegionSize);
+    glm::ivec3 offset=_Index::difference(m_index, index);
 
     glm::ivec3 cubeIndex=m_renderCubeCenterIndex+offset; //0 index;
 
@@ -651,14 +684,14 @@ typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid,
     if(cubeIndex.z>=m_renderCubeSize.z)
         return nullptr;
 
-    size_t index=cubeIndex.z*(m_renderCubeSize.y*m_renderCubeSize.x)+cubeIndex.y*m_renderCubeSize.x+cubeIndex.x;
+    size_t renderIndex=cubeIndex.z*(m_renderCubeSize.y*m_renderCubeSize.x)+cubeIndex.y*m_renderCubeSize.x+cubeIndex.x;
     
 #ifndef NDEBUG
-    if(m_renderCube[index])
-        assert(m_renderCube[index]->getChunkHandle()->key().hash==key.hash);
+//    if(m_renderCube[renderIndex])
+//        assert(m_renderCube[renderIndex]->getChunkHandle()->key().hash==key.hash);
 #endif//NDEBUG
     
-    return m_renderCube[index];
+    return m_renderCube[renderIndex];
 //    auto iter=m_renderCubeMap.find(key.hash);
 //
 //    if(iter==m_renderCubeMap.end())
@@ -667,35 +700,35 @@ typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid,
 //    return &m_renderCube[iter->second];
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::releaseChunkInfo(ChunkRendererType *renderer)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::releaseInfo(RendererType *renderer)
 {
     if(!renderer)
         return;
 
 //    assert(renderer->getAction()==RenderAction::Idle);
     //we are dumping this renderer so chunk no longer need.
-    if(renderer->getChunkHandle()->action()!=ChunkAction::Idle)
-        m_grid->cancelLoadChunk(renderer->getChunkHandle());
+    if(renderer->getHandle()->action()!=HandleAction::Idle)
+        Index::cancelLoad(m_grid, renderer->getHandle());
 
     //can only release the renderer if it is not busy
-    if((renderer->getAction()==RenderAction::Idle) )//&& (renderer->getChunkHandle()->action()==ChunkAction::Idle))
+    if((renderer->getAction()==RenderAction::Idle) )//&& (renderer->getChunkHandle()->action()==HandleAction::Idle))
         releaseRenderer(renderer);
     else    
         m_rendererReleaseQueue.push_back(renderer);
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid, _ChunkRenderer>::getFreeRenderer()
+template<typename _Grid, typename _Renderer, typename _Index>
+typename RenderCube<_Grid, _Renderer, _Index>::RendererType *RenderCube<_Grid, _Renderer, _Index>::getFreeRenderer()
 {
     //release any queued renderers
     if(!m_rendererReleaseQueue.empty())
     {
         for(auto iter=m_rendererReleaseQueue.begin(); iter!=m_rendererReleaseQueue.end(); )
         {
-            ChunkRendererType *renderer=*iter;
+            RendererType *renderer=*iter;
 
-            if((renderer->getAction() == RenderAction::Idle) )//&& (renderer->getChunkHandle()->action() == ChunkAction::Idle))
+            if((renderer->getAction() == RenderAction::Idle) )//&& (renderer->getChunkHandle()->action() == HandleAction::Idle))
             {
                 releaseRenderer(renderer);
                 iter=m_rendererReleaseQueue.erase(iter);
@@ -705,13 +738,13 @@ typename RenderCube<_Grid, _ChunkRenderer>::ChunkRendererType *RenderCube<_Grid,
         }
     }
 
-    ChunkRendererType *renderer=m_rendererQueue.get([&](ChunkRendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId); });
+    RendererType *renderer=m_rendererQueue.get([&](RendererType *renderer){renderer->build(); renderer->buildOutline(m_outlineInstanceId); });
     
     return renderer;
 }
 
-template<typename _Grid, typename _ChunkRenderer>
-void RenderCube<_Grid, _ChunkRenderer>::releaseRenderer(ChunkRendererType *renderer)
+template<typename _Grid, typename _Renderer, typename _Index>
+void RenderCube<_Grid, _Renderer, _Index>::releaseRenderer(RendererType *renderer)
 {
     MeshBuffer mesh=renderer->clearMesh();
 

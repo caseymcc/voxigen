@@ -7,14 +7,51 @@ option(VOXIGEN_TEXTURE "Setup texture classes" ON)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
 message(STATUS "Module path:${CMAKE_MODULE_PATH}")
 
+set(HUNTER_STATUS_DEBUG ON)
+set(
+    HUNTER_CACHE_SERVERS
+    "https://github.com/huntercache/voxigen"
+    CACHE
+    STRING
+    "Default cache server"
+)
+
+string(COMPARE EQUAL "$ENV{TRAVIS}" "true" is_travis)
+string(COMPARE EQUAL "$ENV{APPVEYOR}" "True" is_appveyor)
+string(COMPARE EQUAL "$ENV{GITHUB_USER_PASSWORD}" "" password_is_empty)
+
+if((is_travis OR is_appveyor) AND NOT password_is_empty)
+  option(HUNTER_RUN_UPLOAD "Upload cache binaries" ON)
+endif()
+message(STATUS "Hunter upload: ${HUNTER_RUN_UPLOAD}")
+
+set(
+    HUNTER_PASSWORDS_PATH
+    "${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/passwords.cmake"
+    CACHE
+    FILEPATH
+    "Hunter passwords"
+)
+
 #include(HunterPackage)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/HunterGate.cmake)
 
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.208.tar.gz"
-    SHA1 "4128ac8c79c21b250bf825e8119ce0bff05e5132"
-    LOCAL
+    URL "https://github.com/ruslo/hunter/archive/v0.23.34.tar.gz"
+    SHA1 "70287b1ffa810ee4e952052a9adff9b4856d0d54"
 )
+
+#HunterGate(
+#    URL "https://github.com/ruslo/hunter/archive/v0.23.16.tar.gz"
+#    SHA1 "dbe5b1c966414c4a055983c11d5251a2d8f2f16d"
+#    LOCAL
+#)
+
+#HunterGate(
+#    URL "https://github.com/ruslo/hunter/archive/v0.19.208.tar.gz"
+#    SHA1 "4128ac8c79c21b250bf825e8119ce0bff05e5132"
+#    LOCAL
+#)
 
 project(voxigen)
 
@@ -55,14 +92,14 @@ if(VOXIGEN_TEXTURE)
     hunter_add_package(PNG)
     find_package(PNG)
 
-    set(IMGLIB_USE_BOOST_FILESYSTEM ON)
-    set(IMGLIB_USE_COMPILETIME_TYPE OFF)
-    set(IMGLIB_USE_PNG ON)
-    set(IMGLIB_USE_EIGEN ON)
-    set(IMGLIB_USE_OPENCL OFF)
-    set(IMGLIB_USE_OPENCL_CPP OFF)
-    set(IMGLIB_USE_CUDA OFF)
-    set(IMGLIB_BUILD_TEST OFF)
+    set(IMGLIB_USE_BOOST_FILESYSTEM ON CACHE BOOL "Turn on/off support boost filesystem")
+    set(IMGLIB_USE_COMPILETIME_TYPE OFF CACHE BOOL "Turn on/off support for compile time type informat")
+    set(IMGLIB_USE_PNG ON CACHE BOOL "Turn on/off support for PNG")
+    set(IMGLIB_USE_EIGEN ON CACHE BOOL "Turn on/off support for eigen library")
+    set(IMGLIB_USE_OPENCL OFF CACHE BOOL "Turn on/off support for OpenCl")
+    set(IMGLIB_USE_OPENCL_CPP OFF CACHE BOOL "Turn on/off support for OpenCl CPP classes")
+    set(IMGLIB_USE_CUDA OFF CACHE BOOL "Turn on/off support for CUDA")
+    set(IMGLIB_BUILD_TEST OFF CACHE BOOL "Turns on test application")
 
     add_subdirectory(imglib)
     set_target_properties(imglib PROPERTIES FOLDER Libraries)
@@ -87,7 +124,7 @@ if(USE_OCTOMAP)
     set_target_properties (octomath-static PROPERTIES FOLDER Libraries)
 endif()
 
-if(MSVC)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_definitions(-DNOMINMAX)
 endif()
 
@@ -110,6 +147,8 @@ set(voxigen_headers
     include/voxigen/faces.h
     include/voxigen/generator.h
     include/voxigen/gridDescriptors.h
+    include/voxigen/handleState.h
+    include/voxigen/heightmapMeshBuilder.h
     include/voxigen/initGlew.h
     include/voxigen/jsonSerializer.h
     include/voxigen/object.h
@@ -118,21 +157,26 @@ set(voxigen_headers
     include/voxigen/regularGrid.h
     include/voxigen/region.h
     include/voxigen/regionHandle.h
+    include/voxigen/renderAction.h
     include/voxigen/renderCube.h
     include/voxigen/renderPrepThread.h
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleChunkRenderer.h
     include/voxigen/simpleFilesystem.h
+    include/voxigen/simpleRegionRenderer.h
     include/voxigen/simpleRenderer.h
     include/voxigen/simpleShapes.h
 )
 
 set(voxigen_inline
+    include/voxigen/chunkHandle.inl
     include/voxigen/processQueue.inl
     include/voxigen/renderCube.inl
     include/voxigen/renderPrepThread.inl
+    include/voxigen/regionHandle.inl
     include/voxigen/simpleChunkRenderer.inl
+    include/voxigen/simpleRegionRenderer.inl
     include/voxigen/simpleRenderer.inl
 )
 
@@ -153,7 +197,6 @@ set(voxigen_sources
 
 
 set(voxigen_public_libraries
-    opengl_util
     fastNoise
     glew::glew
     Boost::filesystem
@@ -164,6 +207,7 @@ set(voxigen_public_libraries
 )
 
 set(voxigen_libraries ${voxigen_public_libraries}
+    opengl_util
     glm
     RapidJSON::rapidjson
 )
@@ -174,6 +218,7 @@ if(VOXIGEN_TEXTURE)
         include/voxigen/chunkTextureMesh.h
         include/voxigen/layerMethod.h
         include/voxigen/textureAtlas.h
+        include/voxigen/texturedMesh.h
         include/voxigen/texturePack.h
     )
 
@@ -201,7 +246,7 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
-if(MSVC)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 add_library(voxigen SHARED
     ${voxigen_headers}
     ${voxigen_inline}
@@ -215,10 +260,41 @@ add_library(voxigen STATIC
 )
 endif()
 
+#if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#    target_compile_definitions(voxigen PUBLIC GLM_FORCE_EXPLICIT_CTOR)
+#    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+#        target_compile_options(voxigen PUBLIC "-lstdc++fs")
+#    else()
+#        target_compile_options(voxigen PUBLIC "-lstdc++fs")
+#    endif()
+#endif()
+
+if(TARGET fastNoise_sse2)
+    add_dependencies(voxigen fastNoise_sse2)
+    set_target_properties(fastNoise_sse2 PROPERTIES FOLDER Libraries)
+endif()
+if(TARGET fastNoise_sse41)
+    add_dependencies(voxigen fastNoise_sse41)
+    set_target_properties(fastNoise_sse41 PROPERTIES FOLDER Libraries)
+endif()
+if(TARGET fastNoise_avx2)
+    add_dependencies(voxigen fastNoise_avx2)
+    set_target_properties(fastNoise_avx2 PROPERTIES FOLDER Libraries)
+endif()
+if(TARGET fastNoise_avx512)
+    add_dependencies(voxigen fastNoise_avx512)
+    set_target_properties(fastNoise_avx512 PROPERTIES FOLDER Libraries)
+endif()
+
 source_group("Source Files" FILES ${voxigen_inline})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 target_link_libraries(voxigen ${voxigen_libraries})
+
+#if(APPLE)
+#    target_include_directories(voxigen PUBLIC "/opt/X11/include")
+#    target_link_libraries(voxigen X11)
+#endif()
 
 #test app
 set(testApp_sources
@@ -234,8 +310,11 @@ foreach(target ${voxigen_public_libraries})
 endforeach()
 set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config @ONLY)
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user.config)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/launcher/testApp.vcxproj.user.config @ONLY)
+    file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/launcher/testApp.vcxproj.user.config CONDITION $<CONFIG:Debug>)
+else()
+    configure_file(testApp/run.in ${CMAKE_BINARY_DIR}/launcher/run.config @ONLY)
+    file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/run$<IF:$<STREQUAL:CONFIG,"">,,_$<CONFIG>>.sh INPUT ${CMAKE_BINARY_DIR}/launcher/run.config)
+endif()
 
-configure_file(testApp/run.in ${CMAKE_BINARY_DIR}/run.config @ONLY)
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/run_$<CONFIG>.sh INPUT ${CMAKE_BINARY_DIR}/run.config)

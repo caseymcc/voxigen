@@ -40,9 +40,9 @@ public:
     };
 
     ChunkTextureMesh(){};
-    ChunkTextureMesh(TextureAtlas *textureAtlas):m_textureAtlas(textureAtlas) {};
+    ChunkTextureMesh(TextureAtlas const *textureAtlas):m_textureAtlas(textureAtlas) {};
 
-    void setTextureAtlas(TextureAtlas *textureAtlas)
+    void setTextureAtlas(TextureAtlas const *textureAtlas)
     {
         m_textureAtlas=textureAtlas; 
 
@@ -69,7 +69,7 @@ public:
     void clear();
 
 private:
-    TextureAtlas *m_textureAtlas;
+    TextureAtlas const *m_textureAtlas;
     std::array<short, 4> textOffsetX;
     std::array<short, 4> textOffsetY;
 

@@ -2,9 +2,12 @@
 #define _voxigen_chunkFunctions_h_
 
 #include "voxigen/voxigen_export.h"
+#include "voxigen/gridFunctions.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/component_wise.hpp>
+
 #include <vector>
 #include <functional>
 
@@ -13,19 +16,12 @@ namespace voxigen
 
 inline glm::ivec3 difference(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2, const glm::ivec3 &regionSize)
 {
-    glm::ivec3 offset(0.0f, 0.0f, 0.0f);
-
-    if(regionIndex1!=regionIndex2)
-        offset=(regionIndex2-regionIndex1)*regionSize;
-
-    return chunkIndex2+offset-chunkIndex1;
+    return details::difference(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2, regionSize);
 }
 
 inline float distance(const glm::ivec3 &regionIndex1, const glm::ivec3 &chunkIndex1, const glm::ivec3 &regionIndex2, const glm::ivec3 &chunkIndex2, const glm::ivec3 &regionSize, const glm::ivec3 &chunkSize)
 {
-    glm::vec3 offset=glm::vec3(difference(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2, regionSize)*chunkSize);
-    
-    return glm::length(offset);
+    return details::distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2, regionSize, chunkSize);
 }
 
 template<typename _Chunk>
