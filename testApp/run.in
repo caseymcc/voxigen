@@ -1,6 +1,0 @@
-#!/bin/bash
-
-export LD_LIBRARY_PATH=$@VS_ENVIROMENT_DIR@
-cd @VS_WORKING_DIRECTORY@
-
-$<TARGET_FILE:testApp>
