@@ -4,7 +4,7 @@ option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
 option(USE_OCTOMAP "Use octomap octree transversal" OFF)
 option(VOXIGEN_TEXTURE "Setup texture classes" ON)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/CMakeModules)
 message(STATUS "Module path:${CMAKE_MODULE_PATH}")
 
 set(HUNTER_STATUS_DEBUG ON)
@@ -310,11 +310,10 @@ foreach(target ${voxigen_public_libraries})
 endforeach()
 set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    configure_file(testApp/project.vcxproj.user.in ${CMAKE_BINARY_DIR}/launcher/testApp.vcxproj.user.config @ONLY)
-    file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/testApp.vcxproj.user INPUT ${CMAKE_BINARY_DIR}/launcher/testApp.vcxproj.user.config CONDITION $<CONFIG:Debug>)
-else()
-    configure_file(testApp/run.in ${CMAKE_BINARY_DIR}/launcher/run.config @ONLY)
-    file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/run$<IF:$<STREQUAL:CONFIG,"">,,_$<CONFIG>>.sh INPUT ${CMAKE_BINARY_DIR}/launcher/run.config)
-endif()
+include(CreateLaunchers)
+
+create_target_launcher(testApp
+    RUNTIME_LIBRARY_DIRS "${VS_ENVIROMENT_DIR}"
+    WORKING_DIRECTORY "${VS_WORKING_DIRECTORY}"
+)
 
