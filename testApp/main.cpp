@@ -14,6 +14,8 @@
 #include "voxigen/textureAtlas.h"
 #include "voxigen/simpleShapes.h"
 
+#include "voxigen/log.h"
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -64,6 +66,33 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 //    else
 //        LOG(INFO)<<"Opengl : "<<message;
 }
+
+class LogCallback:public generic::ILogCallback
+{
+public:
+    LogCallback() {};
+    virtual ~LogCallback() {};
+
+    virtual bool write(generic::LogLevel level, const std::string &entry)
+    {
+        switch(level)
+        {
+        case generic::LogLevel::Message:
+            LOG(INFO)<<entry;
+            break;
+        case generic::LogLevel::Warning:
+            LOG(WARNING)<<entry;
+            break;
+        case generic::LogLevel::Error:
+            LOG(ERROR)<<entry;
+            break;
+        case generic::LogLevel::Debug:
+            LOG(INFO)<<entry;
+            break;
+        }
+        return true;
+    }
+};
 
 std::string vertMarkerShader=
 "#version 330 core\n"
@@ -116,7 +145,10 @@ int main(int argc, char ** argv)
 //    FLAGS_logtostderr=true;
     FLAGS_alsologtostderr=true;
 
+    //setup logging
     google::InitGoogleLogging(argv[0]);
+    std::shared_ptr<LogCallback> logCallback=std::make_shared<LogCallback>();
+    voxigen::Log::attachCallback(logCallback);
 
     GLFWwindow* window;
 

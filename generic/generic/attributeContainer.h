@@ -13,7 +13,7 @@ namespace generic
 {
 class AttributeContainer;
 
-class generic_EXPORT ChangeListener
+class GENERIC_EXPORT ChangeListener
 {
 public:
     ChangeListener() {}
@@ -38,7 +38,7 @@ private:
 };
 
 
-class generic_EXPORT AttributeContainer:public IChangeNotify
+class GENERIC_EXPORT AttributeContainer:public IChangeNotify
 {
 public:
 	AttributeContainer(){}

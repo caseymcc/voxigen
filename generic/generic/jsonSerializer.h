@@ -1,16 +1,17 @@
 #ifndef _generic_JsonSerializer_h_
 #define _generic_JsonSerializer_h_
 
-#include "generic_export.h"
-#include <string>
+#include "generic/generic_export.h"
 #include "generic/serializer.h"
+
+#include <string>
 
 namespace generic
 {
 
 struct JsonSerializerHidden;
 
-class generic_EXPORT JsonSerializer:public Serializer
+class GENERIC_EXPORT JsonSerializer:public Serializer
 {
 public:
     JsonSerializer();
@@ -41,7 +42,7 @@ private:
 
 struct JsonDeserializerHidden;
 
-class generic_EXPORT JsonDeserializer:public Deserializer
+class GENERIC_EXPORT JsonDeserializer:public Deserializer
 {
 public:
     JsonDeserializer();

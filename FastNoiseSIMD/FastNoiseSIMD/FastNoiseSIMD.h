@@ -127,7 +127,7 @@ enum class SIMDType { None, Neon, SSE2, SSE4_1, AVX2, AVX512 };
 enum class NoiseClass {Single, Fractal, Cellular};
 enum class BuildType {Default, Map, Vector };
 
-struct NoiseDetails
+struct FASTNOISE_EXPORT NoiseDetails
 {
     NoiseDetails():
         seed(1337),
@@ -165,7 +165,7 @@ struct NoiseDetails
     float  cellularJitter;
 };
 
-struct PerturbDetails
+struct FASTNOISE_EXPORT PerturbDetails
 {
     PerturbDetails():
         Amp(1.0f),

@@ -35,12 +35,11 @@ public:
     const glm::ivec3 &getRegionIndex() const { return m_region->getRegionIndex(); }
     glm::ivec3 getRegionCellSize() const { return details::regionCellSize<Region, Chunk>(); }
 
-    void draw(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset);
+    void draw(const glm::ivec3 &offset);
     void drawInfo(const glm::mat4x4 &projectionViewMat, const glm::ivec3 &offset);
-    void drawOutline(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset, size_t colorId);
+    void drawOutline(const glm::ivec3 &offset);
 
     void build();
-    void buildOutline(unsigned int dummy);
 
     void clear();
 

@@ -8,6 +8,7 @@
 #include "voxigen/jsonSerializer.h"
 #include "voxigen/simpleFilesystem.h"
 #include "voxigen/processQueue.h"
+#include "voxigen/log.h"
 
 #include <thread>
 #include <mutex>
@@ -672,7 +673,7 @@ template<typename _Grid>
 void DataStore<_Grid>::generate(SharedChunkHandle chunkHandle, size_t lod)
 {
 #ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") generating";
+    Log::debug("MainThread - ChunkHandle %x (%d, %d) generating\n", chunkHandle.get(), chunkHandle->regionHash(), chunkHandle->hash());
 #endif//LOG_PROCESS_QUEUE
 
     chunkHandle->setAction(HandleAction::Generating);
@@ -683,7 +684,7 @@ template<typename _Grid>
 void DataStore<_Grid>::read(SharedChunkHandle chunkHandle, size_t lod)
 {
 #ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") reading";
+    Log::debug("MainThread -  ChunkHandle %x (%d, %d) reading", chunkHandle.get(), chunkHandle->regionHash(), chunkHandle->hash());
 #endif//LOG_PROCESS_QUEUE
     chunkHandle->setAction(HandleAction::Reading);
     m_processQueue->addRead(chunkHandle, lod);
@@ -693,7 +694,7 @@ template<typename _Grid>
 void DataStore<_Grid>::write(SharedChunkHandle chunkHandle)
 {
 #ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") writing";
+    Log::debug("MainThread -  ChunkHandle %x (%d, %d) writing", chunkHandle.get(), chunkHandle->regionHash(), chunkHandle->hash());
 #endif//LOG_PROCESS_QUEUE
     chunkHandle->setAction(HandleAction::Writing);
     m_processQueue->addWrite(chunkHandle);
@@ -710,7 +711,7 @@ template<typename _Grid>
 void DataStore<_Grid>::cancel(SharedChunkHandle chunkHandle)
 {
 #ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"MainThread - ChunkHandle "<<chunkHandle.get()<<" ("<<chunkHandle->regionHash()<<", "<<chunkHandle->hash()<<") canceling";
+    Log::debug("MainThread - ChunkHandle %x (%d, %d) canceling", chunkHandle.get(), chunkHandle->regionHash(), chunkHandle->hash());
 #endif//LOG_PROCESS_QUEUE
 
     m_processQueue->addCancel(chunkHandle);

@@ -5,6 +5,8 @@
 #include "voxigen/regularGrid.h"
 #include "voxigen/search.h"
 #include "voxigen/textureAtlas.h"
+#include "voxigen/chunkTextureMesh.h"
+#include "voxigen/meshBuffer.h"
 
 #include <string>
 #include <deque>
@@ -84,7 +86,9 @@ public:
 
     template<typename _Grid, typename _Renderer>
     void requestMesh(_Renderer *chunkRenderer, TextureAtlas *textureAtlas);
+
     void requestReleaseMesh(MeshBuffer &mesh);
+    void releaseMesh(MeshBuffer &mesh) { requestReleaseMesh(mesh); }
 
     void updateQueues(Requests &completedQueue);// ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed);
 

@@ -41,18 +41,6 @@ HunterGate(
     SHA1 "70287b1ffa810ee4e952052a9adff9b4856d0d54"
 )
 
-#HunterGate(
-#    URL "https://github.com/ruslo/hunter/archive/v0.23.16.tar.gz"
-#    SHA1 "dbe5b1c966414c4a055983c11d5251a2d8f2f16d"
-#    LOCAL
-#)
-
-#HunterGate(
-#    URL "https://github.com/ruslo/hunter/archive/v0.19.208.tar.gz"
-#    SHA1 "4128ac8c79c21b250bf825e8119ce0bff05e5132"
-#    LOCAL
-#)
-
 project(voxigen)
 
 #setup build folders
@@ -151,6 +139,8 @@ set(voxigen_headers
     include/voxigen/heightmapMeshBuilder.h
     include/voxigen/initGlew.h
     include/voxigen/jsonSerializer.h
+    include/voxigen/log.h
+    include/voxigen/meshBuffer.h
     include/voxigen/object.h
     include/voxigen/processQueue.h
     include/voxigen/regular2DGrid.h
@@ -246,18 +236,14 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-add_library(voxigen SHARED
+add_library(voxigen
     ${voxigen_headers}
     ${voxigen_inline}
     ${voxigen_sources}
 )
-else()
-add_library(voxigen STATIC
-    ${voxigen_headers}
-    ${voxigen_inline}
-    ${voxigen_sources}
-)
+
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(voxigen PUBLIC -DVOXIGEN_STATIC_DEFINE)
 endif()
 
 #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

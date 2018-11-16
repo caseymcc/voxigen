@@ -3,6 +3,7 @@
 
 #include "voxigen/regularGrid.h"
 #include "voxigen/freeQueue.h"
+//#include "voxigen/renderPrepThread.h"
 
 #include <memory>
 
@@ -280,7 +281,7 @@ glm::ivec3 operator-(const RegionChunkIndex<_Region, _Chunk> &value1, const glm:
 //RenderCube
 /////////////////////////////////////////////////////////////////////////////////////////
 //template<typename _Grid, typename _ChunkRenderer>
-template<typename _Grid, typename _Renderer, typename _Index>
+template<typename _Grid, typename _Renderer, typename _MeshHandler, typename _Index>
 class RenderCube//:public RegularGridTypes<_Grid>
 {
 public:
@@ -294,21 +295,23 @@ public:
     typedef std::vector<RendererType> Renderers;
 //    typedef ChunkRenderInfo<SharedChunkHandle, _ChunkRenderer> ChunkRenderInfoType;
 
+    typedef _MeshHandler MeshHandler;
+
     typedef _Index Index;
 
-    RenderCube(GridType *grid, DescriptorType *descriptors, RenderPrepThread *prepThread);
+    RenderCube(GridType *grid, DescriptorType *descriptors, MeshHandler *meshHandler);
     ~RenderCube();
 
     void setViewRadius(const glm::ivec3 &radius);
-    void setOutlineInstance(unsigned int outlineInstanceId);
 
     void init(const Index &index);
     void updateCamera(const Index &index);
     void update(const Index &index);
 
-    void draw(opengl_util::Program *program, size_t offsetId);
+//    void draw();
+    void draw();
     void drawInfo(const glm::mat4x4 &projectionViewMat);
-    void drawOutline(opengl_util::Program *program, size_t offsetId, size_t colorId);
+    void drawOutline();
 
 //    ChunkRenderInfoType *getChunkRenderInfo(const Key &key);
     RendererType *getRenderInfo(const Index &index);// const Key &key);
@@ -329,10 +332,9 @@ private:
     
     GridType *m_grid;
     const DescriptorType *m_descriptors;
-    RenderPrepThread *m_renderPrepThread;
+    MeshHandler *m_meshHandler;
 
     glm::ivec3 m_viewRadius;
-    unsigned int m_outlineInstanceId;
 
 //    glm::ivec3 m_cameraRegionIndex;
 //    glm::ivec3 m_cameraChunkIndex;

@@ -28,7 +28,7 @@ template<typename classType> class AttributeTemplate;
 namespace generic
 {
 
-class generic_EXPORT IChangeNotify
+class GENERIC_EXPORT IChangeNotify
 {
 public:
 	IChangeNotify(){}
@@ -42,7 +42,7 @@ class Attribute;
 typedef std::shared_ptr<Attribute> SharedAttribute;
 typedef std::vector<SharedAttribute> SharedAttributes;
 
-class generic_EXPORT Attribute
+class GENERIC_EXPORT Attribute
 {
 public:
 	Attribute(Type type, std::string name):m_type(type), m_name(name){}
@@ -139,72 +139,72 @@ protected:
 template <typename T> void Attribute::from(T value){AttributeTemplate<T> *d=(AttributeTemplate<T> *)(this);d?d->template from<T>(value):assert(false);}
 template <typename T> T Attribute::to() const { const AttributeTemplate<T> *d=(const AttributeTemplate<T> *)(this); return d?d->template to<T>():assert(false); }
 
-template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name):Attribute(Type::Bool, name), m_parent(nullptr), m_value(false) {};
-template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name, bool value):Attribute(Type::Bool, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Bool, name), m_parent(parent), m_value(false){};
-template<> generic_EXPORT AttributeTemplate<bool>::AttributeTemplate(IChangeNotify *parent, const std::string name, bool value):Attribute(Type::Bool, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<bool>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addBool(m_value); }
-template<> void generic_EXPORT AttributeTemplate<bool>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getBool(); }
+template<> GENERIC_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name):Attribute(Type::Bool, name), m_parent(nullptr), m_value(false) {};
+template<> GENERIC_EXPORT AttributeTemplate<bool>::AttributeTemplate(const std::string name, bool value):Attribute(Type::Bool, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<bool>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Bool, name), m_parent(parent), m_value(false){};
+template<> GENERIC_EXPORT AttributeTemplate<bool>::AttributeTemplate(IChangeNotify *parent, const std::string name, bool value):Attribute(Type::Bool, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<bool>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addBool(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<bool>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getBool(); }
 typedef AttributeTemplate<bool> AttributeBool;
 
-template<> generic_EXPORT AttributeTemplate<int>::AttributeTemplate(const std::string name):Attribute(Type::Int, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<int>::AttributeTemplate(const std::string name, int value):Attribute(Type::Int, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<int>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<int>::AttributeTemplate(IChangeNotify *parent, const std::string name, int value):Attribute(Type::Int, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<int>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt(m_value); }
-template<> void generic_EXPORT AttributeTemplate<int>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
+template<> GENERIC_EXPORT AttributeTemplate<int>::AttributeTemplate(const std::string name):Attribute(Type::Int, name), m_parent(nullptr), m_value(0) {};
+template<> GENERIC_EXPORT AttributeTemplate<int>::AttributeTemplate(const std::string name, int value):Attribute(Type::Int, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<int>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int, name), m_parent(parent), m_value(0){};
+template<> GENERIC_EXPORT AttributeTemplate<int>::AttributeTemplate(IChangeNotify *parent, const std::string name, int value):Attribute(Type::Int, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<int>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<int>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
 typedef AttributeTemplate<int> AttributeInt;
 
-template<> generic_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(const std::string name):Attribute(Type::UInt, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(const std::string name, unsigned int value):Attribute(Type::UInt, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(IChangeNotify *parent, const std::string name, unsigned int value):Attribute(Type::UInt, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<unsigned int>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt(m_value); }
-template<> void generic_EXPORT AttributeTemplate<unsigned int>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
+template<> GENERIC_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(const std::string name):Attribute(Type::UInt, name), m_parent(nullptr), m_value(0) {};
+template<> GENERIC_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(const std::string name, unsigned int value):Attribute(Type::UInt, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt, name), m_parent(parent), m_value(0){};
+template<> GENERIC_EXPORT AttributeTemplate<unsigned int>::AttributeTemplate(IChangeNotify *parent, const std::string name, unsigned int value):Attribute(Type::UInt, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<unsigned int>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<unsigned int>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
 typedef AttributeTemplate<unsigned int> AttributeUInt;
 
-template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name):Attribute(Type::Int64, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int64, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<int64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt64(m_value); }
-template<> void generic_EXPORT AttributeTemplate<int64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
+template<> GENERIC_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name):Attribute(Type::Int64, name), m_parent(nullptr), m_value(0) {};
+template<> GENERIC_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Int64, name), m_parent(parent), m_value(0){};
+template<> GENERIC_EXPORT AttributeTemplate<int64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, int64_t value):Attribute(Type::Int64, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<int64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addInt64(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<int64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getInt(); }
 typedef AttributeTemplate<int64_t> AttributeInt64;
 
-template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(0) {};
-template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt64, name), m_parent(parent), m_value(0){};
-template<> generic_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<uint64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt64(m_value); }
-template<> void generic_EXPORT AttributeTemplate<uint64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
+template<> GENERIC_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(0) {};
+template<> GENERIC_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::UInt64, name), m_parent(parent), m_value(0){};
+template<> GENERIC_EXPORT AttributeTemplate<uint64_t>::AttributeTemplate(IChangeNotify *parent, const std::string name, uint64_t value):Attribute(Type::UInt64, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<uint64_t>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addUInt64(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<uint64_t>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getUInt(); }
 typedef AttributeTemplate<uint64_t> AttributeUInt64;
 
-template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name):Attribute(Type::Float, name), m_parent(nullptr), m_value(0.0f) {};
-template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name, float value):Attribute(Type::Float, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Float, name), m_parent(parent), m_value(0.0f){};
-template<> generic_EXPORT AttributeTemplate<float>::AttributeTemplate(IChangeNotify *parent, const std::string name, float value):Attribute(Type::Float, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<float>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addFloat(m_value); }
-template<> void generic_EXPORT AttributeTemplate<float>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getFloat(); }
+template<> GENERIC_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name):Attribute(Type::Float, name), m_parent(nullptr), m_value(0.0f) {};
+template<> GENERIC_EXPORT AttributeTemplate<float>::AttributeTemplate(const std::string name, float value):Attribute(Type::Float, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<float>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Float, name), m_parent(parent), m_value(0.0f){};
+template<> GENERIC_EXPORT AttributeTemplate<float>::AttributeTemplate(IChangeNotify *parent, const std::string name, float value):Attribute(Type::Float, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<float>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addFloat(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<float>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getFloat(); }
 typedef AttributeTemplate<float> AttributeFloat;
 
-template<> generic_EXPORT AttributeTemplate<double>::AttributeTemplate(const std::string name):Attribute(Type::Double, name), m_parent(nullptr), m_value(0.0) {};
-template<> generic_EXPORT AttributeTemplate<double>::AttributeTemplate(const std::string name, double value):Attribute(Type::Double, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<double>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Double, name), m_parent(parent), m_value(0.0){};
-template<> generic_EXPORT AttributeTemplate<double>::AttributeTemplate(IChangeNotify *parent, const std::string name, double value):Attribute(Type::Double, name), m_parent(parent), m_value(value){};
-template<> void generic_EXPORT AttributeTemplate<double>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addDouble(m_value); }
-template<> void generic_EXPORT AttributeTemplate<double>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getDouble(); }
+template<> GENERIC_EXPORT AttributeTemplate<double>::AttributeTemplate(const std::string name):Attribute(Type::Double, name), m_parent(nullptr), m_value(0.0) {};
+template<> GENERIC_EXPORT AttributeTemplate<double>::AttributeTemplate(const std::string name, double value):Attribute(Type::Double, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<double>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::Double, name), m_parent(parent), m_value(0.0){};
+template<> GENERIC_EXPORT AttributeTemplate<double>::AttributeTemplate(IChangeNotify *parent, const std::string name, double value):Attribute(Type::Double, name), m_parent(parent), m_value(value){};
+template<> void GENERIC_EXPORT AttributeTemplate<double>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addDouble(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<double>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getDouble(); }
 typedef AttributeTemplate<double> AttributeDouble;
 
-template<> generic_EXPORT AttributeTemplate<std::string>::AttributeTemplate(const std::string name):Attribute(Type::String, name), m_parent(nullptr), m_value("") {};
-template<> generic_EXPORT AttributeTemplate<std::string>::AttributeTemplate(const std::string name, std::string value):Attribute(Type::String, name), m_parent(nullptr), m_value(value) {};
-template<> generic_EXPORT AttributeTemplate<std::string>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::String, name), m_parent(parent), m_value(""){};
-template<> generic_EXPORT AttributeTemplate<std::string>::AttributeTemplate(IChangeNotify *parent, const std::string name, std::string value):Attribute(Type::String, name), m_parent(parent), m_value(value){};
-template<> generic_EXPORT void AttributeTemplate<std::string>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addString(m_value); }
-template<> void generic_EXPORT AttributeTemplate<std::string>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getString(); }
+template<> GENERIC_EXPORT AttributeTemplate<std::string>::AttributeTemplate(const std::string name):Attribute(Type::String, name), m_parent(nullptr), m_value("") {};
+template<> GENERIC_EXPORT AttributeTemplate<std::string>::AttributeTemplate(const std::string name, std::string value):Attribute(Type::String, name), m_parent(nullptr), m_value(value) {};
+template<> GENERIC_EXPORT AttributeTemplate<std::string>::AttributeTemplate(IChangeNotify *parent, const std::string name):Attribute(Type::String, name), m_parent(parent), m_value(""){};
+template<> GENERIC_EXPORT AttributeTemplate<std::string>::AttributeTemplate(IChangeNotify *parent, const std::string name, std::string value):Attribute(Type::String, name), m_parent(parent), m_value(value){};
+template<> GENERIC_EXPORT void AttributeTemplate<std::string>::serialize(Serializer *serializer) { serializer->addKey(name()); serializer->addString(m_value); }
+template<> void GENERIC_EXPORT AttributeTemplate<std::string>::deserialize(Deserializer *serializer) { if(serializer->key(name())) m_value=serializer->getString(); }
 typedef AttributeTemplate<std::string> AttributeString;
 
 template<typename classType>
-class generic_EXPORT AttributeEnum:public AttributeTemplate<classType>
+class GENERIC_EXPORT AttributeEnum:public AttributeTemplate<classType>
 {
 public:
 	AttributeEnum(const std::string name):AttributeTemplate<classType>(nullptr, name) {};

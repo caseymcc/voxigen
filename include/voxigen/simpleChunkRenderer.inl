@@ -4,6 +4,192 @@ namespace voxigen
 {
 
 template<typename _Region, typename _Chunk>
+std::string SimpleChunkRenderer<_Region, _Chunk>::vertShader=
+"#version 330 core\n"
+"//layout (location = 0) in vec3 blockvertex;\n"
+"//layout (location = 1) in vec3 blockNormal;\n"
+"//layout (location = 2) in vec2 blockTexCoord;\n"
+"//layout (location = 3) in vec4 blockOffset;\n"
+"layout (location = 0) in uvec3 packedPosition;\n"
+"layout (location = 1) in ivec2 vTexCoords;\n"
+"layout (location = 2) in uint data;\n"
+"\n"
+"out vec3 position;\n"
+"//out vec3 normal;\n"
+"out vec2 texCoords;\n"
+"flat out uint type;\n"
+"\n"
+"//layout (std140) uniform pos\n"
+"//{\n"
+"//   vec4 cameraPos;\n"
+"//   vec4 lightPos;\n"
+"//   vec4 lightColor;\n"
+"//}\n"
+"uniform mat4 projectionView;\n"
+"uniform vec3 regionOffset;\n"
+"\n"
+"void main()\n"
+"{\n"
+"//   gl_Position=vec4(blockOffset.xyz+blockvertex, 1.0);\n"
+"//   position=regionOffset+blockOffset.xyz+blockvertex;\n"
+"   vec3 decodedPosition=packedPosition;\n"
+"   decodedPosition=decodedPosition;\n"
+"   position=regionOffset+decodedPosition;\n"
+"//   normal=blockNormal;\n"
+"   texCoords=vec2(vTexCoords.x, vTexCoords.y);\n"
+"//   texCoords=vec3(0.0, 0.0, data);\n"
+"   type=data;\n"
+"   gl_Position=projectionView*vec4(position, 1.0);\n"
+
+"}\n"
+"";
+
+template<typename _Region, typename _Chunk>
+std::string SimpleChunkRenderer<_Region, _Chunk>::fragmentShader=
+"#version 330 core\n"
+"\n"
+"in vec3 position;\n"
+"//in vec3 normal;\n"
+"in vec2 texCoords;\n"
+"flat in uint type;\n"
+"out vec4 color;\n"
+"\n"
+"uniform vec3 lightPos;\n"
+"uniform vec3 lightColor;\n"
+"\n"
+"uniform sampler2D textureSampler;\n"
+"\n"
+"void main()\n"
+"{\n"
+"   vec3 normal = cross(dFdy(position), dFdx(position));\n"
+"   normal=normalize(normal);\n"
+"\n"
+"//   float value=texCoords.z/10.0f;\n"
+"//   color=vec3(texCoords.x, 0.0, texCoords.y);\n"
+"   // ambient\n"
+"   float ambientStrength=0.5;\n"
+"   vec3 ambient=ambientStrength * lightColor;\n"
+"   \n"
+"   // diffuse \n"
+"   vec3 lightDir=normalize(lightPos-position); \n"
+"   float diff=max(dot(normal, lightDir), 0.0); \n"
+"   vec3 diffuse=diff * lightColor; \n"
+"//   color=vec4(texCoords.x/1024.0f, texCoords.y/1024.0f, 0.0f, 1.0f);\n"
+"   color=texelFetch(textureSampler, ivec2(texCoords), 0);\n"
+"//   color=vec4((ambient+diffuse)*color.rgb, color.a);\n"
+"//   color=vec4((ambient+diffuse)*vec3(value, value, value), 1.0f);\n"
+"//   color=vec4(abs(normal), 1.0f);\n"
+"//   color=vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+"//   if(type==1u)\n"
+"//       color=vec4(0.2f, 0.2f, 1.0f, 0.8f);\n"
+"//   else if(type>=2u && type<=3u)\n"
+"//       color=vec4(0.08f, 0.53f, 0.08f, 1.0f);\n"
+"//   else if(type>3u)\n"
+"//   {\n"
+"//       float level=1.0f-(float(type-3u)/10.f);"
+"//       color=vec4(level, level, level, 1.0f);\n"
+"//   }\n"
+"//   color=vec4(color.rgb*(ambient+diffuse), color.a);\n"
+"//   color=vec4(1.0, 0.0, 0.0, 1.0);\n"
+"}\n"
+"";
+
+template<typename _Region, typename _Chunk>
+std::string SimpleChunkRenderer<_Region, _Chunk>::vertOutlineShader=
+"#version 330 core\n"
+"layout (location = 0) in vec3 inputVertex;\n"
+"layout (location = 1) in vec3 inputNormal;\n"
+"layout (location = 2) in vec2 inputTexCoord;\n"
+"layout (location = 3) in vec4 inputOffset;\n"
+"\n"
+"out vec3 position;\n"
+"out vec3 normal;\n"
+"out vec3 texCoords;\n"
+"out vec3 cubePos;\n"
+"\n"
+"uniform mat4 projectionView;\n"
+"uniform vec3 regionOffset;\n"
+"\n"
+"void main()\n"
+"{\n"
+"//   position=inputOffset.xyz+inputVertex;\n"
+"   cubePos=inputVertex;\n"
+"   position=regionOffset+inputOffset.xyz+inputVertex;\n"
+"   normal=inputNormal;\n"
+"   gl_Position=projectionView*vec4(position, 1.0);\n"
+"}\n"
+"";
+
+template<typename _Region, typename _Chunk>
+std::string SimpleChunkRenderer<_Region, _Chunk>::fragmentOutlineShader=
+"#version 330 core\n"
+"\n"
+"in vec3 position;\n"
+"in vec3 normal;\n"
+"in vec3 texCoords;\n"
+"in vec3 vertexColor;\n"
+"in vec3 cubePos;\n"
+"\n"
+"out vec4 color;\n"
+"\n"
+"uniform vec3 lightPos;\n"
+"uniform vec3 statusColor;\n"
+"uniform float lineWidth=0.1;\n"
+"\n"
+"void main()\n"
+"{\n"
+"//   float value=1.0f;"
+"//   vec3 lightColor=vec3(1.0f, 1.0f, 1.0f);\n"
+"   vec3 distance=min(cubePos, vec3(64.0, 64.0, 16.0)-cubePos);\n"
+"   float ambientStrength=0.5; \n"
+"//   vec3 ambient=ambientStrength * lightColor;\n"
+"   \n"
+"   int count=0;\n"
+"   if(distance.x < lineWidth)\n"
+"       count++;\n"
+"   if(distance.y < lineWidth)\n"
+"       count++;\n"
+"   if(distance.z < lineWidth)\n"
+"       count++;\n"
+"   if(count<2)\n"
+"       discard;\n"
+"   // diffuse \n"
+"//   vec3 lightDir=normalize(lightPos-position); \n"
+"//   float diff=max(dot(normal, lightDir), 0.0); \n"
+"//   vec3 diffuse=diff*lightColor; \n"
+"//   color=vec4(statusColor*(ambientStrength+diff), 1.0f);\n"
+"   color=vec4(statusColor, 1.0f);\n"
+"}\n"
+"";
+
+template<typename _Region, typename _Chunk>
+bool SimpleChunkRenderer<_Region, _Chunk>::m_outlineInstanceGen=false;
+
+template<typename _Region, typename _Chunk>
+opengl_util::Program SimpleChunkRenderer<_Region, _Chunk>::m_program;
+
+template<typename _Region, typename _Chunk>
+size_t SimpleChunkRenderer<_Region, _Chunk>::m_projectionViewId;
+
+template<typename _Region, typename _Chunk>
+size_t SimpleChunkRenderer<_Region, _Chunk>::m_offsetId;
+
+template<typename _Region, typename _Chunk>
+opengl_util::Program SimpleChunkRenderer<_Region, _Chunk>::m_outlineProgram;
+
+template<typename _Region, typename _Chunk>
+size_t SimpleChunkRenderer<_Region, _Chunk>::m_outlineProjectionViewId;
+
+template<typename _Region, typename _Chunk>
+size_t SimpleChunkRenderer<_Region, _Chunk>::m_outlineOffsetId;
+
+template<typename _Region, typename _Chunk>
+size_t SimpleChunkRenderer<_Region, _Chunk>::m_outlineColorId;
+
+template<typename _Region, typename _Chunk>
+unsigned int SimpleChunkRenderer<_Region, _Chunk>::m_outlineInstanceVertices=0;
+
+template<typename _Region, typename _Chunk>
 SimpleChunkRenderer<_Region, _Chunk>::SimpleChunkRenderer():
 m_state(Init),
 m_action(RenderAction::Idle),
@@ -42,6 +228,55 @@ void SimpleChunkRenderer<_Region, _Chunk>::updateInfo()
 }
 
 template<typename _Region, typename _Chunk>
+void SimpleChunkRenderer<_Region, _Chunk>::buildPrograms()
+{
+    std::string error;
+
+    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
+    {
+        assert(false);
+        return;
+    }
+
+    m_projectionViewId=m_program.getUniformId("projectionView");
+    m_offsetId=m_program.getUniformId("regionOffset");
+
+    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
+    {
+        assert(false);
+        return;
+    }
+
+    m_outlineProjectionViewId=m_outlineProgram.getUniformId("projectionView");
+    m_outlineOffsetId=m_outlineProgram.getUniformId("regionOffset");
+    m_outlineColorId=m_outlineProgram.getUniformId("statusColor");
+}
+
+template<typename _Region, typename _Chunk>
+void SimpleChunkRenderer<_Region, _Chunk>::useProgram()
+{
+    m_program.use();
+}
+
+template<typename _Region, typename _Chunk>
+void SimpleChunkRenderer<_Region, _Chunk>::updateProgramProjection(const glm::mat4 &projection)
+{
+    m_program.uniform(m_projectionViewId)=projection;
+}
+
+template<typename _Region, typename _Chunk>
+void SimpleChunkRenderer<_Region, _Chunk>::useOutlineProgram()
+{
+    m_outlineProgram.use();
+}
+
+template<typename _Region, typename _Chunk>
+void SimpleChunkRenderer<_Region, _Chunk>::updateOutlineProgramProjection(const glm::mat4 &projection)
+{
+    m_outlineProgram.uniform(m_outlineProjectionViewId)=projection;
+}
+
+template<typename _Region, typename _Chunk>
 void SimpleChunkRenderer<_Region, _Chunk>::setChunk(SharedChunkHandle chunk)
 {
     m_chunkHandle=chunk;
@@ -75,18 +310,35 @@ void SimpleChunkRenderer<_Region, _Chunk>::setEmpty()
 template<typename _Region, typename _Chunk>
 void SimpleChunkRenderer<_Region, _Chunk>::build()//unsigned int instanceData)
 {
-    if(m_vertexArrayGen)
-        return;
+    if(!m_vertexArrayGen)
+    {
+        glGenVertexArrays(1, &m_vertexArray);
+        m_vertexArrayGen=true;
 
-    glGenVertexArrays(1, &m_vertexArray);
-    m_vertexArrayGen=true;
+        m_infoText=gltCreateText();
+    }
 
-    m_infoText=gltCreateText();
-}
+    if(!m_outlineInstanceGen)
+    {
+        const std::vector<float> &outlineVertices=SimpleCube<ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value>::vertCoords;
 
-template<typename _Region, typename _Chunk>
-void SimpleChunkRenderer<_Region, _Chunk>::buildOutline(unsigned int instanceData)
-{
+        glGenBuffers(1, &m_outlineInstanceVertices);
+        glBindBuffer(GL_ARRAY_BUFFER, m_outlineInstanceVertices);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*outlineVertices.size(), outlineVertices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+//        float scale(0.05f);
+//        float lineHeight=gltGetLineHeight(1.0f);
+//
+//        m_infoMat=glm::scale(glm::mat4(1.0f), glm::vec3(scale, -scale, scale));
+//
+//        m_infoMat=glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3*lineHeight*scale, 0.0f))*m_infoMat;
+//        m_infoMat=glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f))*m_infoMat;
+//        m_infoMat=glm::rotate(glm::mat4(1.0f), glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f))*m_infoMat;
+
+        m_outlineInstanceGen=true;
+    }
+
     if(m_outlineGen)
         return;
 
@@ -97,7 +349,7 @@ void SimpleChunkRenderer<_Region, _Chunk>::buildOutline(unsigned int instanceDat
     glBindVertexArray(m_outlineVertexArray);
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceData);
+    glBindBuffer(GL_ARRAY_BUFFER, m_outlineInstanceVertices);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)0);
 
     glEnableVertexAttribArray(1);
@@ -249,14 +501,14 @@ bool SimpleChunkRenderer<_Region, _Chunk>::incrementCopy()
 }
 
 template<typename _Region, typename _Chunk>
-void SimpleChunkRenderer<_Region, _Chunk>::draw(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset)
+void SimpleChunkRenderer<_Region, _Chunk>::draw(const glm::ivec3 &offset)
 {
 //    if(m_state==Built)
     if(m_meshBuffer.valid)
     {
         glm::vec3 renderOffset=glm::vec3(offset+getGridOffset());
 
-        program->uniform(offsetId)=renderOffset;
+        m_program.uniform(m_offsetId)=renderOffset;
 
         if(!m_meshBuffer.ready)
         {
@@ -280,8 +532,6 @@ void SimpleChunkRenderer<_Region, _Chunk>::draw(opengl_util::Program *program, s
         glDrawElements(GL_TRIANGLES, m_meshBuffer.indices, m_meshBuffer.indexType, 0);
         assert(glGetError()==GL_NO_ERROR);
     }
-
-
 }
 
 template<typename _Region, typename _Chunk>
@@ -305,10 +555,8 @@ void SimpleChunkRenderer<_Region, _Chunk>::drawInfo(const glm::mat4x4 &projectio
 }
 
 template<typename _Region, typename _Chunk>
-void SimpleChunkRenderer<_Region, _Chunk>::drawOutline(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset, size_t colorId)
+void SimpleChunkRenderer<_Region, _Chunk>::drawOutline(const glm::ivec3 &offset)
 {
-    
-
     glm::vec3 color(1.0f, 1.0f, 1.0f);
 
     if(!m_outlineBuilt)
@@ -342,8 +590,8 @@ void SimpleChunkRenderer<_Region, _Chunk>::drawOutline(opengl_util::Program *pro
     else if(action==HandleAction::Generating)
         color=glm::vec3(1.0f, 0.5f, 0.0f);
 
-    program->uniform(offsetId)=glm::vec3(offset);// +getGridOffset());
-    program->uniform(colorId)=color;
+    m_outlineProgram.uniform(m_outlineOffsetId)=glm::vec3(offset);// +getGridOffset());
+    m_outlineProgram.uniform(m_outlineColorId)=color;
 
     glBindVertexArray(m_outlineVertexArray);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);

@@ -174,18 +174,14 @@ void RegionRenderer<_RegionHandle>::setHandle(SharedRegionHandle handle)
 template<typename _RegionHandle>
 void RegionRenderer<_RegionHandle>::build()
 {
-    if(m_vertexArrayGen)
-        return;
+    if(!m_vertexArrayGen)
+    {
+        glGenVertexArrays(1, &m_vertexArray);
+        m_vertexArrayGen=true;
 
-    glGenVertexArrays(1, &m_vertexArray);
-    m_vertexArrayGen=true;
+        m_infoText=gltCreateText();
+    }
 
-    m_infoText=gltCreateText();
-}
-
-template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::buildOutline(unsigned int dummy)
-{
     if(!m_outlineInstanceGen)
     {
         const std::vector<float> &outlineVertices=SimpleCube<Region::sizeX::value*Chunk::sizeX::value,
@@ -239,11 +235,11 @@ void RegionRenderer<_RegionHandle>::buildOutline(unsigned int dummy)
 }
 
 template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::draw(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset)
+void RegionRenderer<_RegionHandle>::draw(const glm::ivec3 &offset)
 {
     if(m_meshBuffer.valid)
     {
-        m_program.uniform(offsetId)=glm::vec3(offset);
+        m_program.uniform(m_offsetId)=glm::vec3(offset);
 
         if(!m_meshBuffer.ready)
         {
@@ -281,7 +277,7 @@ void RegionRenderer<_RegionHandle>::drawInfo(const glm::mat4x4 &projectionViewMa
 }
 
 template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::drawOutline(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset, size_t colorId)
+void RegionRenderer<_RegionHandle>::drawOutline(const glm::ivec3 &offset)
 {
     glm::vec3 color(1.0f, 1.0f, 1.0f);
 

@@ -71,9 +71,9 @@ public:
 //    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
 
     typedef RegionChunkIndex<typename _Grid::RegionType, typename _Grid::ChunkType> RegionChunkIndexType;
-    typedef RenderCube<GridType, ChunkRendererType, RegionChunkIndexType> RenderCubeType;
+    typedef RenderCube<GridType, ChunkRendererType, RenderPrepThread, RegionChunkIndexType> RenderCubeType;
     typedef RegionIndex<typename _Grid::RegionType> RegionIndexType;
-    typedef RenderCube<GridType, RegionRendererType, RegionIndexType> RegionRenderCubeType;
+    typedef RenderCube<GridType, RegionRendererType, RenderPrepThread, RegionIndexType> RegionRenderCubeType;
 
     typedef prep::RequestMesh<_Grid, ChunkRendererType> ChunkRequestMesh;
     typedef prep::RequestMesh<_Grid, RegionRendererType> RegionRequestMesh;

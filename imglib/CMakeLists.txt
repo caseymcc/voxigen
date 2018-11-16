@@ -119,12 +119,16 @@ if(IMGLIB_USE_OPENCL)
 
 endif()
 
-
-add_library(imglib STATIC
+add_library(imglib
     ${imglib_sources}
     ${imglib_headers}
     ${embededFiles}
 )
+
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(imglib PUBLIC -DIMGLIB_STATIC_DEFINE)
+endif()
+
 
 include(GenerateExportHeader)
 generate_export_header(imglib)
