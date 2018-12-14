@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 3.0)
 
 option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
-option(USE_OCTOMAP "Use octomap octree transversal" OFF)
+option(VOXIGEN_USE_OCTOMAP "Use octomap octree transversal" OFF)
 option(VOXIGEN_TEXTURE "Setup texture classes" ON)
+option(VOXIGEN_TESTAPP "Create simple app project for testing" ON)
+option(VOXIGEN_LMBR_LIB "Generate Lumberyard 3rdParty library json file" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/CMakeModules)
 message(STATUS "Module path:${CMAKE_MODULE_PATH}")
@@ -55,22 +57,25 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
 endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 
-message(STATUS "USE_OCTOMAP ${USE_OCTOMAP}")
+message(STATUS "VOXIGEN_USE_OCTOMAP ${VOXIGEN_USE_OCTOMAP}")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #message(STATUS "module path:${CMAKE_MODULE_PATH}")
 
 hunter_add_package(glm)
 find_package(glm CONFIG REQUIRED)
-hunter_add_package(glfw)
-find_package(glfw3 REQUIRED)
-hunter_add_package(glew)
-find_package(glew CONFIG REQUIRED)
 hunter_add_package(RapidJSON)
 find_package(RapidJSON CONFIG REQUIRED)
-hunter_add_package(gflags)
-find_package(gflags CONFIG REQUIRED)
-hunter_add_package(glog)
-find_package(glog CONFIG REQUIRED)
+hunter_add_package(glew)
+    find_package(glew CONFIG REQUIRED)
+
+if(VOXIGEN_TESTAPP)
+    hunter_add_package(glfw)
+    find_package(glfw3 REQUIRED)
+    hunter_add_package(gflags)
+    find_package(gflags CONFIG REQUIRED)
+    hunter_add_package(glog)
+    find_package(glog CONFIG REQUIRED)
+endif()
 
 
 hunter_add_package(Boost COMPONENTS filesystem system)
@@ -100,7 +105,7 @@ set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
 add_subdirectory(generic)
 set_target_properties(generic PROPERTIES FOLDER Libraries)
 
-if(USE_OCTOMAP)
+if(VOXIGEN_USE_OCTOMAP)
     add_definitions(-DUSE_OCTOMAP)
     set(OCTOVIS_QT5 OFF)
     set(BUILD_OCTOVIS_SUBPROJECT OFF)
@@ -185,14 +190,11 @@ set(voxigen_sources
     src/utils/simpleFilesystem.cpp
 )
 
-
 set(voxigen_public_libraries
     fastNoise
     glew::glew
     Boost::filesystem
     Boost::system
-    gflags
-    glog::glog
     generic
 )
 
@@ -225,7 +227,7 @@ if(VOXIGEN_TEXTURE)
     )
 endif()
 
-if(USE_OCTOMAP)
+if(VOXIGEN_USE_OCTOMAP)
     set(voxigen_libraries ${voxigen_libraries} octomap-static)
 endif()
 
@@ -282,15 +284,25 @@ target_link_libraries(voxigen ${voxigen_libraries})
 #    target_link_libraries(voxigen X11)
 #endif()
 
-#test app
-set(testApp_sources
-    testApp/main.cpp
-)
+if(VOXIGEN_TESTAPP)
+    #test app
+    set(testApp_sources
+        testApp/main.cpp
+    )
 
-add_executable(testApp ${testApp_sources})
-target_link_libraries(testApp voxigen glfw)
+    set(testApp_libraries
+        glfw
+        gflags
+        glog::glog
+    )
+    
+    add_executable(testApp ${testApp_sources})
+    target_link_libraries(testApp voxigen ${testApp_libraries})
 
-set(voxigen_public_libraries ${voxigen_public_libraries} glfw)
+    set(voxigen_libraries ${voxigen_libraries} ${testApp_libraries})
+    set(voxigen_public_libraries ${voxigen_public_libraries} ${testApp_libraries})
+endif()
+
 foreach(target ${voxigen_public_libraries})
     set(VS_ENVIROMENT_DIR ${VS_ENVIROMENT_DIR} "$<TARGET_FILE_DIR:${target}>")
 endforeach()
@@ -303,3 +315,93 @@ create_target_launcher(testApp
     WORKING_DIRECTORY "${VS_WORKING_DIRECTORY}"
 )
 
+
+if(VOXIGEN_LMBR_LIB)
+    set(voxigen_lib_includes "\"include\"")
+    set(voxigen_libs)
+    set(voxigen_sharedlibs)
+    foreach(target ${voxigen_libraries})
+        get_target_property(target_type ${target} TYPE)
+        message(STATUS "${target}: ${target_type}")
+
+        if(target_type STREQUAL "INTERFACE_LIBRARY")
+            get_target_property(target_includes ${target} INTERFACE_INCLUDE_DIRECTORIES)
+        else()
+            get_target_property(target_includes ${target} INCLUDE_DIRECTORIES)
+        endif()
+
+        if(target_includes)
+            foreach(target_include ${target_includes})
+                set(voxigen_lib_includes "${voxigen_lib_includes}, \"${target_include}\"")
+            endforeach()
+        endif()
+
+
+        if(target_type STREQUAL "STATIC_LIBRARY" OR target_type STREQUAL "SHARED_LIBRARY")
+            if(voxigen_libs)
+                set(voxigen_libs "${voxigen_libs}$<COMMA> \"$<TARGET_LINKER_FILE:${target}>\"")
+            else()
+                set(voxigen_libs "\"$<TARGET_LINKER_FILE:${target}>\"")
+            endif()
+            
+            if(target_type STREQUAL "SHARED_LIBRARY")
+                if(voxigen_sharedlibs)
+                    set(voxigen_sharedlibs "${voxigen_sharedlibs}$<COMMA> \"$<TARGET_FILE:${target}>\"")
+                else()
+                    set(voxigen_sharedlibs "\"$<TARGET_FILE:${target}>\"")
+                endif()
+            endif()
+        endif()
+
+        message(STATUS "${target}: includes - ${target_includes}")
+    endforeach()
+
+
+#cmake voodoo in action, need to create one file with information from different build types and generator expressions, cmake does not support that directly
+    set(config_types)
+    if(CMAKE_CONFIGURATION_TYPES)
+        foreach(config_type ${CMAKE_CONFIGURATION_TYPES})
+            #only need debug and release for the json file
+            if(config_type STREQUAL "Debug" OR config_type STREQUAL "Release") 
+                set(config_types ${config_types} ${config_type})
+            endif()
+        endforeach()
+    else()
+        #likely run into issues with builds that only have one build type
+        set(config_types ${CMAKE_BUILD_TYPE})
+    endif()
+
+    foreach(config_type ${config_types})
+        string(TOLOWER ${config_type} config_type_lower)
+        set(voxigen_${config_type_lower}_libs "$<IF:$<CONFIG:${config_type}>,\n${voxigen_libs},$<TARGET_PROPERTY:voxigen,WAF_CONFIG_${config_type}_LIBS>>\n")
+        set_target_properties(voxigen PROPERTIES WAF_CONFIG_${config_type}_LIBS ${voxigen_${config_type_lower}_libs})
+
+        if(voxigen_sharedlibs)
+            set(voxigen_${config_type_lower}_sharedlibs "$<IF:$<CONFIG:${config_type}>,\n${voxigen_sharedlibs},$<TARGET_PROPERTY:voxigen,WAF_CONFIG_${config_type}_SHAREDLIBS>>\n")
+            set_target_properties(voxigen PROPERTIES WAF_CONFIG_${config_type}_SHAREDLIBS ${voxigen_${config_type_lower}_sharedlibs})
+        endif()
+    endforeach()
+
+    message(STATUS "voxigen_lib_includes: ${voxigen_lib_includes}")
+    message(STATUS "voxigen_debug_libs: ${voxigen_debug_libs}")
+    message(STATUS "voxigen_release_libs: ${voxigen_release_libs}")
+    message(STATUS "voxigen_debug_sharedlibs: ${voxigen_debug_sharedlibs}")
+    message(STATUS "voxigen_release_sharedlibs: ${voxigen_release_sharedlibs}")
+
+    #build gen file from vars
+    set(config_base_file "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/voxigen.json")
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/voxigen.json.cmake" ${config_base_file}.gen @ONLY)
+    
+    #now loop over the types and generate the recursive files to compile the final
+    set(last_config)
+    foreach(config_type ${config_types})
+        if(NOT last_config)
+            file(GENERATE OUTPUT ${config_base_file}.${config_type}.gen INPUT ${config_base_file}.gen CONDITION $<CONFIG:${config_type}>)
+        else()
+            file(GENERATE OUTPUT ${config_base_file}.${config_type}.gen INPUT ${config_base_file}.${last_config}.gen CONDITION $<CONFIG:${config_type}>)
+        endif()
+        set(last_config ${config_type})
+    endforeach()
+
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_LIST_DIR}/voxigen.json" INPUT "${config_base_file}.${last_config}.gen")
+endif()

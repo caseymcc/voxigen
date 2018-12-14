@@ -5,6 +5,9 @@
 #include "voxigen/faces.h"
 
 #include <array>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 namespace voxigen
 {
