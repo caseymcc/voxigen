@@ -1,6 +1,8 @@
 #include "voxigen/simpleFilesystem.h"
 #include "voxigen/filesystem.h"
 
+#include <cstring>
+
 namespace voxigen
 {
 namespace fs
@@ -12,7 +14,7 @@ void current_path(char *value, size_t &size)
     std::string pathString=path.string();
 
     if((value!=nullptr) && (pathString.size()<size))
-        memcpy((void *)value, pathString.data(), pathString.size()+1);
+        std::memcpy((void *)value, pathString.data(), pathString.size()+1);
     size=pathString.size()+1;
 }
 
@@ -56,7 +58,7 @@ void VOXIGEN_EXPORT extension(const char *file, char *value, size_t &size)
     std::string filePath=path.extension().string();
 
     if((value!=nullptr) && (filePath.size()<size))
-        memcpy((void *)value, filePath.data(), filePath.size()+1);
+        std::memcpy((void *)value, filePath.data(), filePath.size()+1);
     size=filePath.size()+1;
 }
 
@@ -83,7 +85,7 @@ void VOXIGEN_EXPORT get_directories(const char *directory, char **directoriePath
                 for(size_t i=0; i<directories.size(); ++i)
                 {
                     if(directories[i].size()<sizes[i])
-                        memcpy((void *)directoriePaths[i], directories[i].data(), directories[i].size()+1);
+                        std::memcpy((void *)directoriePaths[i], directories[i].data(), directories[i].size()+1);
                 }
             }
 
