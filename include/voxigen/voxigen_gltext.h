@@ -2,11 +2,11 @@
 #define _voxigen_gltext_
 
 #include <glbinding/gl/gl.h>
+using namespace gl;
 
 //put gltext in our namespace
 namespace voxigen
 {
-using namespace gl;
 
 #ifndef __gl_h_
 #define __gl_h_
