@@ -15,5 +15,6 @@ template class GeneratorTemplate<EquiRectWorldGenerator<World>>;
 }
 
 typedef voxigen::SimpleRenderer<World> WorldRenderer;
+typedef voxigen::SimpleRenderer<World>::ChunkRendererType ChunkRenderer;
 
 #endif//_voxigen_world_h_

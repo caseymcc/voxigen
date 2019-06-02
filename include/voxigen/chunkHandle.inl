@@ -3,8 +3,6 @@
 namespace voxigen
 {
 
-#include "voxigen/generator.h"
-
 template<typename _Chunk>
 void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *generator, size_t lod)
 {

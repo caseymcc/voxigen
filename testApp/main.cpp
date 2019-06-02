@@ -318,7 +318,7 @@ int main(int argc, char ** argv)
         debugScreen->startBuild();
         debugScreen->update(&world);
         debugScreen->updateControls();
-        debugScreen->updateChunkInfo(&renderer);
+        debugScreen->updateChunkInfo(&world, &renderer);
         debugScreen->build();
 
         if(chunksUpdated)

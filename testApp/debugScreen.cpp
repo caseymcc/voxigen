@@ -82,18 +82,55 @@ void DebugScreen::updateControls()
     ImGui::End();
 }
 
-void DebugScreen::updateChunkInfo(WorldRenderer *renderer)
+void DebugScreen::updateChunkInfo(World *world, WorldRenderer *renderer)
 {
     bool show=true;
 
     auto chunkRenderers=renderer->getChunkRenderers();
     std::string info;
 
-    ImGui::Begin("Region/Chunk Info", &show, ImVec2(150, m_height), 0.5f);
-    for(auto chunkRenderer:chunkRenderers)
+    ImGui::SetNextWindowPos(ImVec2(m_width-350, 0));
+    ImGui::SetNextWindowSize(ImVec2(350, 450));
+    ImGui::Begin("Region/Chunk Info", &show, 
+        ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoBackground|ImGuiWindowFlags_NoBringToFrontOnFocus|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize);
+    
+    ChunkRenderer *cameraChunk=nullptr;
+    ChunkRenderer *playerChunk=nullptr;
+
+    const glm::vec3 &cameraPos=m_renderingOptions->camera.getPosition();
+    glm::ivec3 cameraChunkIndex=world->getChunkIndex(cameraPos);
+
+    for(ChunkRenderer *chunkRenderer:chunkRenderers)
     {
-        chunkRenderer->updateInfo(info);
+        if(chunkRenderer->getChunkIndex() == cameraChunkIndex)
+            cameraChunk=chunkRenderer;
+        if(chunkRenderer->getChunkIndex() == m_renderingOptions->playerChunkIndex)
+            playerChunk=chunkRenderer;
+    }
+
+    if(cameraChunk)
+    {
+        cameraChunk->updateInfo(info);
+        ImGui::Text("Camera");
         ImGui::Text(info.c_str());
+        ImGui::Text("");
+    }
+    else
+    {
+        ImGui::Text("Camera");
+        ImGui::Text("Region Index:\nChunk Index:\nRenderer:\nChunk:");
+        ImGui::Text("");
+    }
+    if(playerChunk)
+    {
+        playerChunk->updateInfo(info);
+        ImGui::Text("Player");
+        ImGui::Text(info.c_str());
+    }
+    else
+    {
+        ImGui::Text("Player");
+        ImGui::Text("Region Index:\nChunk Index:\nRenderer:\nChunk:");
     }
 
     ImGui::End();
