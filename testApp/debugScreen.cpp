@@ -39,7 +39,7 @@ void DebugScreen::update(World *world)
     bool show=true;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(350, 450));
+    ImGui::SetNextWindowSize(ImVec2(450, 450));
     ImGui::Begin("Info", &show, 
         ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoBackground|ImGuiWindowFlags_NoBringToFrontOnFocus|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize);
 

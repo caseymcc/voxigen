@@ -374,6 +374,8 @@ if(VOXIGEN_TESTAPP)
         testApp/marker.cpp
         testApp/initGlew.h
         testApp/initGlew.cpp
+        testApp/world.h
+        testApp/renderingOptions.h
 #        imgui/imgui_impl_glfw.h
 #        imgui/imgui_impl_glfw.cpp
 #        imgui/imgui_impl_opengl3.h
