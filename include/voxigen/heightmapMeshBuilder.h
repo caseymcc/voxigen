@@ -17,7 +17,7 @@ void buildVertices(std::vector<glm::ivec3> &vertices, size_t &vertIndex, const s
     size_t count=0;
     int cellHeight=0;
 
-    if(type(cell)>0)
+    if(type(cell)>=0)
     {
         count++;
         cellHeight+=height(cell);

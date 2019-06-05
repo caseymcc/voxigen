@@ -208,7 +208,7 @@ int main(int argc, char ** argv)
         fs::create_directory(worldPath);
 
         //creating earth sizes
-        world.create(worldDirectory, "TestApWorld", glm::ivec3(39999488, 80000000, 1024), "EquiRectWorldGenerator");
+        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());

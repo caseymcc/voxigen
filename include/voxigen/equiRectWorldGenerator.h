@@ -10,8 +10,21 @@
 
 #undef None
 
+#include <random>
+
 namespace voxigen
 {
+
+struct VOXIGEN_EXPORT InfluenceCell
+{
+    float heightBase;
+    float heightRangs;
+
+    int tectonicPlate;
+    int tectonicPlate;
+
+    float airCurrent;
+};
 
 struct VOXIGEN_EXPORT EquiRectDescriptors
 {
@@ -25,6 +38,9 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
         m_contientLacunarity=2.2f;
 
         m_seaLevel=0.0f;
+
+        m_plateCountMin=8;
+        m_plateCountMax=24;
     }
 
     bool load(const char *json);
@@ -37,6 +53,9 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
 
     float m_seaLevel;
     float m_continentaShelf;
+
+    int m_plateCountMin;
+    int m_plateCountMax;
 };
 
 template<typename _Grid>
@@ -78,6 +97,7 @@ private:
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
 
+    Regular2DGrid<InfluenceCell> m_influence;
 //    noise::module::Perlin m_perlin;
 //    noise::module::Perlin m_continentPerlin;
 //    noise::module::Curve m_continentCurve;
@@ -148,7 +168,6 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 
-
     m_layersPerlin=HastyNoise::CreateNoise(seed+1, m_simdLevel);
 
     m_layersPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
@@ -158,6 +177,13 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     vectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     regionVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
+
+    std::default_random_engine generator(seed);
+    std::uniform_int_distribution<int> plateDistribution(m_descriptorValues.m_plateCountMin, m_descriptorValues.m_plateCountMax);
+
+    m_plateCount=plateDistribution(generator);
+
+    generateWorldOverview()
 }
 
 template<typename _Grid>
@@ -193,6 +219,12 @@ void EquiRectWorldGenerator<_Grid>::save(std::string &descriptors)
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
+{
+    generatePlates();
+}
+
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
 
 }

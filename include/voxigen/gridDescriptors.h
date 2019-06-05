@@ -65,6 +65,9 @@ struct IGridDescriptors
     virtual glm::ivec3 getSize() const=0;
     virtual void setSize(const glm::ivec3 &value)=0;
 
+    virtual glm::ivec2 getInfluenceGridSize() const=0;
+    virtual void setInfluenceGridSize(const glm::ivec2 &value)=0;
+
     virtual glm::ivec3 getRegionSize() const=0;
     virtual void setRegionSize(const glm::ivec3 &value)=0;
 
@@ -129,6 +132,8 @@ struct GridDescriptors:IGridDescriptors
     std::string m_generatorDescriptors;
 
     glm::ivec3 m_size;
+    glm::ivec2 m_influenceGridSize;
+    glm::ivec2 m_influenceSize;
     static glm::ivec3 m_regionSize; //from compile time value
     static glm::ivec3 m_regionCellSize; //calculated
     glm::ivec3 m_regionCount; //calculated
@@ -144,46 +149,67 @@ struct GridDescriptors:IGridDescriptors
 //
 //    float m_seaLevel;
 //    float m_continentaShelf;
+    void calculateInfluenceSize()
+    {
+        m_influenceSize=glm::ivec2(m_size.x, m_size.y)/m_influenceGridSize;
 
+        while(m_influenceSize.x*m_influenceGridSize.x<m_size.x)
+            m_influenceSize.x+1;
+        while(m_influenceSize.y*m_influenceGridSize.y<m_size.y)
+            m_influenceSize.y+1;
+
+        m_influenceSize=m_influenceSize*m_influenceGridSize;
+    }
 //IGridDescriptor Interface
-    virtual const char *getName() const { return m_name.c_str(); }
-    virtual void setName(const char *value) { m_name=value; }
+    const char *getName() const override { return m_name.c_str(); }
+    void setName(const char *value) override { m_name=value; }
 
-    virtual unsigned int getSeed() const { return m_seed; }
-    virtual void setSeed(unsigned int value) { m_seed=value; }
+    unsigned int getSeed() const override { return m_seed; }
+    void setSeed(unsigned int value) override { m_seed=value; }
 
-    virtual glm::ivec3 getSize() const { return m_size; }
-    virtual void setSize(const glm::ivec3 &value) { m_size=value; }
+    glm::ivec3 getSize() const override { return m_size; }
+    void setSize(const glm::ivec3 &value) override 
+    { 
+        m_size=value; 
+        calculateInfluenceSize();
+    }
 
-    virtual glm::ivec3 getRegionSize() const { return m_regionSize; }
-    virtual void setRegionSize(const glm::ivec3 &value) { m_regionSize=value; }
+    glm::ivec2 getInfluenceGridSize() const override { return m_influenceGridSize; }
+    void setInfluenceGridSize(const glm::ivec2 &value) override 
+    { 
+        m_influenceGridSize=value; 
+        calculateInfluenceSize();
+    }
 
-    virtual glm::ivec3 getRegionCellSize() const { return m_regionCellSize; }
+    glm::ivec3 getRegionSize() const override { return m_regionSize; }
+    void setRegionSize(const glm::ivec3 &value) override { m_regionSize=value; }
 
-    virtual glm::ivec3 getRegionCount() const { return m_regionCount; }
+    glm::ivec3 getRegionCellSize() const override { return m_regionCellSize; }
 
-    virtual RegionHash getRegionHash(const glm::ivec3 &index) const { return regionHash(index); }
-    virtual glm::ivec3 getRegionIndex(RegionHash hash) const { return regionIndex(hash); }
-    virtual glm::vec3 getRegionOffset(RegionHash hash) const { return regionOffset(hash); }
-    virtual glm::ivec3 getRegionStride() const { return m_regionStride; }
+    glm::ivec3 getRegionCount() const override { return m_regionCount; }
 
-    virtual glm::ivec3 getChunkSize() const { return m_chunkSize; }
-    virtual void setChunkSize(const glm::ivec3 &value) { m_chunkSize=value; }
+    RegionHash getRegionHash(const glm::ivec3 &index) const override { return regionHash(index); }
+    glm::ivec3 getRegionIndex(RegionHash hash) const override { return regionIndex(hash); }
+    glm::vec3 getRegionOffset(RegionHash hash) const override { return regionOffset(hash); }
+    glm::ivec3 getRegionStride() const override { return m_regionStride; }
 
-    virtual glm::ivec3 getChunkCount() const { return m_chunkCount; }
+    glm::ivec3 getChunkSize() const override { return m_chunkSize; }
+    void setChunkSize(const glm::ivec3 &value) override { m_chunkSize=value; }
 
-    virtual ChunkHash getChunkHash(const glm::ivec3 &index) const { return chunkHash(index); }
-    virtual glm::ivec3 getChunkIndex(ChunkHash hash) const { return chunkIndex(hash); }
-    virtual glm::vec3 getChunkOffset(ChunkHash hash) const { return chunkOffset(hash); }
-    virtual glm::ivec3 getChunkStride() const { return m_chunkStride; }
+    glm::ivec3 getChunkCount() const override { return m_chunkCount; }
 
-    virtual const char *getGenerator() const { return m_generator.c_str(); }
-    virtual void setGenerator(const char *value) { m_generator=value; }
+    ChunkHash getChunkHash(const glm::ivec3 &index) const override { return chunkHash(index); }
+    glm::ivec3 getChunkIndex(ChunkHash hash) const override { return chunkIndex(hash); }
+    glm::vec3 getChunkOffset(ChunkHash hash) const override { return chunkOffset(hash); }
+    glm::ivec3 getChunkStride() const override { return m_chunkStride; }
 
-    virtual const char *getGeneratorDescriptors() const { return m_generatorDescriptors.c_str(); }
-    virtual void setGeneratorDescriptors(const char *value) { m_generatorDescriptors=value; }
+    const char *getGenerator() const override { return m_generator.c_str(); }
+    void setGenerator(const char *value) override { m_generator=value; }
 
-    virtual float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const { return distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2); }
+    const char *getGeneratorDescriptors() const override { return m_generatorDescriptors.c_str(); }
+    void setGeneratorDescriptors(const char *value) override { m_generatorDescriptors=value; }
+
+    float getDistance(glm::ivec3 &regionIndex1, glm::ivec3 &chunkIndex1, glm::ivec3 &regionIndex2, glm::ivec3 &chunkIndex2) const override { return distance(regionIndex1, chunkIndex1, regionIndex2, chunkIndex2); }
     void offsetIndexes(const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, glm::ivec3 delta, glm::ivec3 &regionIndex, glm::ivec3 &chunkIndex) const;
 
 };
@@ -203,7 +229,8 @@ GridDescriptors<_Grid>::GridDescriptors()
     m_seed=0;
 
     m_size=glm::ivec3(1024, 1024, 256);
-    //    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
+    m_influenceGridSize={4096, 4096};
+;    //    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
     //    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
 
     //    m_noiseScale=0.001;
@@ -245,6 +272,8 @@ bool GridDescriptors<_Grid>::save(std::string fileName)
 template<typename _Grid>
 void GridDescriptors<_Grid>::init()
 {
+    calculateInfluenceSize();
+
     m_regionCellSize=m_regionSize*m_chunkSize;
     m_regionCount=m_size/(m_regionCellSize);
     m_regionStride=glm::ivec3(1, m_regionCount.x, m_regionCount.x*m_regionCount.y);
