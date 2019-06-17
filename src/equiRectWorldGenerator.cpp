@@ -74,4 +74,9 @@ bool EquiRectDescriptors::save(char *json, size_t &size)
     return false;
 }
 
+void EquiRectDescriptors::init(IGridDescriptors *gridDescriptors)
+{
+    calculateInfluenceSize(gridDescriptors);
+}
+
 }//namespace voxigen

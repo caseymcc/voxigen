@@ -21,7 +21,6 @@ struct VOXIGEN_EXPORT InfluenceCell
     float heightRangs;
 
     int tectonicPlate;
-    int tectonicPlate;
 
     float airCurrent;
 };
@@ -41,10 +40,30 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
 
         m_plateCountMin=8;
         m_plateCountMax=24;
+
+        m_plateFrequency=0.005f;
+        m_plateOctaves=2;
+        m_plateLacunarity=2.2f;
+
+        m_influenceGridSize={4096, 4096};
+    }
+
+    void calculateInfluenceSize(IGridDescriptors *gridDescriptors)
+    {
+        glm::ivec3 size=gridDescriptors->getSize();
+
+        m_influenceSize=glm::ivec2(size.x, size.y)/m_influenceGridSize;
+
+        while(m_influenceSize.x*m_influenceGridSize.x<size.x)
+            m_influenceSize.x+1;
+        while(m_influenceSize.y*m_influenceGridSize.y<size.y)
+            m_influenceSize.y+1;
     }
 
     bool load(const char *json);
     bool save(char *json, size_t &size);
+
+    void init(IGridDescriptors *gridDescriptors);
 
     float m_noiseScale;
     float m_contientFrequency;
@@ -56,6 +75,13 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
 
     int m_plateCountMin;
     int m_plateCountMax;
+
+    float m_plateFrequency;
+    int m_plateOctaves;
+    float m_plateLacunarity;
+
+    glm::ivec2 m_influenceSize;
+    glm::ivec2 m_influenceGridSize;
 };
 
 template<typename _Grid>
@@ -90,14 +116,21 @@ public:
 private:
     void buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride);
 
+    void generatePlates();
+
     GridDescriptors<_Grid> *m_descriptors;
     EquiRectDescriptors m_descriptorValues;
     
     size_t m_simdLevel;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_plateCellular;
 
-    Regular2DGrid<InfluenceCell> m_influence;
+    int m_plateCount;
+    std::vector<float> m_influenceMap;
+    std::unique_ptr<HastyNoise::VectorSet> m_influenceVectorSet;
+
+//    Regular2DGrid<InfluenceCell> m_influence;
 //    noise::module::Perlin m_perlin;
 //    noise::module::Perlin m_continentPerlin;
 //    noise::module::Curve m_continentCurve;
@@ -154,6 +187,8 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     if(!loaded)
         save(m_descriptors->m_generatorDescriptors);
 
+    m_descriptorValues.init(m_descriptors);
+
 //    m_descriptors=descriptors;
 //    assert(m_descriptors!=nullptr);
 
@@ -175,6 +210,15 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 
+    m_plateCellular=HastyNoise::CreateNoise(seed+2, m_simdLevel);
+
+    m_plateCellular->SetNoiseType(HastyNoise::NoiseType::Cellular);
+    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
+    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+    m_plateCellular->SetCellularReturnType(CellularReturnType::Value);
+    m_plateCellular->SetCellularDistanceFunction(CellularDistance::Natural);
+
     vectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     regionVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
 
@@ -183,7 +227,7 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     m_plateCount=plateDistribution(generator);
 
-    generateWorldOverview()
+    generateWorldOverview();
 }
 
 template<typename _Grid>
@@ -226,7 +270,37 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
+    glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
+    int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
+    glm::ivec2 size=m_descriptors->getSize();
 
+    m_influenceMap.resize(influenceMapSize);
+
+    m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
+    m_influenceVectorSet->SetSize(influenceMapSize);
+
+    glm::vec3 mapPos;
+    size_t index=0;
+    mapPos.z=(float)(size.x/2.0f);
+    for(int y=0; y<influenceSize.y; y++)
+    {
+        mapPos.y=y;
+        for(int x=0; x<influenceSize.x; x++)
+        {
+            mapPos.x=x;
+            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
+
+            m_influenceVectorSet->xSet[index]=pos.x;
+            m_influenceVectorSet->ySet[index]=pos.y;
+            m_influenceVectorSet->zSet[index]=pos.z;
+            index++;
+        }
+    }
+
+    m_plateCellular->FillSet(m_influenceMap.data(), m_influenceVectorSet.get());
+
+    for(size_t i=0; i<influenceMapSize; i++)
+        regionHeightMap[i]=floor(regionHeightMap[i]*m_plateCount);
 }
 
 template<bool useStride>

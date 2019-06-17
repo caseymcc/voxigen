@@ -65,9 +65,6 @@ struct IGridDescriptors
     virtual glm::ivec3 getSize() const=0;
     virtual void setSize(const glm::ivec3 &value)=0;
 
-    virtual glm::ivec2 getInfluenceGridSize() const=0;
-    virtual void setInfluenceGridSize(const glm::ivec2 &value)=0;
-
     virtual glm::ivec3 getRegionSize() const=0;
     virtual void setRegionSize(const glm::ivec3 &value)=0;
 
@@ -132,8 +129,6 @@ struct GridDescriptors:IGridDescriptors
     std::string m_generatorDescriptors;
 
     glm::ivec3 m_size;
-    glm::ivec2 m_influenceGridSize;
-    glm::ivec2 m_influenceSize;
     static glm::ivec3 m_regionSize; //from compile time value
     static glm::ivec3 m_regionCellSize; //calculated
     glm::ivec3 m_regionCount; //calculated
@@ -149,17 +144,7 @@ struct GridDescriptors:IGridDescriptors
 //
 //    float m_seaLevel;
 //    float m_continentaShelf;
-    void calculateInfluenceSize()
-    {
-        m_influenceSize=glm::ivec2(m_size.x, m_size.y)/m_influenceGridSize;
-
-        while(m_influenceSize.x*m_influenceGridSize.x<m_size.x)
-            m_influenceSize.x+1;
-        while(m_influenceSize.y*m_influenceGridSize.y<m_size.y)
-            m_influenceSize.y+1;
-
-        m_influenceSize=m_influenceSize*m_influenceGridSize;
-    }
+    
 //IGridDescriptor Interface
     const char *getName() const override { return m_name.c_str(); }
     void setName(const char *value) override { m_name=value; }
@@ -171,14 +156,6 @@ struct GridDescriptors:IGridDescriptors
     void setSize(const glm::ivec3 &value) override 
     { 
         m_size=value; 
-        calculateInfluenceSize();
-    }
-
-    glm::ivec2 getInfluenceGridSize() const override { return m_influenceGridSize; }
-    void setInfluenceGridSize(const glm::ivec2 &value) override 
-    { 
-        m_influenceGridSize=value; 
-        calculateInfluenceSize();
     }
 
     glm::ivec3 getRegionSize() const override { return m_regionSize; }
@@ -229,7 +206,6 @@ GridDescriptors<_Grid>::GridDescriptors()
     m_seed=0;
 
     m_size=glm::ivec3(1024, 1024, 256);
-    m_influenceGridSize={4096, 4096};
 ;    //    m_regionSize=glm::ivec3(_Grid::RegionType::sizeX::value, _Grid::RegionType::sizeY::value, _Grid::RegionType::sizeZ::value);
     //    m_chunkSize=glm::ivec3(_Grid::ChunkType::sizeX::value, _Grid::ChunkType::sizeY::value, _Grid::ChunkType::sizeZ::value);
 
@@ -272,8 +248,6 @@ bool GridDescriptors<_Grid>::save(std::string fileName)
 template<typename _Grid>
 void GridDescriptors<_Grid>::init()
 {
-    calculateInfluenceSize();
-
     m_regionCellSize=m_regionSize*m_chunkSize;
     m_regionCount=m_size/(m_regionCellSize);
     m_regionStride=glm::ivec3(1, m_regionCount.x, m_regionCount.x*m_regionCount.y);
