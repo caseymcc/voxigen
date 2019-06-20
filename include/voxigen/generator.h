@@ -50,6 +50,7 @@ public:
     virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
     virtual unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateRegion(startPos, size, buffer, bufferSize, lod); };
 
+    _Generator *get() { return m_generator.get(); }
 private:
     std::unique_ptr<_Generator> m_generator;
 };

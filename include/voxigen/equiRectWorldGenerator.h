@@ -15,6 +15,42 @@
 namespace voxigen
 {
 
+template< typename T >
+typename std::vector<T>::iterator
+insert_sorted(std::vector<T> &container, T const &item)
+{
+    return container.insert
+    (
+        std::upper_bound(container.begin(), container.end(), item),
+        item
+    );
+}
+
+template<class T>
+bool contains_sorted(const std::vector<T> &container, const T &item)
+{
+    auto iter=std::lower_bound(
+        container.begin(),
+        container.end(),
+        item,
+        [](const T &l, const T &r){ return l < r; });
+    return iter!=container.end()&&*iter==item;
+}
+
+template<class T>
+size_t index_sorted(const std::vector<T> &container, const T &item)
+{
+    auto iter=std::lower_bound(
+        container.begin(),
+        container.end(),
+        item,
+        [](const T &l, const T &r){ return l < r; });
+    
+    if(iter!=container.end()&&*iter==item)
+        return iter-container.begin();
+    return std::numeric_limits<size_t>::max();
+}
+
 struct VOXIGEN_EXPORT InfluenceCell
 {
     float heightBase;
@@ -32,18 +68,18 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
         m_noiseScale=0.001f;
 
         //    contientFrequency=1.0;
-        m_contientFrequency=0.005f;
-        m_contientOctaves=2;
-        m_contientLacunarity=2.2f;
+        m_continentFrequency=0.005f;
+        m_continentOctaves=2;
+        m_continentLacunarity=2.2f;
 
         m_seaLevel=0.0f;
 
         m_plateCountMin=8;
         m_plateCountMax=24;
 
-        m_plateFrequency=0.005f;
-        m_plateOctaves=2;
-        m_plateLacunarity=2.2f;
+        m_plateFrequency=0.0005f;
+        m_plateOctaves=3;
+        m_plateLacunarity=2.0f;
 
         m_influenceGridSize={4096, 4096};
     }
@@ -55,9 +91,9 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
         m_influenceSize=glm::ivec2(size.x, size.y)/m_influenceGridSize;
 
         while(m_influenceSize.x*m_influenceGridSize.x<size.x)
-            m_influenceSize.x+1;
+            m_influenceSize.x++;
         while(m_influenceSize.y*m_influenceGridSize.y<size.y)
-            m_influenceSize.y+1;
+            m_influenceSize.y++;
     }
 
     bool load(const char *json);
@@ -66,12 +102,12 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
     void init(IGridDescriptors *gridDescriptors);
 
     float m_noiseScale;
-    float m_contientFrequency;
-    int m_contientOctaves;
-    float m_contientLacunarity;
+    float m_continentFrequency;
+    int m_continentOctaves;
+    float m_continentLacunarity;
 
     float m_seaLevel;
-    float m_continentaShelf;
+    float m_continentalShelf;
 
     int m_plateCountMin;
     int m_plateCountMax;
@@ -93,6 +129,8 @@ public:
     typedef typename _Grid::ChunkType ChunkType;
     typedef std::unique_ptr<ChunkType> UniqueChunkType;
 
+    typedef std::vector<InfluenceCell> InfluenceMap;
+
     EquiRectWorldGenerator();
     ~EquiRectWorldGenerator();
 
@@ -113,10 +151,18 @@ public:
     unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod);
     unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod);
 
+    //for debugging
+    int getPlateCount() { return m_plateCount; }
+    const InfluenceMap &getInfluenceMap() { return m_influenceMap; }
+    const glm::ivec2 &getInfluenceMapSize() { return m_descriptorValues.m_influenceSize; }
+
+    EquiRectDescriptors &getDecriptors() { return m_descriptorValues; }
+
 private:
     void buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride);
 
     void generatePlates();
+    void generateContinents();
 
     GridDescriptors<_Grid> *m_descriptors;
     EquiRectDescriptors m_descriptorValues;
@@ -125,9 +171,13 @@ private:
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_plateCellular;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_continentCellular;
+
+    int m_plateSeed;
+    int m_continentSeed;
 
     int m_plateCount;
-    std::vector<float> m_influenceMap;
+    InfluenceMap m_influenceMap;
     std::unique_ptr<HastyNoise::VectorSet> m_influenceVectorSet;
 
 //    Regular2DGrid<InfluenceCell> m_influence;
@@ -198,26 +248,25 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     m_continentPerlin=HastyNoise::CreateNoise(seed, m_simdLevel);
 
+    m_continentSeed=seed;
     m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
-    m_continentPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
-    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
-    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
+    m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
+    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
+    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
 
     m_layersPerlin=HastyNoise::CreateNoise(seed+1, m_simdLevel);
 
     m_layersPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
-    m_layersPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
-    m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
-    m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
+    m_layersPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
+    m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
+    m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
 
+    m_plateSeed=seed+2;
     m_plateCellular=HastyNoise::CreateNoise(seed+2, m_simdLevel);
 
     m_plateCellular->SetNoiseType(HastyNoise::NoiseType::Cellular);
-    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
-    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
-    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
-    m_plateCellular->SetCellularReturnType(CellularReturnType::Value);
-    m_plateCellular->SetCellularDistanceFunction(CellularDistance::Natural);
+    m_plateCellular->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
+    m_plateCellular->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
 
     vectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     regionVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
@@ -265,15 +314,23 @@ template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 {
     generatePlates();
+    generateContinents();
 }
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
+    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
+    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+    
     glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
     int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
     glm::ivec2 size=m_descriptors->getSize();
 
+    std::vector<float> plateMap;
+
+    plateMap.resize(influenceMapSize);
     m_influenceMap.resize(influenceMapSize);
 
     m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
@@ -281,26 +338,67 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 
     glm::vec3 mapPos;
     size_t index=0;
-    mapPos.z=(float)(size.x/2.0f);
+    mapPos.z=(float)(influenceSize.x/2.0f);
     for(int y=0; y<influenceSize.y; y++)
     {
         mapPos.y=y;
         for(int x=0; x<influenceSize.x; x++)
         {
             mapPos.x=x;
-            glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
+            glm::vec3 pos=getSphericalcalCoords(influenceSize.x, influenceSize.y, mapPos);
 
-            m_influenceVectorSet->xSet[index]=pos.x;
-            m_influenceVectorSet->ySet[index]=pos.y;
+            //hasty treats x and y in reverse, need to change
+            m_influenceVectorSet->xSet[index]=pos.y;
+            m_influenceVectorSet->ySet[index]=pos.x;
             m_influenceVectorSet->zSet[index]=pos.z;
             index++;
         }
     }
 
-    m_plateCellular->FillSet(m_influenceMap.data(), m_influenceVectorSet.get());
+    m_plateCellular->FillSet(plateMap.data(), m_influenceVectorSet.get());
+
+    float last=-2.0f;
+    std::vector<float> plates;
 
     for(size_t i=0; i<influenceMapSize; i++)
-        regionHeightMap[i]=floor(regionHeightMap[i]*m_plateCount);
+    {
+        if(plateMap[i]==last)
+            continue;
+        if(contains_sorted(plates, plateMap[i]))
+            continue;
+
+        insert_sorted(plates, plateMap[i]);
+        last=plateMap[i];
+    }
+
+    last=-2.0f;
+    size_t lastIndex=0;
+    
+    for(size_t i=0; i<influenceMapSize; i++)
+    {
+        if(plateMap[i]==last)
+        {
+            m_influenceMap[i].tectonicPlate=lastIndex;
+            continue;
+        }
+        size_t index=index_sorted(plates, plateMap[i]);
+        if(index== std::numeric_limits<size_t>::max())
+            continue;
+
+        m_influenceMap[i].tectonicPlate=index;
+        last=plateMap[i];
+        lastIndex=index;
+    }
+
+    m_plateCount=plates.size();
+}
+
+template<typename _Grid>
+void EquiRectWorldGenerator<_Grid>::generateContinents()
+{
+    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
+    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
 }
 
 template<bool useStride>

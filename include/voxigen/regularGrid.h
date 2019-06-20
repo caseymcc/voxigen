@@ -113,6 +113,8 @@ public:
     Key getHashes(const glm::vec3 &gridPosition);
     Key getHashes(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
 
+    Generator &getGenerator() { return *m_generator.get(); }
+
 #ifdef USE_OCTOMAP
     octomap::OcTree<SharedRegionHandle> m_regionTree;
 #endif //USE_OCTOMAP
@@ -156,7 +158,7 @@ private:
     ChunkUpdateCallback chunkUpdateCallback;
 
     GeneratorQueue<GridType> m_generatorQueue;
-    SharedGenerator m_generator;
+    std::unique_ptr<Generator> m_generator;
     DataStore<GridType> m_dataStore;
     UpdateQueue m_updateQueue;
 

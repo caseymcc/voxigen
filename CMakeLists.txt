@@ -1,13 +1,12 @@
 cmake_minimum_required (VERSION 3.0)
 
 option(OVERIDE_HUNTER_RAPIDJASON "Overides hunter for RapidJson" OFF)
-option(USE_OCTOMAP "Use octomap octree transversal" OFF)
 option(VOXIGEN_RENDERING "Enable simple rendering" ON)
 option(VOXIGEN_TEXTURE "Setup texture classes" ON)
 option(VOXIGEN_TESTAPP "Build test app" ON)
+option(VOXIGEN_MAPGENAPP "Build mapgen app" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/CMakeModules)
-message(STATUS "Module path:${CMAKE_MODULE_PATH}")
 
 set(HUNTER_STATUS_DEBUG ON)
 set(HUNTER_KEEP_PACKAGE_SOURCES ON)
@@ -71,14 +70,10 @@ else()
     endif()
 endif()
 
-message(STATUS "USE_OCTOMAP ${USE_OCTOMAP}")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-#message(STATUS "module path:${CMAKE_MODULE_PATH}")
 
 hunter_add_package(glm)
 find_package(glm CONFIG REQUIRED)
-hunter_add_package(glfw)
-find_package(glfw3 REQUIRED)
 hunter_add_package(RapidJSON)
 find_package(RapidJSON CONFIG REQUIRED)
 hunter_add_package(gflags)
@@ -147,25 +142,11 @@ if(VOXIGEN_TEXTURE)
     set_target_properties(imglib PROPERTIES FOLDER Libraries)
 endif()
 
-#add_subdirectory(FastNoiseSIMD)
-#set_target_properties(fastNoise PROPERTIES FOLDER Libraries)
 add_subdirectory(opengl_util)
 set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
 set(GENERIC_DISABLE_ATTRIBUTE ON CACHE BOOL "Disable support for attributes" FORCE)
 add_subdirectory(generic)
 set_target_properties(generic PROPERTIES FOLDER Libraries)
-
-if(USE_OCTOMAP)
-    add_definitions(-DUSE_OCTOMAP)
-    set(OCTOVIS_QT5 OFF)
-    set(BUILD_OCTOVIS_SUBPROJECT OFF)
-    set(BUILD_DYNAMICETD3D_SUBPROJECT OFF)
-    add_subdirectory(octomap)
-    set_target_properties (octomap PROPERTIES FOLDER Libraries)
-    set_target_properties (octomap-static PROPERTIES FOLDER Libraries)
-    set_target_properties (octomath PROPERTIES FOLDER Libraries)
-    set_target_properties (octomath-static PROPERTIES FOLDER Libraries)
-endif()
 
 set(voxigen_headers
     include/voxigen/biome.h
@@ -297,15 +278,11 @@ if(VOXIGEN_TEXTURE)
     )
 endif()
 
-if(USE_OCTOMAP)
-    set(voxigen_libraries ${voxigen_libraries} octomap-static)
-endif()
-
 if(VOXIGEN_OUTPUT_DIRECTORY_DEBUG)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${VOXIGEN_OUTPUT_DIRECTORY_DEBUG})
 endif()
 if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -330,48 +307,23 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
     endif()
 endif()
 
-#if(TARGET fastNoise_sse2)
-#    add_dependencies(voxigen fastNoise_sse2)
-#    set_target_properties(fastNoise_sse2 PROPERTIES FOLDER Libraries)
-#endif()
-#if(TARGET fastNoise_sse41)
-#    add_dependencies(voxigen fastNoise_sse41)
-#    set_target_properties(fastNoise_sse41 PROPERTIES FOLDER Libraries)
-#endif()
-#if(TARGET fastNoise_avx2)
-#    add_dependencies(voxigen fastNoise_avx2)
-#    set_target_properties(fastNoise_avx2 PROPERTIES FOLDER Libraries)
-#endif()
-#if(TARGET fastNoise_avx512)
-#    add_dependencies(voxigen fastNoise_avx512)
-#    set_target_properties(fastNoise_avx512 PROPERTIES FOLDER Libraries)
-#endif()
-
 source_group("Source Files" FILES ${voxigen_inline})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 target_link_libraries(voxigen ${voxigen_libraries})
 
-#if(APPLE)
-#    target_include_directories(voxigen PUBLIC "/opt/X11/include")
-#    target_link_libraries(voxigen X11)
-#endif()
+
+if(VOXIGEN_TESTAPP OR VOXIGEN_MAPGENAPP)
+    hunter_add_package(imgui)
+    find_package(imgui CONFIG REQUIRED)
+    hunter_add_package(glfw)
+    find_package(glfw3 REQUIRED)
+
+    include(CreateLaunchers)
+endif()
 
 ##test app
 if(VOXIGEN_TESTAPP)
-    #set(NANOGUI_BUILD_SHARED OFF CACHE BOOL "Build NanoGUI as a shared library?" FORCE)
-    ##set(NANOGUI_USE_GLAD ON CACHE BOOL "Use Glad OpenGL loader library?" FORCE)
-    #add_subdirectory(nanogui)
-    
-    #set(GWK_USE_HUNTER ON CACHE BOOL "Use huter to build dependencies" FORCE)
-    #set(RENDER_OPENGL_CORE ON CACHE BOOL "Renderer: OPENGL Core Profile" FORCE)
-    #set(BUILD_TEST OFF CACHE BOOL "Include unittests" FORCE)
-    #set(BUILD_SAMPLE OFF CACHE BOOL "Include sample" FORCE)
-    #add_subdirectory(GWork)
-    
-    hunter_add_package(imgui)
-    find_package(imgui CONFIG REQUIRED)
-
     set(testApp_sources
         testApp/debugScreen.h
         testApp/debugScreen.cpp
@@ -382,41 +334,59 @@ if(VOXIGEN_TESTAPP)
         testApp/initGlew.cpp
         testApp/world.h
         testApp/renderingOptions.h
-#        imgui/imgui_impl_glfw.h
-#        imgui/imgui_impl_glfw.cpp
-#        imgui/imgui_impl_opengl3.h
-#        imgui/imgui_impl_opengl3.cpp
     )
     
-    #include_directories(${CMAKE_CURRENT_LIST_DIR}/nanogui/include ${NANOGUI_EXTRA_INCS})
     add_executable(testApp ${testApp_sources})
-    #target_link_libraries(testApp voxigen glfw glbinding::glbinding nanogui) #globjects::globjects)
-    #target_link_libraries(testApp voxigen glfw glbinding::glbinding Gwork GworkOpenGLCore) #globjects::globjects)
-    target_link_libraries(testApp voxigen glfw imgui::imgui)
 
-    #add_dependencies(testApp nanogui)
-    #set_target_properties(nanogui PROPERTIES FOLDER Libraries)
-    #set_target_properties(nanogui-obj PROPERTIES FOLDER Libraries)
+    target_include_directories(testApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+    target_link_libraries(testApp voxigen glfw imgui::imgui)
     
-    include_directories(${CMAKE_CURRENT_LIST_DIR})
-    #include_directories(${CMAKE_CURRENT_LIST_DIR}/Gwork/source/gwork/include)
-    #include_directories(${CMAKE_CURRENT_LIST_DIR}/Gwork/source/platform/include)
-    
-    #add_dependencies(testApp GworkOpenGLCore)
-    #add_dependencies(testApp Gwork GworkOpenGLCore)
-    
-    set(voxigen_public_libraries ${voxigen_public_libraries} glfw)
-    foreach(target ${voxigen_public_libraries})
-        set(VS_ENVIROMENT_DIR ${VS_ENVIROMENT_DIR} "$<TARGET_FILE_DIR:${target}>")
+    set(testApp_public_libraries ${voxigen_public_libraries} glfw)
+
+    set(testApp_vs_enviroment_dir)
+    foreach(target ${testApp_public_libraries})
+        list(APPEND testApp_vs_enviroment_dir "$<TARGET_FILE_DIR:${target}>")
     endforeach()
-    set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+    set(testApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
+    
+    create_target_launcher(testApp
+        RUNTIME_LIBRARY_DIRS "${testApp_vs_enviroment_dir}"
+        WORKING_DIRECTORY "${testApp_vs_working_dir}"
+    )
+endif()
+
+if(VOXIGEN_MAPGENAPP)
+    
+    set(mapgenApp_sources
+        mapgenApp/main.cpp
+        mapgenApp/randomcolor.h
+        mapgenApp/randomcolor.cpp
+        mapgenApp/mapgen.h
+        mapgenApp/mapgen.cpp
+        testApp/initGlew.h
+        testApp/initGlew.cpp
+        testApp/world.h
+    )
+    
+    add_executable(mapgenApp ${mapgenApp_sources})
+
+    target_include_directories(mapgenApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+    target_link_libraries(mapgenApp voxigen glfw imgui::imgui)
+
+    set(mapgenApp_public_libraries ${voxigen_public_libraries} glfw)
+    set(mapgenApp_vs_enviroment_dir)
+    foreach(target ${mapgenApp_public_libraries})
+        list(APPEND mapgenApp_vs_enviroment_dir "$<TARGET_FILE_DIR:${target}>")
+    endforeach()
+    set(mapgenApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
 #    if(NOT APPLE) #some issue on osx will need to track down
     include(CreateLaunchers)
     
-    create_target_launcher(testApp
-        RUNTIME_LIBRARY_DIRS "${VS_ENVIROMENT_DIR}"
-        WORKING_DIRECTORY "${VS_WORKING_DIRECTORY}"
+    
+    create_target_launcher(mapgenApp
+        RUNTIME_LIBRARY_DIRS "${mapgenApp_vs_enviroment_dir}"
+        WORKING_DIRECTORY "${mapgenApp_vs_working_dir}"
     )
 #    endif()
 endif()

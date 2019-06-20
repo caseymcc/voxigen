@@ -21,24 +21,24 @@ bool EquiRectDescriptors::load(const char *json)
         m_noiseScale=document["noiseScale"].GetDouble();
     else
         retValue=false;
-    if(document.HasMember("contientFrequency"))
-        m_contientFrequency=document["contientFrequency"].GetDouble();
+    if(document.HasMember("continentFrequency"))
+        m_continentFrequency=document["continentFrequency"].GetDouble();
     else
         retValue=false;
-    if(document.HasMember("contientOctaves"))
-        m_contientOctaves=document["contientOctaves"].GetInt();
+    if(document.HasMember("continentOctaves"))
+        m_continentOctaves=document["continentOctaves"].GetInt();
     else
         retValue=false;
-    if(document.HasMember("contientLacunarity"))
-        m_contientLacunarity=document["contientLacunarity"].GetDouble();
+    if(document.HasMember("continentLacunarity"))
+        m_continentLacunarity=document["continentLacunarity"].GetDouble();
     else
         retValue=false;
     if(document.HasMember("seaLevel"))
         m_seaLevel=document["seaLevel"].GetDouble();
     else
         retValue=false;
-    if(document.HasMember("continentaShelf"))
-        m_continentaShelf=document["continentaShelf"].GetDouble();
+    if(document.HasMember("continentalShelf"))
+        m_continentalShelf=document["continentalShelf"].GetDouble();
     else
         retValue=false;
 
@@ -55,11 +55,11 @@ bool EquiRectDescriptors::save(char *json, size_t &size)
     document.SetObject();
 
     document.AddMember("noiseScale", rapidjson::Value(m_noiseScale).Move(), document.GetAllocator());
-    document.AddMember("contientFrequency", rapidjson::Value(m_contientFrequency).Move(), document.GetAllocator());
-    document.AddMember("contientOctaves", rapidjson::Value(m_contientOctaves).Move(), document.GetAllocator());
-    document.AddMember("contientLacunarity", rapidjson::Value(m_contientLacunarity).Move(), document.GetAllocator());
+    document.AddMember("continentFrequency", rapidjson::Value(m_continentFrequency).Move(), document.GetAllocator());
+    document.AddMember("continentOctaves", rapidjson::Value(m_continentOctaves).Move(), document.GetAllocator());
+    document.AddMember("continentLacunarity", rapidjson::Value(m_continentLacunarity).Move(), document.GetAllocator());
     document.AddMember("seaLevel", rapidjson::Value(m_seaLevel).Move(), document.GetAllocator());
-    document.AddMember("continentaShelf", rapidjson::Value(m_continentaShelf).Move(), document.GetAllocator());
+    document.AddMember("continentalShelf", rapidjson::Value(m_continentalShelf).Move(), document.GetAllocator());
 
     document.Accept(writer);
 
