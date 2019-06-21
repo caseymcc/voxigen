@@ -938,7 +938,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 
 	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
 
-	if (compileStatus != GL_TRUE)
+	if ((GLboolean)compileStatus != GL_TRUE)
 	{
 #ifdef GLT_DEBUG_PRINT
 		glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
@@ -962,7 +962,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 		gltTerminate();
 
 #ifdef GLT_DEBUG
-		_GLT_ASSERT(compileStatus == GL_TRUE);
+		_GLT_ASSERT((GLboolean)compileStatus == GL_TRUE);
 		return GL_FALSE;
 #else
 		return GL_FALSE;
@@ -976,7 +976,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
 
-	if (compileStatus != GL_TRUE)
+	if ((GLboolean)compileStatus != GL_TRUE)
 	{
 #ifdef GLT_DEBUG_PRINT
 		glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
@@ -1001,7 +1001,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 		gltTerminate();
 
 #ifdef GLT_DEBUG
-		_GLT_ASSERT(compileStatus == GL_TRUE);
+		_GLT_ASSERT((GLboolean)compileStatus == GL_TRUE);
 		return GL_FALSE;
 #else
 		return GL_FALSE;
@@ -1030,7 +1030,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 
 	glGetProgramiv(_gltText2DShader, GL_LINK_STATUS, &linkStatus);
 
-	if (linkStatus != GL_TRUE)
+	if ((GLboolean)linkStatus != GL_TRUE)
 	{
 #ifdef GLT_DEBUG_PRINT
 		glGetProgramiv(_gltText2DShader, GL_INFO_LOG_LENGTH, &infoLogLength);
@@ -1053,7 +1053,7 @@ GLT_API GLboolean _gltCreateText2DShader(void)
 		gltTerminate();
 
 #ifdef GLT_DEBUG
-		_GLT_ASSERT(linkStatus == GL_TRUE);
+		_GLT_ASSERT((GLboolean)linkStatus == GL_TRUE);
 		return GL_FALSE;
 #else
 		return GL_FALSE;

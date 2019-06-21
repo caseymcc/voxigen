@@ -1,8 +1,3 @@
-#hunter_config(glm VERSION 0.9.7.6)
-#hunter_config(zlib VERSION 1.2.8-p3)
-#hunter_config(RapidJSON VERSION 1.0.2-p2)
-#hunter_config(glfw VERSION 3.2-p0)
-
 hunter_config(Boost VERSION ${HUNTER_Boost_VERSION}
     CMAKE_ARGS 
         BUILD_SHARED_LIBS=ON 
@@ -18,3 +13,18 @@ hunter_config(glm VERSION ${HUNTER_glm_VERSION}
         GLM_FORCE_CTOR_INIT=ON
 )
 endif()
+
+hunter_config(imgui VERSION ${HUNTER_imgui_VERSION}
+    CMAKE_ARGS 
+        IMGUI_BUILD_EXAMPLES=OFF
+        IMGUI_ENABLE_TEST_ENGINE=OFF
+        IMGUI_IMPL_OPENGL3=ON
+        IMGUI_IMPL_GLFW=ON
+        IMGUI_IMPL_OPENGL_LOADER=GLEW
+)
+
+hunter_config(HastyNoise VERSION ${HUNTER_HastyNoise_VERSION}
+    CMAKE_ARGS 
+        HN_PREVIEW_APP=OFF
+        HN_BUILD_APP=OFF
+)

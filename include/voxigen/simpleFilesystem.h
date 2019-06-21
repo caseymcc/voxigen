@@ -11,6 +11,19 @@ namespace voxigen
 namespace fs
 {
 
+VOXIGEN_EXPORT void current_path(char *value, size_t &size);
+inline std::string current_path()
+{
+    size_t size;
+    std::string value;
+
+    current_path(nullptr, size);
+    value.resize(size-1);//std::string does not count null terminated character
+    current_path(&value[0], size);
+
+    return value;
+}
+
 VOXIGEN_EXPORT bool exists(const char *name);
 inline bool exists(const std::string &name) { return exists(name.c_str()); }
 
@@ -68,4 +81,4 @@ inline std::vector<std::string> get_directories(const std::string &directory) { 
 }
 }//namespace voxigen::fs
 
-#endif //_voxigen_simpleCamera_h_
+#endif //_voxigen_simpleFileSystem_h_

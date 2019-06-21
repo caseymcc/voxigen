@@ -1,6 +1,6 @@
 #include "opengl_util/shader.h"
 #include "opengl_util/program.h"
-#include "opengl_util/initGlew.h"
+#include "opengl_util/initOpenGL.h"
 
 //#include <filesystem>
 #include <regex>
@@ -11,7 +11,7 @@ namespace opengl_util
 Shader::Shader(GLenum type):
 m_type(type)
 {
-    initGlew();
+    initOpenGL();
     m_id=glCreateShader(type);
 }
 
@@ -97,7 +97,7 @@ bool Shader::compile(std::string &error)
 
     glGetShaderiv(m_id, GL_COMPILE_STATUS, &compiled);
 
-    if(compiled == GL_FALSE)
+    if(compiled == 0)
     {
         GLint length;
 

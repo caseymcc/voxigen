@@ -12,8 +12,7 @@
 #include "voxigen/chunkTextureMesh.h"
 #include "voxigen/renderAction.h"
 #include "voxigen/renderPrepThread.h"
-
-#include "voxigen/gltext.h"
+#include "voxigen/voxigen_gltext.h"
 
 #include <string>
 #include <vector>
@@ -80,6 +79,7 @@ public:
     MeshBuffer setMesh(MeshBuffer &mesh);
     bool update();
     void updated();
+    void updateInfo(std::string &value);
 
     void updateOutline();
     void invalidate();
@@ -111,14 +111,16 @@ public:
     
     glm::ivec3 getRegionCellSize() const { return details::regionCellSize<_Region, _Chunk>(); }
 
+    MeshBuffer &getMeshBuffer() { return m_meshBuffer; }
     size_t getLod() const { return m_lod; }
     void setLod(size_t lod);
 
     void clear();
 
     unsigned int refCount;
+
 private:
-    void updateInfo();
+    void updateInfoText();
     void calculateMemoryUsed();
 
 //    RenderType *m_parent;
@@ -149,7 +151,7 @@ private:
     size_t m_memoryUsed;
 //    ChunkTextureMesh m_mesh;
 
-    GLsync m_vertexBufferSync;
+    gl::GLsync m_vertexBufferSync;
     int m_delayedFrames;
 
     bool m_outlineGen;

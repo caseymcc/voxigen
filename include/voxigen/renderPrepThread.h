@@ -5,15 +5,10 @@
 #include "voxigen/regularGrid.h"
 #include "voxigen/search.h"
 #include "voxigen/textureAtlas.h"
+#include "voxigen/nativeGL.h"
 
 #include <string>
 #include <deque>
-
-#if defined(_WIN32) || defined(_WIN64)
-#include "windows.h"
-#else
-#include <GL/glx.h>
-#endif
 
 namespace voxigen
 {
@@ -88,25 +83,14 @@ public:
 
     void updateQueues(Requests &completedQueue);// ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed);
 
-#if defined(_WIN32) || defined(_WIN64)
-    void start(HDC dc, HGLRC glContext);
-#else
-    void start(Display *display, GLXDrawable drawable, GLXContext glContext);
-#endif
+    void start(NativeGL *nativeGL);
+
     //stop only happens when there is no work todo
     void stop();
     void processThread();
 
 private:
-#if defined(_WIN32) || defined(_WIN64)
-    HDC m_dc;
-    HGLRC m_glContext;
-#else
-    Display *m_display;
-    GLXDrawable m_drawable;
-    GLXContext m_glContext;
-
-#endif
+    NativeGL *m_nativeGL;
     unsigned int m_outlineInstanceVertices;
 
     std::thread m_thread;

@@ -119,7 +119,7 @@ inline void ChunkMesh::addFace(size_t face, unsigned int cellType, const glm::iv
 //    m_indices[indicesIndex]=vertIndex;
 //}
 
-size_t ChunkMesh::memoryUsed()
+inline size_t ChunkMesh::memoryUsed()
 {
     size_t memoryUsed=0;
 

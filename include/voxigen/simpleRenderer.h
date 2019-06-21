@@ -4,7 +4,7 @@
 #include "voxigen/rendererSettings.h"
 
 #include "voxigen/voxigen_export.h"
-#include "voxigen/initGlew.h"
+#include "voxigen/initOpengl.h"
 #include "voxigen/regularGrid.h"
 #include "voxigen/simpleCamera.h"
 #include "voxigen/simpleChunkRenderer.h"
@@ -13,7 +13,7 @@
 #include "voxigen/object.h"
 #include "voxigen/renderPrepThread.h"
 #include "voxigen/renderCube.h"
-#include "voxigen/gltext.h"
+#include "voxigen/voxigen_gltext.h"
 
 #include <string>
 #include <algorithm>
@@ -21,12 +21,6 @@
 #include <glm/ext.hpp>
 #include <opengl_util/program.h>
 #include <deque>
-
-#if defined(_WIN32) || defined(_WIN64)
-#include "windows.h"
-#else
-#include <GL/glx.h>
-#endif
 
 namespace voxigen
 {
@@ -90,7 +84,7 @@ public:
     void updateView();
     
     void draw();
-    void update();
+    void update(bool &regionsUpdated, bool &chunksUpdated);
 
     void setCamera(SimpleFpsCamera *camera);
     void setCameraChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
@@ -99,6 +93,8 @@ public:
 //    void updateChunks();
 
     void setTextureAtlas(SharedTextureAtlas textureAtlas) { m_textureAtlas=textureAtlas; m_textureAtlasDirty=true; }
+
+    std::vector<ChunkRendererType *> getChunkRenderers();
 
 ////    void addPrepQueue(ChunkRenderType *chunkRenderer);
 //    void addPrepQueue(const std::vector<ChunkRenderType *> &chunkRenderers);
@@ -127,7 +123,7 @@ public:
     bool isDisplayInfo() { return m_displayInfo; }
 
 private:
-    void updateChunkHandles();
+    void updateChunkHandles(bool &regionsUpdated, bool &chunksUpdated);
     void updatePrepChunks();
 
 //    void processAdd(typename RenderPrepThread::RequestAdd *request);
@@ -166,7 +162,7 @@ private:
     RenderCubeType m_renderCube;
     RegionRenderCubeType m_regionRenderCube;
 
-    GLuint m_textureAtlasId;
+    gl::GLuint m_textureAtlasId;
     SharedTextureAtlas m_textureAtlas;
     bool m_textureAtlasDirty;
 
@@ -235,29 +231,10 @@ private:
     unsigned int m_instanceTexCoords;
 
     //render prep thread/queue
-#if defined(_WIN32) || defined(_WIN64)
-    HDC m_prepDC;
-    HGLRC m_prepGlContext;
-#else
-    Display *m_prepDisplay;
-    GLXDrawable m_prepDrawable;
-    GLXContext m_prepGlContext;
-#endif
-
+    NativeGL m_nativeGL;
     GLTtext *m_cameraInfo;
-//    std::mutex m_prepMutex;
-//    std::thread m_prepThread;
-//    
-//    std::deque<ChunkRenderType *> m_prepQueue;
-//    std::deque<ChunkRenderType *> m_removeQueue;
-//
-//    std::condition_variable m_prepEvent;
-//    std::condition_variable m_prepUpdateEvent;
-//    bool m_prepThreadRun;
 
     //Status updates
-//    std::mutex m_chunkUpdatedMutex;
-//    std::vector<Key> m_chunksUpdated;
     std::vector<ChunkRenderType *> m_chunksUpdated;
 
     unsigned int m_outlineInstanceVertices;

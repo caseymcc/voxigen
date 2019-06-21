@@ -7,7 +7,7 @@
 
 #include "voxigen/texturedMesh.h"
 
-#include "voxigen/gltext.h"
+#include "voxigen/voxigen_gltext.h"
 
 namespace voxigen
 {

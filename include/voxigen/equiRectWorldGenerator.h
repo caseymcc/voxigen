@@ -9,7 +9,8 @@
 
 //#include <noise/noise.h>
 #undef None
-#include <FastNoiseSIMD/FastNoiseSIMD.h>
+//#include <FastNoiseSIMD/FastNoiseSIMD.h>
+#include <HastyNoise/hastyNoise.h>
 
 namespace voxigen
 {
@@ -74,9 +75,10 @@ private:
 
     GridDescriptors<_Grid> *m_descriptors;
     EquiRectDescriptors m_descriptorValues;
-
-    std::unique_ptr<FastNoise::NoiseSIMD> m_continentPerlin;
-    std::unique_ptr<FastNoise::NoiseSIMD> m_layersPerlin;
+    
+    size_t m_simdLevel;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
 
 //    noise::module::Perlin m_perlin;
 //    noise::module::Perlin m_continentPerlin;
@@ -90,10 +92,10 @@ private:
     static std::vector<float> yMap;
     static std::vector<float> zMap;
     static std::vector<float> layerMap;
-    static FastNoise::VectorSet vectorSet;
+    static std::unique_ptr<HastyNoise::VectorSet> vectorSet;
 
     static std::vector<float> regionHeightMap;
-    static FastNoise::VectorSet regionVectorSet;
+    static std::unique_ptr<HastyNoise::VectorSet> regionVectorSet;
 };
 
 template<typename _Grid>
@@ -107,12 +109,12 @@ std::vector<float> EquiRectWorldGenerator<_Grid>::zMap;
 template<typename _Grid>
 std::vector<float> EquiRectWorldGenerator<_Grid>::layerMap;
 template<typename _Grid>
-FastNoise::VectorSet EquiRectWorldGenerator<_Grid>::vectorSet;
+std::unique_ptr<HastyNoise::VectorSet> EquiRectWorldGenerator<_Grid>::vectorSet;
 
 template<typename _Grid>
 std::vector<float> EquiRectWorldGenerator<_Grid>::regionHeightMap;
 template<typename _Grid>
-FastNoise::VectorSet EquiRectWorldGenerator<_Grid>::regionVectorSet;
+std::unique_ptr<HastyNoise::VectorSet> EquiRectWorldGenerator<_Grid>::regionVectorSet;
 
 template<typename _Grid>
 EquiRectWorldGenerator<_Grid>::EquiRectWorldGenerator()
@@ -138,21 +140,25 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     assert(m_descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     int seed=m_descriptors->m_seed;
+    m_simdLevel=HastyNoise::GetFastestSIMD();
 
-    m_continentPerlin.reset(FastNoise::NoiseSIMD::New(seed));
+    m_continentPerlin=HastyNoise::CreateNoise(seed, m_simdLevel);
 
-    m_continentPerlin->SetNoiseType(FastNoise::NoiseType::PerlinFractal);
+    m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
     m_continentPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
     m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
 
 
-    m_layersPerlin.reset(FastNoise::NoiseSIMD::New(seed+1));
+    m_layersPerlin=HastyNoise::CreateNoise(seed+1, m_simdLevel);
 
-    m_layersPerlin->SetNoiseType(FastNoise::NoiseType::PerlinFractal);
+    m_layersPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
     m_layersPerlin->SetFrequency(m_descriptorValues.m_contientFrequency);
     m_layersPerlin->SetFractalLacunarity(m_descriptorValues.m_contientLacunarity);
     m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_contientOctaves);
+
+    vectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
+    regionVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
 }
 
 template<typename _Grid>
@@ -249,7 +255,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
     //assert(bufferSize>=(ChunkType::sizeX::value*ChunkType::sizeY::value*ChunkType::sizeZ::value)*sizeof(ChunkType::CellType));
     assert(bufferSize>=(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z)*sizeof(typename ChunkType::CellType));
 
-//    int heightMapSize=FastNoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y);
+//    int heightMapSize=HastyAlignedSize(lodChunkSize.x*lodChunkSize.y, m_simdLevel);
 //
 ////    std::vector<float> heightMap(heightMapSize);
 ////    std::vector<float> xMap(heightMapSize);
@@ -285,7 +291,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 //    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodChunkSize.x, lodChunkSize.y, 1);
     buildHeightMap(startPos, lodChunkSize, stride);
 
-    int chunkMapSize=FastNoise::NoiseSIMD::AlignedSize(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z);
+    int chunkMapSize=HastyNoise::AlignedSize(lodChunkSize.x*lodChunkSize.y*lodChunkSize.z, m_simdLevel);
 
 //    std::vector<float> layerMap(chunkMapSize);
     layerMap.resize(chunkMapSize);
@@ -356,10 +362,10 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
     typename _Grid::RegionHandleType::Cell *cells=(typename _Grid::RegionHandleType::Cell *)buffer;
     assert(bufferSize>=(lodSize.x*lodSize.y)*sizeof(typename _Grid::RegionHandleType::Cell));
 
-    int heightMapSize=FastNoise::NoiseSIMD::AlignedSize(lodSize.x*lodSize.y);
+    int heightMapSize=HastyNoise::AlignedSize(lodSize.x*lodSize.y, m_simdLevel);
 
     regionHeightMap.resize(heightMapSize);
-    regionVectorSet.SetSize(heightMapSize);
+    regionVectorSet->SetSize(heightMapSize);
 
     size_t index=0;
     glm::vec3 mapPos;
@@ -378,14 +384,14 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
 
             glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
 
-            regionVectorSet.xSet[index]=pos.x;
-            regionVectorSet.ySet[index]=pos.y;
-            regionVectorSet.zSet[index]=pos.z;
+            regionVectorSet->xSet[index]=pos.x;
+            regionVectorSet->ySet[index]=pos.y;
+            regionVectorSet->zSet[index]=pos.z;
             index++;
         }
     }
 
-    m_continentPerlin->FillSet(regionHeightMap.data(), &regionVectorSet);
+    m_continentPerlin->FillSet(regionHeightMap.data(), regionVectorSet.get());
 
     index=0;
     for(int y=0; y<regionSize.y; y+=stride)
@@ -473,14 +479,14 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride)
 {
-    int heightMapSize=FastNoise::NoiseSIMD::AlignedSize(lodSize.x*lodSize.y);
+    int heightMapSize=HastyNoise::AlignedSize(lodSize.x*lodSize.y, m_simdLevel);
 
     heightMap.resize(heightMapSize);
     xMap.resize(heightMapSize);
     yMap.resize(heightMapSize);
     zMap.resize(heightMapSize);
 
-    vectorSet.SetSize(heightMapSize);
+    vectorSet->SetSize(heightMapSize);
 
     size_t index=0;
     glm::vec3 mapPos;
@@ -496,14 +502,14 @@ void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, co
 
             glm::vec3 pos=getCylindricalCoords(size.x, size.y, mapPos);
 
-            vectorSet.xSet[index]=pos.x;
-            vectorSet.ySet[index]=pos.y;
-            vectorSet.zSet[index]=pos.z;
+            vectorSet->xSet[index]=pos.x;
+            vectorSet->ySet[index]=pos.y;
+            vectorSet->zSet[index]=pos.z;
             index++;
         }
     }
 
-    m_continentPerlin->FillSet(heightMap.data(), &vectorSet);
+    m_continentPerlin->FillSet(heightMap.data(), vectorSet.get());
 //    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodSize.x, lodSize.y, 1);
 }
 

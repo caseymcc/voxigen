@@ -1,6 +1,8 @@
 #ifndef _generic_attributes_h_
 #define _generic_attributes_h_
 
+#ifndef GENERIC_DISABLE_ATTRIBUTE
+
 #include "generic/generic_export.h"
 #include "generic/attribute.h"
 
@@ -60,4 +62,5 @@ void generic_EXPORT merge(Attributes &dst, const Attributes &src);
 
 }//namespace generic
 
+#endif //GENERIC_DISABLE_ATTRIBUTE
 #endif //_generic_attributes_h_

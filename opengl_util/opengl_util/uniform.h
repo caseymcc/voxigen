@@ -10,12 +10,15 @@
 
 #include <glm/glm.hpp>
 
-#include <GL/glew.h>
+//#include <GL/glew.h>
+#include <glbinding/gl/gl.h>
 
 #undef Bool
 
 namespace opengl_util
 {
+
+using namespace gl;
 
 class OPENGL_UTIL_EXPORT Uniform
 {
