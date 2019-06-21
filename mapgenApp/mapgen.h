@@ -18,6 +18,7 @@ public:
 
 private:
     void updateTexture();
+    void updatePlateTexture();
     void generate();
 
     bool m_show;
@@ -39,6 +40,11 @@ private:
     GLuint m_textureId;
     int m_textureWidth;
     int m_textureHeight;
+
+    int layerIndex;
+    std::vector<char> m_layerNames;
+
+    std::vector<std::tuple<int, int, int>> m_plateColors;
 };
 
 #endif//_voxigen_mapgen_h_

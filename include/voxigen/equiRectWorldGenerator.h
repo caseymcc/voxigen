@@ -57,6 +57,9 @@ struct VOXIGEN_EXPORT InfluenceCell
     float heightRangs;
 
     int tectonicPlate;
+    float plateValue;
+    float plateDistanceValue;
+    float continentValue;
 
     float airCurrent;
 };
@@ -94,6 +97,9 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
             m_influenceSize.x++;
         while(m_influenceSize.y*m_influenceGridSize.y<size.y)
             m_influenceSize.y++;
+
+        m_plateFrequency=5.12f/m_influenceSize.x;
+        m_continentFrequency=10*m_plateFrequency;
     }
 
     bool load(const char *json);
@@ -170,7 +176,7 @@ private:
     size_t m_simdLevel;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
-    std::unique_ptr<HastyNoise::NoiseSIMD> m_plateCellular;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_cellularNoise;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentCellular;
 
     int m_plateSeed;
@@ -262,11 +268,9 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     m_layersPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
 
     m_plateSeed=seed+2;
-    m_plateCellular=HastyNoise::CreateNoise(seed+2, m_simdLevel);
+    m_cellularNoise=HastyNoise::CreateNoise(seed+2, m_simdLevel);
 
-    m_plateCellular->SetNoiseType(HastyNoise::NoiseType::Cellular);
-    m_plateCellular->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
-    m_plateCellular->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
+    m_cellularNoise->SetNoiseType(HastyNoise::NoiseType::Cellular);
 
     vectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     regionVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
@@ -320,17 +324,17 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
-    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
-    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
-    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
-    
     glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
     int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
     glm::ivec2 size=m_descriptors->getSize();
 
     std::vector<float> plateMap;
+    std::vector<float> plateDistanceMap;
+    std::vector<float> continentMap;
 
     plateMap.resize(influenceMapSize);
+    plateDistanceMap.resize(influenceMapSize);
+    continentMap.resize(influenceMapSize);
     m_influenceMap.resize(influenceMapSize);
 
     m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
@@ -355,7 +359,23 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         }
     }
 
-    m_plateCellular->FillSet(plateMap.data(), m_influenceVectorSet.get());
+    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
+    m_cellularNoise->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
+    m_cellularNoise->SetSeed(m_plateSeed);
+    m_cellularNoise->SetFrequency(m_descriptorValues.m_plateFrequency);
+    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+    m_cellularNoise->FillSet(plateMap.data(), m_influenceVectorSet.get());
+    
+    //going to generate twice as I want the distance value as well, will mod HastyNoise later to  produce both
+    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Distance);
+    m_cellularNoise->FillSet(plateDistanceMap.data(), m_influenceVectorSet.get());
+
+    //continent map
+    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
+    m_cellularNoise->SetSeed(m_continentSeed);
+    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
+    m_cellularNoise->FillSet(continentMap.data(), m_influenceVectorSet.get());
 
     float last=-2.0f;
     std::vector<float> plates;
@@ -377,17 +397,19 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     for(size_t i=0; i<influenceMapSize; i++)
     {
         if(plateMap[i]==last)
-        {
             m_influenceMap[i].tectonicPlate=lastIndex;
-            continue;
-        }
-        size_t index=index_sorted(plates, plateMap[i]);
-        if(index== std::numeric_limits<size_t>::max())
-            continue;
+        else
+        {
+            size_t index=index_sorted(plates, plateMap[i]);
+            assert(index!=std::numeric_limits<size_t>::max());
+            m_influenceMap[i].tectonicPlate=index;
 
-        m_influenceMap[i].tectonicPlate=index;
-        last=plateMap[i];
-        lastIndex=index;
+            last=plateMap[i];
+            lastIndex=index;
+        }
+        m_influenceMap[i].plateValue=plateMap[i];
+        m_influenceMap[i].plateDistanceValue=plateMap[i];
+        m_influenceMap[i].continentValue=plateMap[i];
     }
 
     m_plateCount=plates.size();
@@ -396,9 +418,9 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateContinents()
 {
-    m_plateCellular->SetFrequency(m_descriptorValues.m_plateFrequency);
-    m_plateCellular->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
-    m_plateCellular->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
+    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
 }
 
 template<bool useStride>

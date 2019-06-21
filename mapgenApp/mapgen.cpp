@@ -8,6 +8,29 @@
 
 #include <tuple>
 
+std::vector<char> packVectorString(const std::vector<std::string> &values)
+{
+    std::vector<char> packed;
+
+    size_t size=0;
+    for(std::string &value:values)
+        size+=value.size()+1;//null terminator
+
+    packed.resize(size+1);
+
+    size=0;
+    for(std::string &value:values)
+    {
+        memcpy(&packed[size], value.c_str(), value.size());
+        size+=value.size();
+        packed[size]=0;
+        size++;
+    }
+    packed[size]=0;
+
+    return packed;
+}
+
 MapGen::MapGen():
     m_textureValid(false),
     m_show(true)
@@ -29,6 +52,8 @@ void MapGen::initialize()
 
     updateTexture();
 
+    m_layerIndex=0;
+    m_layerNames=packVectorString({"Tectonic Plates", "Plates Distance", "Continents"});
 //    if(!fs::exists(worldsDirectory))
 //        fs::create_directory(worldsDirectory);
 //
@@ -77,6 +102,11 @@ void MapGen::draw()
     ImGui::SliderFloat("Plate Frequency", &descriptors.m_plateFrequency, 0.0001f, 1.0f, "%.4f", 3.0f);
     ImGui::SliderFloat("Continent Frequency", &descriptors.m_continentFrequency, 0.001f, 1.0f, "%.3f", 3.0f);
 
+    ImGui::Separator();
+
+    if(ImGui::Combo("Layer", &m_layerIndex, &m_layerNames[0]))
+        currentFractalType=getTypeFromIndex<HastyNoise::FractalType>(fractalTypes, fractalIndex);
+
     ImGui::End();
 
     int imageWidth=std::max(m_width-controlsWidth, 0);
@@ -120,12 +150,14 @@ void MapGen::updateTexture()
 //    }
 
     RandomColor::RandomColorGenerator colorGenerator;
-    std::vector<std::tuple<int, int, int>> colors=colorGenerator.randomColors(plateCount);
+
+    if(m_plateColors.size() <plateCount)
+        m_plateColors=colorGenerator.randomColors(plateCount);
 
     size_t index=0;
     for(size_t i=0; i<influenceMap.size(); ++i)
     {
-        auto &color=colors[influenceMap[i].tectonicPlate];
+        auto &color=m_plateColors[influenceMap[i].tectonicPlate];
 
         textureBuffer[index++]=(GLubyte)std::get<0>(color);
         textureBuffer[index++]=(GLubyte)std::get<1>(color);
