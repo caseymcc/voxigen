@@ -10,6 +10,7 @@
 #include <thread>
 #include <queue>
 #include <mutex>
+#include <atomic>
 
 namespace voxigen
 {

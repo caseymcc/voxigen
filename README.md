@@ -1,13 +1,16 @@
 [![discord](https://img.shields.io/discord/495955797872869376.svg?logo=discord "Discord")](https://discord.gg/BfceAsX)
-[![travis](https://img.shields.io/travis/caseymcc/voxigen/master.svg?logo=travis&style=flat-square&label=Linux "Travis CI")](https://travis-ci.org/caseymcc/voxigen)
+[![travis](https://img.shields.io/travis/caseymcc/voxigen/master.svg?logo=travis&style=flat-square&label=Linux/OSX "Travis CI")](https://travis-ci.org/caseymcc/voxigen)
 [![appveyor](https://img.shields.io/appveyor/ci/caseymcc/voxigen/master.svg?logo=appveyor&style=flat-square&label=Windows "AppVeyor CI")](https://ci.appveyor.com/project/caseymcc/voxigen)
 
 # ![logo](https://github.com/caseymcc/voxigen/raw/master/resources/voxigen_64_tr.png) voxigen
-Voxel handling library, generating/loading/saving/meshing/memory managment. Video of current version - https://youtu.be/urhNRiDqqWE
+Voxel handling library, generating/loading/saving/meshing/memory managment.  
+
+Video of current version - https://www.youtube.com/watch?v=KFW_KskYbPA  
+HeightMap Imposter testing - https://www.youtube.com/watch?v=NAaNWuHsJkQ
 
 ![screenshot](https://github.com/caseymcc/voxigen/raw/master/resources/screenshot1.png)
 
-Although the library is currently geared towards blocky worlds the hope is to support Marchin Cubes and Dual Countoring in the future. Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
+Although the library is currently geared towards blocky worlds the hope is to support Marching Cubes and Dual Contouring in the future. Voxigen handles chunking and loading/saving of the world based on a maximum size. The world is not infinite but the size can be chosen as though it seems to be infinite. Also the current generator choses blocks based on a cylinder out of 3D noise allowing the y axis to wrap around. Sphere could be possible but rendering might become an issue.
 
 The plan is to support physics directly into this layer so the world is segmented into regions that the physics will stay stable in. There should be sharing across the segments to make sure the simulation is across the full world.
 

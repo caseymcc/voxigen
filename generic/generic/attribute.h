@@ -1,6 +1,8 @@
 #ifndef _generic_attribute_h_
 #define _generic_attribute_h_
 
+#ifndef GENERIC_DISABLE_ATTRIBUTE
+
 #include "generic/types.h"
 #include "generic/serializer.h"
 
@@ -250,4 +252,5 @@ typedef std::shared_ptr<AttributeStringEnum> SharedAttributeStringEnum;
 
 }//namespace generic
 
+#endif //GENERIC_DISABLE_ATTRIBUTE
 #endif //_generic_attribute_h_

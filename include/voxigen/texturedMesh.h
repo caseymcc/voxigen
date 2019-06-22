@@ -6,7 +6,7 @@
 
 #include <array>
 
-#include <GL/glew.h>
+//#include <GL/glew.h>
 
 namespace voxigen
 {

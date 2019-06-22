@@ -1,6 +1,8 @@
 #include "generic/attributes.h"
 #include "generic/attribute.h"
 
+#ifndef GENERIC_DISABLE_ATTRIBUTE
+
 namespace generic
 {
 
@@ -70,3 +72,5 @@ void Attributes::deserialize(Deserializer *deserializer)
 }
 
 }//namespace generic
+
+#endif //GENERIC_DISABLE_ATTRIBUTE

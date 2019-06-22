@@ -1,6 +1,8 @@
 #include "generic/attributeContainer.h"
 #include "generic/attribute.h"
 
+#ifndef GENERIC_DISABLE_ATTRIBUTE
+
 namespace generic
 {
 //bool AttributeContainer::hasAttribute(const std::string &name)
@@ -192,3 +194,5 @@ void AttributeContainer::deserialize(Deserializer *deserializer)
 }
 
 }//namespace generic
+
+#endif //GENERIC_DISABLE_ATTRIBUTE

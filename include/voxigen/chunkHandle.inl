@@ -1,3 +1,5 @@
+#include <fstream>
+
 namespace voxigen
 {
 

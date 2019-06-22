@@ -1,9 +1,3 @@
-
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
-#include <boost/filesystem.hpp>
-
 #include "voxigen/defines.h"
 #include "voxigen/cell.h"
 #include "voxigen/regularGrid.h"
@@ -13,17 +7,33 @@
 #include "voxigen/texturePack.h"
 #include "voxigen/textureAtlas.h"
 #include "voxigen/simpleShapes.h"
+#include "voxigen/filesystem.h"
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-//#include <filesystem>
+#include <glbinding/gl/gl.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
-namespace fs=boost::filesystem;
+#include "debugScreen.h"
+#include "marker.h"
+#include "renderingOptions.h"
+#include "initGlew.h"
+#include "world.h"
+
+//using namespace gl;
+//
+//#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "<glbinding/gl/gl.h>"
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+voxigen::SharedTextureAtlas buildTextureAtlas();
 
 bool key_w=false;
 bool key_a=false;
@@ -32,29 +42,41 @@ bool key_s=false;
 bool key_space=false;
 bool key_left_shift=false;
 bool key_caps_on=false;
-bool resetCamera=false;
-bool showPlayer=false;
-bool move_player=true;
-bool show_chunks=true;
-bool show_regions=true;
+//bool resetCamera=false;
+//bool showPlayer=false;
+//bool move_player=true;
+//bool show_chunks=true;
+//bool show_regions=true;
+//bool cursor_capture=false;
+RenderingOptions renderingOptions;
 
+float lastFrame;
+float currentFrame;
+float deltaTime;
 
-voxigen::SimpleFpsCamera camera;
-voxigen::Position player;
+DebugScreen *debugScreen=nullptr;
 
-unsigned int playerRegion;
-glm::ivec3 playerRegionIndex;
-glm::ivec3 playerChunkIndex;
-unsigned int playerChunk;
+//voxigen::SimpleFpsCamera camera;
+//voxigen::Position player;
+//typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
+//namespace voxigen
+//{
+////force generator instantiation
+//template class GeneratorTemplate<EquiRectWorldGenerator<World>>;
+//}
+//voxigen::SimpleRenderer<World> *g_renderer;
+WorldRenderer *g_renderer;
+
+//Player info
+Marker marker;
+//unsigned int playerRegion;
+//glm::ivec3 playerRegionIndex;
+//glm::ivec3 playerChunkIndex;
+//unsigned int playerChunk;
 bool lastUpdateAdded;
 
-typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
-namespace voxigen
-{
-//force generator instantiation
-template class GeneratorTemplate<EquiRectWorldGenerator<World>>;
-}
-voxigen::SimpleRenderer<World> *g_renderer;
+void updatePosition(World &world);
+void updateChunkInfo();
 
 void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
 {
@@ -65,50 +87,7 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 //        LOG(INFO)<<"Opengl : "<<message;
 }
 
-std::string vertMarkerShader=
-"#version 330 core\n"
-"layout (location = 0) in vec3 inputVertex;\n"
-"layout (location = 1) in vec3 inputNormal;\n"
-"layout (location = 2) in vec2 inputTexCoord;\n"
-"layout (location = 3) in vec4 color;\n"
-"\n"
-"out vec3 position;\n"
-"out vec3 normal;\n"
-"out vec4 vertexColor;\n"
-"\n"
-"uniform mat4 projectionView;\n"
-"uniform vec3 regionOffset;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   normal=inputNormal;\n"
-"   vertexColor=color;\n"
-"   vec3 position=regionOffset+inputVertex;\n"
-"   gl_Position=projectionView*vec4(position, 1.0);\n"
-"}\n"
-"";
 
-std::string fragMarkerShader=
-"#version 330 core\n"
-"\n"
-"in vec3 position;\n"
-"in vec3 normal;\n"
-"in vec4 vertexColor;\n"
-"\n"
-"out vec4 color;\n"
-"\n"
-"//uniform vec3 lightPos;\n"
-"//uniform vec3 lightColor;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   //vec3 lightDir=normalize(lightPos-position); \n"
-"   //float diff=max(dot(normal, lightDir), 0.0); \n"
-"   //vec3 diffuse=diff * lightColor; \n"
-"   //color=vec4((ambient+diffuse)*vertexColor.xyz, 1.0f); \n"
-"   color=vertexColor;\n"
-"}\n"
-"";
 
 int main(int argc, char ** argv)
 {
@@ -130,96 +109,71 @@ int main(int argc, char ** argv)
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, (int)GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     window=glfwCreateWindow(width, height, "TestApp", NULL, NULL);
-    
+
     if(!window)
     {
         glfwTerminate();
         return -1;
 
     }
-
-    voxigen::TexturePack texturePack;
-
-    fs::path texturePackPath("resources/TexturePacks/SoA_Default");
-
-    texturePack.load(texturePackPath.string());
-
-    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
-    std::vector<std::string> blockNames={"dirt", "grass", "mud", "mud_dry", "sand", "clay", "cobblestone", "stone", "granite", "slate", "snow"};
-
-    textureAtlas->build(blockNames, texturePack);
-    textureAtlas->save(texturePackPath.string(), "terrain");
-
+    voxigen::SharedTextureAtlas textureAtlas=buildTextureAtlas();
+    
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+//    voxigen::initOpenGL(glfwGetProcAddress);
+    glbinding::initialize(glfwGetProcAddress);
+    initGlew();//hack for imgui
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io=ImGui::GetIO();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
+
+    ImGui::StyleColorsDark();
+
+    debugScreen=new DebugScreen(&renderingOptions);
+    
+//    debugScreen->initialize(window, true);
+//    debugScreen->performLayout();
+    debugScreen->initialize();
+    debugScreen->setSize(width, height);
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouse_callback);
-    
-    glewInit();
+    glfwSetMouseButtonCallback(window,
+        [](GLFWwindow *, int button, int action, int modifiers) 
+        {
+//            debugScreen->mouseButtonCallbackEvent(button, action, modifiers);
+        });
+    glfwSetCharCallback(window,
+        [](GLFWwindow *, unsigned int codepoint) 
+        {
+            if(!renderingOptions.cursor_capture){}
+//                debugScreen->charCallbackEvent(codepoint);
+        });
+
+//    debugScreen->setVisible(true);
 
 #ifndef NDEBUG
     glDebugMessageCallback(debugMessage, nullptr);
     glEnable(GL_DEBUG_OUTPUT);
 #endif
+
+
 //create player marker
-    unsigned int m_playerVertexArray;
-    unsigned int playerVertexBufferID;
-    unsigned int playerColor;
-    const std::vector<float> &playerVertices=voxigen::SimpleCube<1, 1, 2>::vertCoords;
+    marker.init();
 
-    glGenVertexArrays(1, &m_playerVertexArray);
-    glGenBuffers(1, &playerVertexBufferID);
-    glGenBuffers(1, &playerColor);
-
-    glBindVertexArray(m_playerVertexArray);
-
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, playerVertexBufferID);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float)*8, (void*)(sizeof(float)*3));
-
-    glEnableVertexAttribArray(3);
-    glBindBuffer(GL_ARRAY_BUFFER, playerColor);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, nullptr, GL_STATIC_DRAW);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glVertexAttribDivisor(3, 1);
-
-    glBindVertexArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, playerVertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*playerVertices.size(), playerVertices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glm::vec4 color(1.0f, 0.0f, 0.0f, 1.0f);
-
-    glBindBuffer(GL_ARRAY_BUFFER, playerColor);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4)*1, glm::value_ptr(color), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    opengl_util::Program markerProgram;
-    std::string error;
-    if(!markerProgram.attachLoadAndCompileShaders(vertMarkerShader, fragMarkerShader, error))
-    {
-        assert(false);
-        return 0;
-    }
-
-    size_t markerProjectionViewId=markerProgram.getUniformId("projectionView");
-    size_t markerOffsetId=markerProgram.getUniformId("regionOffset");
-//end player marker
-
-//    glViewport(0, 0, width, height);
     framebuffer_size_callback(window, width, height);
 
     World world;
@@ -251,217 +205,169 @@ int main(int argc, char ** argv)
     worldMiddle.z+=worldMiddle.z/2;
 //    worldMiddle=glm::ivec3(1536, 1536, 384);
 
-    camera.setYaw(0.0f);
-    camera.setPitch(0.0f);
+    renderingOptions.camera.setYaw(0.0f);
+    renderingOptions.camera.setPitch(0.0f);
     
     voxigen::Key hashes=world.getHashes(glm::vec3(worldMiddle));
 
-    playerRegion=hashes.regionHash;
-    playerChunk=hashes.chunkHash;
-    playerRegionIndex=world.getRegionIndex(playerRegion);
-    playerChunkIndex=world.getChunkIndex(playerChunk);
+    renderingOptions.playerRegion=hashes.regionHash;
+    renderingOptions.playerChunk=hashes.chunkHash;
+    renderingOptions.playerRegionIndex=world.getRegionIndex(renderingOptions.playerRegion);
+    renderingOptions.playerChunkIndex=world.getChunkIndex(renderingOptions.playerChunk);
     
     //set player position to local region
-    glm::vec3 regionPos=world.gridPosToRegionPos(playerRegion, glm::vec3(worldMiddle))+glm::vec3(32.0f, 32.0f, 0.0f);
+    glm::vec3 regionPos=world.gridPosToRegionPos(renderingOptions.playerRegion, glm::vec3(worldMiddle))+glm::vec3(32.0f, 32.0f, 0.0f);
     
-    camera.setPosition(playerRegion, regionPos);
-    player.setPosition(playerRegionIndex, regionPos);
+    renderingOptions.camera.setPosition(renderingOptions.playerRegion, regionPos);
+    renderingOptions.player.setPosition(renderingOptions.playerRegionIndex, regionPos);
 
-    world.updatePosition(playerRegionIndex, playerChunkIndex);
+    world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
 
     voxigen::SimpleRenderer<World> renderer(&world);
 
     g_renderer=&renderer;
     renderer.setTextureAtlas(textureAtlas);
 
-    renderer.setCamera(&camera);
+    renderer.setCamera(&renderingOptions.camera);
     renderer.build();
     renderer.setViewRadius(glm::ivec3(128, 128, 128));
 
-    renderer.setCameraChunk(playerRegionIndex, playerChunkIndex);
-    renderer.setPlayerChunk(playerRegionIndex, playerChunkIndex);
+    renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
+    renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
 //    lastUpdateAdded=renderer.updateChunks();
 //    renderer.updateChunks();
 
-    float movementSpeed=100;
-
-    float lastFrame=glfwGetTime();
-    float currentFrame;
-    float deltaTime;
+    lastFrame=glfwGetTime();
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    debugScreen->startBuild();
+    debugScreen->update(&world);
+    debugScreen->build();
     while(!glfwWindowShouldClose(window))
     {
-        if(resetCamera)
+        if(renderingOptions.resetCamera)
         {
-            glm::ivec3 regionIndex=player.getRegionIndex();
-            glm::vec3 position=player.getPosition();
+            glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
+            glm::vec3 position=renderingOptions.player.getPosition();
             glm::ivec3 chunkIndex=world.getChunkIndex(position);
             voxigen::RegionHash regionHash=world.getRegionHash(regionIndex);
 
-            camera.setPosition(regionHash, position);
+            renderingOptions.camera.setPosition(regionHash, position);
             renderer.setCameraChunk(regionIndex, chunkIndex);
 
-            resetCamera=false;
-            showPlayer=false;
+            renderingOptions.resetCamera=false;
+            renderingOptions.showPlayer=false;
         }
 
-        currentFrame=glfwGetTime();
-        deltaTime=currentFrame-lastFrame;
-        lastFrame=currentFrame;
-
-        glm::vec3 direction(0.0f, 0.0f, 0.0f);
-        bool move=false;
-
-        if(key_w)
-        {
-            direction+=glm::vec3(1.0f, 0.0f, 0.0f);
-            move=true;
-        }
-        if(key_s)
-        {
-            direction+=glm::vec3(-1.0f, 0.0f, 0.0f);
-            move=true;
-        }
-        if(key_a)
-        {
-            direction+=glm::vec3(0.0f, -1.0f, 0.0f);
-            move=true;
-        }
-        if(key_d)
-        {
-            direction+=glm::vec3(0.0f, 1.0f, 0.0f);
-            move=true;
-        }
-        if(key_space)
-        {
-            direction+=glm::vec3(0.0f, 0.0f, 1.0f);
-            move=true;
-        }
-        if(key_left_shift)
-        {
-            direction+=glm::vec3(0.0f, 0.0f, -1.0f);
-            move=true;
-        }
-
-//        bool updateChunks=false;
-
-        if(move)
-        {
-            unsigned int chunkHash;
-            bool updateCamera;
-            glm::vec3 deltaPosition;
-
-            camera.moveDirection(direction*movementSpeed*deltaTime, deltaPosition);
-            glm::ivec3 cameraRegionIndex=world.getRegionIndex(camera.getRegionHash());
-            glm::vec3 cameraPosition=camera.getPosition();
-
-            if(world.alignPosition(cameraRegionIndex, cameraPosition))
-            {
-                voxigen::RegionHash cameraRegionHash=world.getRegionHash(cameraRegionIndex);
-
-                camera.setPosition(cameraRegionHash, cameraPosition);
-                g_renderer->setCameraChunk(cameraRegionIndex, world.getChunkIndex(cameraPosition));
-            }
-
-            if(move_player)
-            {
-                player.move(deltaPosition);
-
-                glm::ivec3 regionIndex=player.getRegionIndex();
-                glm::vec3 position=player.getPosition();
-
-                if(world.alignPosition(regionIndex, position))
-                    player.setPosition(regionIndex, position);
-
-                glm::ivec3 chunkIndex=world.getChunkIndex(position);
-
-                if((playerChunkIndex!=chunkIndex) || (playerRegionIndex!=regionIndex))
-                {
-                    playerRegionIndex=regionIndex;
-                    playerChunkIndex=chunkIndex;
-
-                    g_renderer->setPlayerChunk(playerRegionIndex, playerChunkIndex);
-                    world.updatePosition(playerRegionIndex, playerChunkIndex);
-                }
-
-                if((cameraRegionIndex!=regionIndex)||(cameraPosition!=position))
-                    showPlayer=true;
-                else
-                    showPlayer=false;
-            }
-            else
-            {
-                glm::ivec3 regionIndex=player.getRegionIndex();
-                glm::vec3 position=player.getPosition();
-
-                if((cameraRegionIndex!=regionIndex)||(cameraPosition!=position))
-                    showPlayer=true;
-                else
-                    showPlayer=false;
-            }
-        }
+        updatePosition(world);
 
         //Rendering started
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glEnable(GL_CULL_FACE);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         
         //render anything that needs it
         renderer.draw();
 
-        if(showPlayer)
+        if(renderingOptions.showPlayer)
         {
-            markerProgram.use();
-            
-            markerProgram.uniform(markerProjectionViewId)=camera.getProjectionViewMat();
-            
-            glm::ivec3 cameraRegionIndex=world.getRegionIndex(camera.getRegionHash());
-            glm::vec3 cameraPosition=camera.getPosition();
-            glm::ivec3 regionIndex=player.getRegionIndex();
-            glm::vec3 position=player.getPosition();
+            glm::ivec3 cameraRegionIndex=world.getRegionIndex(renderingOptions.camera.getRegionHash());
+            glm::vec3 cameraPosition=renderingOptions.camera.getPosition();
+            glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
+            glm::vec3 position=renderingOptions.player.getPosition();
 
             glm::vec3 regionOffset=glm::vec3(regionIndex-cameraRegionIndex);
             glm::vec3 offset=regionOffset*glm::vec3(world.getDescriptors().m_regionCellSize)+position;
 
-            markerProgram.uniform(markerOffsetId)=offset;
-
-            glBindVertexArray(m_playerVertexArray);
-            glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
+            marker.draw(renderingOptions.camera.getProjectionViewMat(), offset);
         }
+
+
+        //render ui
+//        debugScreen->drawContents();
+//        debugScreen->drawWidgets();
+//        glDepthFunc(GL_ALWAYS);
+//        glDisable(GL_CULL_FACE);
+        debugScreen->draw();
+//        glEnable(GL_CULL_FACE);
 
         //get opengl started, we can handle some updating before calling the swap
         glFlush();
 
+        bool regionsUpdated=false, chunksUpdated=false;
         //take time to make any scene updates
-        renderer.update();
+        renderer.update(regionsUpdated, chunksUpdated);
+        
+        debugScreen->startBuild();
+        debugScreen->update(&world);
+        debugScreen->updateControls();
+        debugScreen->updateChunkInfo(&renderer);
+        debugScreen->build();
+
+        if(chunksUpdated)
+            updateChunkInfo();
 
         // Swap front and back buffers when opengl ready
         glfwSwapBuffers(window);
 
         // Poll for and process events
         glfwPollEvents();
-
     }
 
     //bring renderers down before world is terminated;
     renderer.destroy();
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
     glfwTerminate();
+
     return 0;
 }
 
+voxigen::SharedTextureAtlas buildTextureAtlas()
+{
+    voxigen::TexturePack texturePack;
+
+    fs::path texturePackPath("resources/TexturePacks/SoA_Default");
+
+    texturePack.load(texturePackPath.string());
+
+    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+    std::vector<std::string> blockNames={"dirt", "grass", "mud", "mud_dry", "sand", "clay", "cobblestone", "stone", "granite", "slate", "snow"};
+
+    textureAtlas->build(blockNames, texturePack);
+    textureAtlas->save(texturePackPath.string(), "terrain");
+
+    return textureAtlas;
+}
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+//    debugScreen->resizeCallbackEvent(width, height);
+
     glViewport(0, 0, width, height);
-    gltViewport(width, height);
-    camera.setView(width, height);
+    if(debugScreen)
+        debugScreen->setSize(width, height);
+    renderingOptions.camera.setView(width, height);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    if(!renderingOptions.cursor_capture)
+    {
+//        debugScreen->cursorPosCallbackEvent(xpos, ypos);
+        return;
+    }
+
     static bool firstMouse=true;
     static float lastX;
     static float lastY;
@@ -499,15 +405,35 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     if(pitch < -89.0f)
         pitch=-89.0f;
 
-    camera.setYaw(glm::radians(yaw));
-    camera.setPitch(glm::radians(pitch));
+    renderingOptions.camera.setYaw(glm::radians(yaw));
+    renderingOptions.camera.setPitch(glm::radians(pitch));
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if(key==GLFW_KEY_ESCAPE && action==GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-    else if(key==GLFW_KEY_W)
+    else if((key==GLFW_KEY_GRAVE_ACCENT) &&(action==GLFW_RELEASE))
+    {
+        if(!renderingOptions.cursor_capture)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            renderingOptions.cursor_capture=true;
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            renderingOptions.cursor_capture=false;
+        }
+    }
+
+    if(!renderingOptions.cursor_capture)
+    {
+//        debugScreen->keyCallbackEvent(key, scancode, action, mods);
+        return;
+    }
+
+    if(key==GLFW_KEY_W)
     {
         if(action==GLFW_PRESS)
             key_w=true;
@@ -562,27 +488,147 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     else if(key==GLFW_KEY_Q)
     {
         if(action==GLFW_RELEASE)
-            move_player=!move_player;
+        {
+            renderingOptions.move_player=!renderingOptions.move_player;
+//            debugScreen->update();
+        }
     }
     else if(key==GLFW_KEY_E)
     {
         if(action==GLFW_RELEASE)
         {
-            show_chunks=!show_chunks;
-            g_renderer->showChunks(show_chunks);
+            renderingOptions.show_chunks=!renderingOptions.show_chunks;
+            g_renderer->showChunks(renderingOptions.show_chunks);
         }
     }
     else if(key==GLFW_KEY_C)
     {
         if(action==GLFW_RELEASE)
         {
-            show_regions=!show_regions;
-            g_renderer->showRegions(show_regions);
+            renderingOptions.show_regions=!renderingOptions.show_regions;
+            g_renderer->showRegions(renderingOptions.show_regions);
         }
     }
     else if(key==GLFW_KEY_R)
     {
         if(action==GLFW_RELEASE)
-            resetCamera=true;
+            renderingOptions.resetCamera=true;
     }
+}
+
+void updatePosition(World &world)
+{
+    float movementSpeed=100;
+
+    currentFrame=glfwGetTime();
+    deltaTime=currentFrame-lastFrame;
+    lastFrame=currentFrame;
+
+    glm::vec3 direction(0.0f, 0.0f, 0.0f);
+    bool move=false;
+
+    if(key_w)
+    {
+        direction+=glm::vec3(1.0f, 0.0f, 0.0f);
+        move=true;
+    }
+    if(key_s)
+    {
+        direction+=glm::vec3(-1.0f, 0.0f, 0.0f);
+        move=true;
+    }
+    if(key_a)
+    {
+        direction+=glm::vec3(0.0f, -1.0f, 0.0f);
+        move=true;
+    }
+    if(key_d)
+    {
+        direction+=glm::vec3(0.0f, 1.0f, 0.0f);
+        move=true;
+    }
+    if(key_space)
+    {
+        direction+=glm::vec3(0.0f, 0.0f, 1.0f);
+        move=true;
+    }
+    if(key_left_shift)
+    {
+        direction+=glm::vec3(0.0f, 0.0f, -1.0f);
+        move=true;
+    }
+
+    //        bool updateChunks=false;
+
+    if(move)
+    {
+        unsigned int chunkHash;
+        bool updateCamera;
+        glm::vec3 deltaPosition;
+
+        renderingOptions.camera.moveDirection(direction*movementSpeed*deltaTime, deltaPosition);
+        glm::ivec3 cameraRegionIndex=world.getRegionIndex(renderingOptions.camera.getRegionHash());
+        glm::vec3 cameraPosition=renderingOptions.camera.getPosition();
+
+        if(world.alignPosition(cameraRegionIndex, cameraPosition))
+        {
+            voxigen::RegionHash cameraRegionHash=world.getRegionHash(cameraRegionIndex);
+
+            renderingOptions.camera.setPosition(cameraRegionHash, cameraPosition);
+            g_renderer->setCameraChunk(cameraRegionIndex, world.getChunkIndex(cameraPosition));
+        }
+
+        if(renderingOptions.move_player)
+        {
+            renderingOptions.player.move(deltaPosition);
+
+            glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
+            glm::vec3 position=renderingOptions.player.getPosition();
+
+            if(world.alignPosition(regionIndex, position))
+                renderingOptions.player.setPosition(regionIndex, position);
+
+            glm::ivec3 chunkIndex=world.getChunkIndex(position);
+
+            if((renderingOptions.playerChunkIndex!=chunkIndex)||(renderingOptions.playerRegionIndex!=regionIndex))
+            {
+                renderingOptions.playerRegionIndex=regionIndex;
+                renderingOptions.playerChunkIndex=chunkIndex;
+
+                g_renderer->setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
+                world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
+            }
+
+            if((cameraRegionIndex!=regionIndex)||(cameraPosition!=position))
+                renderingOptions.showPlayer=true;
+            else
+                renderingOptions.showPlayer=false;
+        }
+        else
+        {
+            glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
+            glm::vec3 position=renderingOptions.player.getPosition();
+
+            if((cameraRegionIndex!=regionIndex)||(cameraPosition!=position))
+                renderingOptions.showPlayer=true;
+            else
+                renderingOptions.showPlayer=false;
+        }
+    }
+}
+
+void updateChunkInfo()
+{
+    std::ostringstream chunkInfoStream;
+    auto chunkRenderers=g_renderer->getChunkRenderers();
+
+    for(auto chunkRenderer:chunkRenderers)
+    {
+        std::string chunkInfo;
+
+        chunkRenderer->updateInfo(chunkInfo);
+        chunkInfoStream<<chunkInfo;
+    }
+
+//    debugScreen->setChunkInfo(chunkInfoStream.str());
 }

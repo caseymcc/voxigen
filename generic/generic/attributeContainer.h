@@ -1,6 +1,8 @@
 #ifndef _generic_attributeContainer_h_
 #define _generic_attributeContainer_h_
 
+#ifndef GENERIC_DISABLE_ATTRIBUTE
+
 #include "generic/generic_export.h"
 #include "generic/attributes.h"
 #include "generic/serializer.h"
@@ -106,4 +108,5 @@ template<> void AttributeContainer::addAttribute<char *>(std::string name, char 
 
 }//namespace generic
 
+#endif //GENERIC_DISABLE_ATTRIBUTE
 #endif //__generic_attributeContainer_h_

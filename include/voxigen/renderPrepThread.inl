@@ -3,10 +3,13 @@
 
 #include <glog/logging.h>
 
+#include <glbinding/gl/gl.h>
+
 namespace voxigen
 {
+using namespace gl;
 
-void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
+inline void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
 {
 #ifndef NDEBUG
     if(type==GL_DEBUG_TYPE_ERROR)
@@ -17,17 +20,17 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 }
 
 
-RenderPrepThread::RenderPrepThread()
+inline RenderPrepThread::RenderPrepThread()
 {
 }
 
 
-RenderPrepThread::~RenderPrepThread()
+inline RenderPrepThread::~RenderPrepThread()
 {
 
 }
 
-void RenderPrepThread::requestSearchUpdate()
+inline void RenderPrepThread::requestSearchUpdate()
 {
     std::unique_lock<std::mutex> lock(m_queueMutex);
 
@@ -35,7 +38,7 @@ void RenderPrepThread::requestSearchUpdate()
 }
 
 
-void RenderPrepThread::requestSearchUpdate(const SearchSettings &settings)
+inline void RenderPrepThread::requestSearchUpdate(const SearchSettings &settings)
 {
     std::unique_lock<std::mutex> lock(m_queueMutex);
 
@@ -61,14 +64,14 @@ void RenderPrepThread::requestMesh(_Renderer *renderer, TextureAtlas *textureAtl
 }
 
 
-void RenderPrepThread::requestReleaseMesh(MeshBuffer &mesh)
+inline void RenderPrepThread::requestReleaseMesh(MeshBuffer &mesh)
 {
     prep::RequestReleaseMesh *request=new prep::RequestReleaseMesh(mesh);
 
     m_requestCache.push_back(request);
 }
 
-void RenderPrepThread::updateQueues(Requests &completedQueue)//ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed)
+inline void RenderPrepThread::updateQueues(Requests &completedQueue)//ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed)
 {
     bool update=false;
 
@@ -94,25 +97,15 @@ void RenderPrepThread::updateQueues(Requests &completedQueue)//ChunkRenderers &a
         m_event.notify_all();
 }
 
-#if defined(_WIN32) || defined(_WIN64)
-void RenderPrepThread::start(HDC dc, HGLRC glContext)
+inline void RenderPrepThread::start(NativeGL *nativeGL)
 {
-    m_dc=dc;
-    m_glContext=glContext;
-#else//_WINDOWS
-void RenderPrepThread::start(Display *display, GLXDrawable drawable, GLXContext glContext)
-{
-    m_display=display;
-    m_drawable=drawable;
-    m_glContext=glContext;
-#endif//_WINDOWS
-
+    m_nativeGL=nativeGL;
     m_run=true;
     m_thread=std::thread(std::bind(&RenderPrepThread::processThread, this));
 }
 
 
-void RenderPrepThread::stop()
+inline void RenderPrepThread::stop()
 {
     {
         std::unique_lock<std::mutex> lock(m_queueMutex);
@@ -124,13 +117,9 @@ void RenderPrepThread::stop()
 }
 
 
-void RenderPrepThread::processThread()
+inline void RenderPrepThread::processThread()
 {
-#if defined(_WIN32) || defined(_WIN64)
-    wglMakeCurrent(m_dc, m_glContext);
-#else
-    glXMakeCurrent(m_display, m_drawable, m_glContext);
-#endif
+    m_nativeGL->makeCurrent();
 
 #ifndef NDEBUG
     glDebugMessageCallback(debugMessage, nullptr);
@@ -200,7 +189,7 @@ void RenderPrepThread::processThread()
 namespace prep
 {
 
-void RequestReleaseMesh::process()
+inline void RequestReleaseMesh::process()
 {
     //likely better to store these and re-use
     glDeleteBuffers(1, &mesh.vertexBuffer);

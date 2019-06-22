@@ -263,31 +263,8 @@ void SimpleRenderer<_Grid>::build()
 
     RegionRendererType::buildPrograms();
 
-#if defined(_WIN32) || defined(_WIN64)
-    m_prepDC=wglGetCurrentDC();
-    HGLRC currentContext=wglGetCurrentContext();
-
-    m_prepGlContext=wglCreateContext(m_prepDC);
-    
-    BOOL success=wglShareLists(currentContext, m_prepGlContext);
-
-    assert(success);
-
-    m_renderPrepThread.start(m_prepDC, m_prepGlContext);
-#else
-    m_prepDisplay=glXGetCurrentDisplay();
-    m_prepDrawable=glXGetCurrentDrawable();
-    GLXContext currentContext=glXGetCurrentContext();
-
-    int nelements;
-    GLXFBConfig *fbConfig=glXChooseFBConfig(m_prepDisplay, DefaultScreen(m_prepDisplay), 0, &nelements);
-
-    m_prepGlContext=glXCreateNewContext(m_prepDisplay, *fbConfig, GLX_RGBA_TYPE, currentContext, true);
-
-    assert(m_prepGlContext);
-
-    m_renderPrepThread.start(m_prepDisplay, m_prepDrawable, m_prepGlContext);
-#endif
+    m_nativeGL.createSharedContext();
+    m_renderPrepThread.start(&m_nativeGL);
 }
 
 template<typename _Grid>
@@ -347,7 +324,7 @@ void SimpleRenderer<_Grid>::draw()
         glm::ivec3 chunkIndex=m_grid->getChunkIndex(cameraPos);
 
         cameraInfo<<"Pos: Region:"<<regionIndex.x<<" ,"<<regionIndex.y<<", "<<regionIndex.z<<" Chunk:"<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<" ("<<cameraPos.x<<" ,"<<cameraPos.y<<" ,"<<cameraPos.z<<")\n";
-        cameraInfo<<"Press \"CapsLock\" toggle camera/player movement\n";
+        cameraInfo<<"Press \"q\" toggle camera/player movement\n";
         cameraInfo<<"Press \"r\" reset camera to player\n";
         cameraInfo<<"Press \"o\" toggle chunk overlay";
         if(m_displayOutline)
@@ -413,7 +390,7 @@ void SimpleRenderer<_Grid>::draw()
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::update()
+void SimpleRenderer<_Grid>::update(bool &regionsUpdated, bool &chunksUpdated)
 {
     m_renderCube.update(m_playerIndex);
     m_regionRenderCube.update(RegionIndexType(m_playerIndex.region));
@@ -422,14 +399,14 @@ void SimpleRenderer<_Grid>::update()
     m_grid->updateProcessQueue();
 
     //update chunks that have been loaded by the grid
-    updateChunkHandles();
+    updateChunkHandles(regionsUpdated, chunksUpdated);
 
     //update render prep chunk
     updatePrepChunks();
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::updateChunkHandles()
+void SimpleRenderer<_Grid>::updateChunkHandles(bool &regionsUpdated, bool &chunksUpdated)
 {
     std::vector<RegionHash> updatedRegions;
     std::vector<Key> updatedChunks;
@@ -438,6 +415,7 @@ void SimpleRenderer<_Grid>::updateChunkHandles()
 
     if(!updatedRegions.empty())
     {
+        regionsUpdated=true;
         typename RegionRenderCubeType::RendererType *renderer;
         RegionIndexType index;
         typename _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
@@ -466,6 +444,7 @@ void SimpleRenderer<_Grid>::updateChunkHandles()
     if(updatedChunks.empty())
         return;
     
+    chunksUpdated=true;
     typename RenderCubeType::RendererType *renderer;
     RegionChunkIndexType index;
     typename _Grid::DescriptorType &descriptors=m_grid->getDescriptors();
@@ -651,6 +630,12 @@ void SimpleRenderer<_Grid>::setPlayerChunk(const glm::ivec3 &regionIndex, const 
 {
     m_playerIndex.region=regionIndex;
     m_playerIndex.chunk=chunkIndex;
+}
+
+template<typename _Grid>
+std::vector<typename SimpleRenderer<_Grid>::ChunkRendererType *> SimpleRenderer<_Grid>::getChunkRenderers()
+{
+    return m_renderCube.getRenderers();
 }
 
 struct ChunkQueryOffset

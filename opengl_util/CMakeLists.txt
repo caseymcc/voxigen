@@ -1,7 +1,9 @@
 project(opengl_util)
 
-hunter_add_package(glew)
-find_package(glew CONFIG REQUIRED)
+#hunter_add_package(glew)
+#find_package(glew CONFIG REQUIRED)
+hunter_add_package(glbinding)
+find_package(glbinding CONFIG REQUIRED)
 
 #remove min and max macro declares from windows builds, causes issues with std::min/max
 add_definitions(-DNOMINMAX)
@@ -11,7 +13,7 @@ add_definitions(-DNOMINMAX)
 #endif()
 
 set(opengl_util_sources
-    initGlew.cpp
+    initOpenGL.cpp
     program.cpp
     shader.cpp
     uniform.cpp
@@ -19,7 +21,7 @@ set(opengl_util_sources
 )
 
 set(opengl_util_headers
-    opengl_util/initGlew.h
+    opengl_util/initOpenGL.h
     opengl_util/program.h
     opengl_util/shader.h
     opengl_util/uniform.h
@@ -27,7 +29,8 @@ set(opengl_util_headers
 )
 
 set(opengl_util_libraries
-    glew::glew
+#    glew::glew
+    glbinding::glbinding
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

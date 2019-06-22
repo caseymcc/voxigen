@@ -1,5 +1,5 @@
 #include "opengl_util/program.h"
-#include "opengl_util/initGlew.h"
+#include "opengl_util/initOpenGL.h"
 
 //#include <filesystem>
 #include <regex>
@@ -29,7 +29,7 @@ Program::~Program()
 
 void Program::generateProgram()
 {
-    initGlew();
+    initOpenGL();
     if(m_id == 0)
         m_id=glCreateProgram();
 }
@@ -430,7 +430,7 @@ bool Program::compile(std::string &errorString)
 
     glGetProgramiv(m_id, GL_LINK_STATUS, (int *)&linked);
 
-    if(linked == GL_FALSE)
+    if(linked == 0)
     {
         GLint length=0;
 
@@ -539,7 +539,7 @@ bool Program::compile(std::string &errorString)
             GLsizei uniformNameLength;
 
             glGetActiveUniformName(m_id, indices[j], uniformMaxNameLength, &uniformNameLength, uniformName.data());
-            uniformBufferDetail->uniformDetails.push_back(UniformDetail(uniformName.data(), uniformType(types[j])));
+            uniformBufferDetail->uniformDetails.push_back(UniformDetail(uniformName.data(), uniformType((GLenum)types[j])));
         }
         glUniformBlockBinding(m_id, uniformBufferDetail->blockIndex, uniformBufferDetail->blockBinding);
 

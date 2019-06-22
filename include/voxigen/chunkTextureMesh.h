@@ -7,10 +7,13 @@
 
 #include <array>
 
-#include <GL/glew.h>
+//#include <GL/glew.h>
+#include <glbinding/gl/gl.h>
 
 namespace voxigen
 {
+
+using namespace gl;
 
 struct MeshBuffer
 {
@@ -24,9 +27,10 @@ struct MeshBuffer
     unsigned int indexBuffer;
     unsigned int indices;
 
-    unsigned int indexType;
+    GLenum indexType;
 
     GLsync sync;
+//    void *sync;
 };
 
 class ChunkTextureMesh

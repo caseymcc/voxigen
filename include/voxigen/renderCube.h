@@ -312,6 +312,7 @@ public:
 
 //    ChunkRenderInfoType *getChunkRenderInfo(const Key &key);
     RendererType *getRenderInfo(const Index &index);// const Key &key);
+    std::vector<RendererType *> getRenderers() { return m_renderCube; }
 
 private:
     glm::ivec3 calcCubeSize(const glm::ivec3 &radius);

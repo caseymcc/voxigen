@@ -4,18 +4,28 @@
 #include "imglib/png.h"
 #include "imglib/ppm.h"
 
-#ifdef IMGLIB_USE_BOOST_FILESYSTEM
+#if IMGLIB_USE_FILESYSTEM == 1
+#include <filesystem>
+#elif IMGLIB_USE_FILESYSTEM == 2
+#include <experimental/filesystem>
+#else
 #include <boost/filesystem.hpp>
-#endif//IMGLIB_USE_BOOST_FILESYSTEM
+#endif
 
 namespace imglib
 {
 
-#ifdef IMGLIB_USE_BOOST_FILESYSTEM
-namespace fs=boost::filesystem;
-#else//IMGLIB_USE_BOOST_FILESYSTEM
+#if IMGLIB_USE_FILESYSTEM == 1
 namespace fs=std::filesystem;
-#endif//IMGLIB_USE_BOOST_FILESYSTEM
+#elif IMGLIB_USE_FILESYSTEM == 2
+#ifdef _MSC_VER
+namespace fs=std::experimental::filesystem::v1;
+#else
+namespace fs=std::experimental::filesystem;
+#endif
+#else
+namespace fs=boost::filesystem;
+#endif
 
 template<typename _ImageType>
 bool load(_ImageType &image, const std::string &location)

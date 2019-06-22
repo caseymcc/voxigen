@@ -4,7 +4,6 @@ project(imglib)
 #remove min and max macro declares from windows builds, causes issues with std::min/max
 add_definitions(-DNOMINMAX)
 
-option(IMGLIB_USE_BOOST_FILESYSTEM "Turn on/off support boost filesystem" OFF)
 option(IMGLIB_USE_COMPILETIME_TYPE "Turn on/off support for compile time type informat" ON)
 option(IMGLIB_USE_PNG "Turn on/off support for PNG" ON)
 option(IMGLIB_USE_EIGEN "Turn on/off support for eigen library" ON)
@@ -12,6 +11,40 @@ option(IMGLIB_USE_OPENCL "Turn on/off support for OpenCl" ON)
 option(IMGLIB_USE_OPENCL_CPP "Turn on/off support for OpenCl CPP classes" ON)
 option(IMGLIB_USE_CUDA "Turn on/off support for CUDA" OFF)
 option(IMGLIB_BUILD_TEST "Turns on test application" ON)
+
+set(IMGLIB_BOOST_FILESYSTEM 0)
+set(IMGLIB_STD_FILESYSTEM 1)
+set(IMGLIB_EXPERIMENTAL_FILESYSTEM 2)
+set(IMGLIB_USE_FILESYSTEM ${IMGLIB_BOOST_FILESYSTEM})
+
+#find what filesystem to use
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    add_definitions(-DNOMINMAX)
+
+    if(MSVC_VERSION GREATER_EQUAL 1900)
+        set(IMGLIB_USE_FILESYSTEM ${IMGLIB_EXPERIMENTAL_FILESYSTEM})
+        if(MSVC_VERSION GREATER 1900)
+            include(CheckCXXCompilerFlag)
+
+            CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+            if(_cpp_17_flag_supported)
+                add_compile_options("/std:c++17")
+                set(IMGLIB_USE_FILESYSTEM ${IMGLIB_STD_FILESYSTEM})
+            endif()
+        endif()
+    endif()
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+        set(IMGLIB_USE_FILESYSTEM ${IMGLIB_STD_FILESYSTEM})
+    endif()
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(IMGLIB_USE_FILESYSTEM ${IMGLIB_BOOST_FILESYSTEM})
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(IMGLIB_USE_FILESYSTEM ${IMGLIB_EXPERIMENTAL_FILESYSTEM})
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+        set(IMGLIB_USE_FILESYSTEM ${IMGLIB_STD_FILESYSTEM})
+    endif()
+endif()
 
 set(imglib_headers
     imglib/colorConversion.h
@@ -33,12 +66,9 @@ set(imglib_sources
     transform.cpp
 )
 
-set(imglib_libraries 
-    Boost::system 
-    Boost::filesystem
-)
+set(imglib_libraries )
 
-if(IMGLIB_USE_BOOST_FILESYSTEM)
+if(IMGLIB_USE_FILESYSTEM EQUAL ${IMGLIB_BOOST_FILESYSTEM})
     hunter_add_package(Boost COMPONENTS system filesystem)
     find_package(Boost CONFIG REQUIRED system filesystem)
 
@@ -134,12 +164,12 @@ target_link_libraries(imglib ${imglib_libraries})
 target_include_directories(imglib PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(imglib PUBLIC ${PROJECT_BINARY_DIR}) #export files will be here
 
-if(IMGLIB_USE_BOOST_FILESYSTEM)
-    target_compile_definitions(imglib PUBLIC -DIMGLIB_USE_BOOST_FILESYSTEM)
-endif()
-
-if(IMGLIB_USE_COMPILETIME_TYPE)
-    target_compile_definitions(imglib PUBLIC -DIMGLIB_USE_COMPILETIME_TYPE)
+target_compile_definitions(imglib PUBLIC "-DIMGLIB_USE_FILESYSTEM=${IMGLIB_USE_FILESYSTEM}")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    if(IMGLIB_USE_FILESYSTEM GREATER ${IMGLIB_BOOST_FILESYSTEM})
+        target_compile_options(imglib PUBLIC "-lstdc++fs")
+        target_link_libraries(imglib stdc++fs)
+    endif()
 endif()
 
 if(IMGLIB_USE_OPENCL)
