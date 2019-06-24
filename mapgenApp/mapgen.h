@@ -2,6 +2,7 @@
 #define _voxigen_mapgen_h_
 
 #include "./testApp/world.h"
+#include "colorMap.h"
 
 #include <glbinding/gl/gl.h>
 using namespace gl;
@@ -18,7 +19,10 @@ public:
 
 private:
     void updateTexture();
-    void updatePlateTexture();
+    void updatePlateTexture(std::vector<GLubyte> &textureBuffer);
+    void updatePlateDistanceTexture(std::vector<GLubyte> &textureBuffer);
+    void updateContinentTexture(std::vector<GLubyte> &textureBuffer);
+
     void generate();
 
     bool m_show;
@@ -41,10 +45,11 @@ private:
     int m_textureWidth;
     int m_textureHeight;
 
-    int layerIndex;
+    int m_layerIndex;
     std::vector<char> m_layerNames;
 
     std::vector<std::tuple<int, int, int>> m_plateColors;
+    voxigen::ColorMap m_colorMap;
 };
 
 #endif//_voxigen_mapgen_h_

@@ -367,7 +367,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
     m_cellularNoise->FillSet(plateMap.data(), m_influenceVectorSet.get());
     
-    //going to generate twice as I want the distance value as well, will mod HastyNoise later to  produce both
+    //going to generate twice as I want the distance value as well, will mod HastyNoise later to produce both (as it has already done the work)
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Distance);
     m_cellularNoise->FillSet(plateDistanceMap.data(), m_influenceVectorSet.get());
 
@@ -408,8 +408,8 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
             lastIndex=index;
         }
         m_influenceMap[i].plateValue=plateMap[i];
-        m_influenceMap[i].plateDistanceValue=plateMap[i];
-        m_influenceMap[i].continentValue=plateMap[i];
+        m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
+        m_influenceMap[i].continentValue=continentMap[i];
     }
 
     m_plateCount=plates.size();
@@ -418,9 +418,9 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateContinents()
 {
-    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
-    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
-    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+//    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
+//    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+//    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
 }
 
 template<bool useStride>

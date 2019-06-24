@@ -358,6 +358,8 @@ endif()
 if(VOXIGEN_MAPGENAPP)
     
     set(mapgenApp_sources
+        mapgenApp/colorMap.h
+        mapgenApp/colorMap.cpp
         mapgenApp/main.cpp
         mapgenApp/randomcolor.h
         mapgenApp/randomcolor.cpp
