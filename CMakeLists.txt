@@ -377,14 +377,9 @@ if(VOXIGEN_MAPGENAPP)
     endforeach()
     set(mapgenApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
-#    if(NOT APPLE) #some issue on osx will need to track down
-    include(CreateLaunchers)
-    
-    
     create_target_launcher(mapgenApp
         RUNTIME_LIBRARY_DIRS "${mapgenApp_vs_enviroment_dir}"
         WORKING_DIRECTORY "${mapgenApp_vs_working_dir}"
     )
-#    endif()
 endif()
 
