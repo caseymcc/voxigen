@@ -494,6 +494,7 @@ void RequestMesh<_Grid, SimpleChunkRenderer<typename _Grid::RegionType, typename
 //        assert(gl::glGetError()==gl::GL_NO_ERROR);
 
         mesh.sync=gl::glFenceSync(gl::GL_SYNC_GPU_COMMANDS_COMPLETE, gl::UnusedMask::GL_NONE_BIT);
+        gl::glFlush();
     }
 
     mesh.valid=true;

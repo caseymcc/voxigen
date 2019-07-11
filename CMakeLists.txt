@@ -39,8 +39,8 @@ set(
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/HunterGate.cmake)
 
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.23.192.tar.gz"
-    SHA1 "8e5944c07fe0fb944132f2ad5d6f787968565ca8"
+    URL "https://github.com/ruslo/hunter/archive/v0.23.204.tar.gz"
+    SHA1 "32cfed254da901f6f184027d530d8da47e035b85"
     LOCAL
 )
 
@@ -51,12 +51,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/)
 #for multi-config builds (e.g. msvc)
-foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/bin/${OUTPUTCONFIG}/)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
-endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
+if(CMAKE_CONFIGURATION_TYPES)
+    foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/bin/${OUTPUTCONFIG}/)
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG}/)
+    endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
+else()
+    #make sure there is a build type
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug)
+    endif()
+endif()
 
 message(STATUS "USE_OCTOMAP ${USE_OCTOMAP}")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -74,6 +81,8 @@ hunter_add_package(glog)
 find_package(glog CONFIG REQUIRED)
 hunter_add_package(HastyNoise)
 find_package(HastyNoise CONFIG REQUIRED)
+hunter_add_package(CreateLaunchers)
+find_package(CreateLaunchers CONFIG REQUIRED)
 
 set(VOXIGEN_BOOST_FILESYSTEM 0)
 set(VOXIGEN_STD_FILESYSTEM 1)
@@ -101,6 +110,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(VOXIGEN_USE_FILESYSTEM ${VOXIGEN_STD_FILESYSTEM})
     endif()
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(CMAKE_CXX_STANDARD 14)
     set(VOXIGEN_USE_FILESYSTEM ${VOXIGEN_BOOST_FILESYSTEM})
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(VOXIGEN_USE_FILESYSTEM ${VOXIGEN_EXPERIMENTAL_FILESYSTEM})
@@ -110,8 +120,8 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if(VOXIGEN_USE_FILESYSTEM EQUAL ${VOXIGEN_BOOST_FILESYSTEM})
-    hunter_add_package(Boost COMPONENTS filesystem system)
-    find_package(Boost REQUIRED COMPONENTS filesystem system)
+    hunter_add_package(Boost COMPONENTS filesystem)
+    find_package(Boost REQUIRED COMPONENTS filesystem)
 endif()
 
 if(VOXIGEN_TEXTURE)
@@ -175,6 +185,7 @@ set(voxigen_headers
     include/voxigen/heightmapMeshBuilder.h
     include/voxigen/jsonSerializer.h
     include/voxigen/nativeGL.h
+    include/voxigen/noise.h
     include/voxigen/object.h
     include/voxigen/processQueue.h
     include/voxigen/regular2DGrid.h
@@ -209,6 +220,7 @@ set(voxigen_sources
     src/coords.cpp
     src/jsonSerializer.cpp
     src/nativeGL.cpp
+    src/noise.cpp
     src/simpleFilesystem.cpp
 )
 
@@ -229,7 +241,6 @@ set(voxigen_libraries ${voxigen_public_libraries}
 if(VOXIGEN_USE_FILESYSTEM EQUAL ${VOXIGEN_BOOST_FILESYSTEM})
     set(voxigen_libraries ${voxigen_libraries}
         Boost::filesystem
-        Boost::system
     )
 endif()
 
@@ -392,11 +403,13 @@ if(VOXIGEN_TESTAPP)
     endforeach()
     set(VS_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
     
+#    if(NOT APPLE) #some issue on osx will need to track down
     include(CreateLaunchers)
     
     create_target_launcher(testApp
         RUNTIME_LIBRARY_DIRS "${VS_ENVIROMENT_DIR}"
         WORKING_DIRECTORY "${VS_WORKING_DIRECTORY}"
     )
+#    endif()
 endif()
 

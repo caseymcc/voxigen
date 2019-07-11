@@ -122,8 +122,16 @@ inline void RenderPrepThread::processThread()
     m_nativeGL->makeCurrent();
 
 #ifndef NDEBUG
-    glDebugMessageCallback(debugMessage, nullptr);
-    glEnable(GL_DEBUG_OUTPUT);
+    GLint majorVersion, minorVersion;
+
+    glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+    glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
+
+    if((majorVersion >= 4) && (minorVersion >= 3))
+    {
+        glDebugMessageCallback(debugMessage, nullptr);
+        glEnable(GL_DEBUG_OUTPUT);
+    }
 #endif
 
     bool run=true;
