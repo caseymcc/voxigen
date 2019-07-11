@@ -37,12 +37,6 @@ set(
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/Hunter/HunterGate.cmake)
 
-#HunterGate(
-#    URL "https://github.com/ruslo/hunter/archive/v0.23.181.tar.gz"
-#    SHA1 "270cafa2d67def4ad4d52409ff22a28890d41c84"
-#    LOCAL
-#)
-
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.23.204.tar.gz"
     SHA1 "32cfed254da901f6f184027d530d8da47e035b85"
@@ -197,15 +191,16 @@ set(voxigen_inline
 
 set(voxigen_sources
     src/biome.cpp
-    src/entity.cpp
-    src/gridDescriptors.cpp
-    src/regular2DGrid.cpp
-    src/object.cpp
-    src/equiRectWorldGenerator.cpp
     src/chunkMesh.cpp
-    src/simpleCamera.cpp
     src/coords.cpp
+    src/entity.cpp
+    src/equiRectWorldGenerator.cpp
+    src/gridDescriptors.cpp
     src/jsonSerializer.cpp
+    src/noise.cpp
+    src/object.cpp
+    src/regular2DGrid.cpp
+    src/simpleCamera.cpp
     src/nativeGL.cpp
     src/noise.cpp
     src/simpleFilesystem.cpp

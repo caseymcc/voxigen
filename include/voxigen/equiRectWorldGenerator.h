@@ -226,7 +226,7 @@ std::unique_ptr<HastyNoise::VectorSet> EquiRectWorldGenerator<_Grid>::regionVect
 template<typename _Grid>
 EquiRectWorldGenerator<_Grid>::EquiRectWorldGenerator()
 {
-    initNoise();
+    initNoise();//make sure noise dlls are loaded
 }
 
 template<typename _Grid>
@@ -317,9 +317,16 @@ void EquiRectWorldGenerator<_Grid>::save(std::string &descriptors)
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 {
+    
     generatePlates();
-    generateContinents();
+//    generateContinents();
 }
+
+//template<typename _Grid>
+//void EquiRectWorldGenerator<_Grid>::generatePlates()
+//{
+//
+//}
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
@@ -349,7 +356,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         for(int x=0; x<influenceSize.x; x++)
         {
             mapPos.x=x;
-            glm::vec3 pos=getSphericalcalCoords(influenceSize.x, influenceSize.y, mapPos);
+            glm::vec3 pos=getSphericalCoords(influenceSize.x, influenceSize.y, mapPos);
 
             //hasty treats x and y in reverse, need to change
             m_influenceVectorSet->xSet[index]=pos.y;
@@ -738,6 +745,11 @@ void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, co
 //    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodSize.x, lodSize.y, 1);
 }
 
+//template<typename _Grid>
+//void EquiRectWorldGenerator<_Grid>::generate()
+//{
+//
+//}
 
 }//namespace voxigen
 
