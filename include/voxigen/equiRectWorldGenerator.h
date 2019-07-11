@@ -6,11 +6,9 @@
 #include "voxigen/gridDescriptors.h"
 #include "voxigen/coords.h"
 #include "voxigen/heightMap.h"
+#include "voxigen/noise.h"
 
-//#include <noise/noise.h>
 #undef None
-//#include <FastNoiseSIMD/FastNoiseSIMD.h>
-#include <HastyNoise/hastyNoise.h>
 
 namespace voxigen
 {
@@ -53,7 +51,7 @@ public:
     EquiRectWorldGenerator();
     ~EquiRectWorldGenerator();
 
-    static char *typeName(){return "EquiRectWorldGenerator";}
+    static const char *typeName(){return "EquiRectWorldGenerator";}
 
     void initialize(IGridDescriptors *descriptors);
     void save(IGridDescriptors *descriptors);
@@ -119,6 +117,7 @@ std::unique_ptr<HastyNoise::VectorSet> EquiRectWorldGenerator<_Grid>::regionVect
 template<typename _Grid>
 EquiRectWorldGenerator<_Grid>::EquiRectWorldGenerator()
 {
+    initNoise();
 }
 
 template<typename _Grid>

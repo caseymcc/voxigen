@@ -6,6 +6,7 @@
 #elif __linux__
 #include <GL/glx.h>
 #elif __APPLE__
+#include <OpenGL/OpenGL.h>
 #endif
 
 namespace voxigen
@@ -21,6 +22,8 @@ struct NativeStruct
     GLXDrawable m_drawable;
     GLXContext m_glContext;
 #elif __APPLE__
+    CGLPixelFormatObj m_pixelFormat;
+    CGLContextObj m_glContext;
 #endif
 };
 
@@ -55,8 +58,12 @@ void NativeGL::createSharedContext()
 
     assert(hidden->m_glContext);
 #elif __APPLE__
-    //this needs to be implemented
-    assert(false);
+    CGLContextObj currentContext=CGLGetCurrentContext();
+    hidden->m_pixelFormat=CGLGetPixelFormat(currentContext);
+
+    CGLError error=CGLCreateContext(hidden->m_pixelFormat, currentContext, &hidden->m_glContext);
+
+    assert(error == kCGLNoError);
 #endif
 
 }
@@ -68,6 +75,7 @@ void NativeGL::makeCurrent()
 #elif __linux__
     glXMakeCurrent(hidden->m_display, hidden->m_drawable, hidden->m_glContext);
 #elif __APPLE__
+    CGLSetCurrentContext(hidden->m_glContext);
 #endif
 
 }

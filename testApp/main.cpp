@@ -104,7 +104,7 @@ int main(int argc, char ** argv)
         return -1;
 
     size_t width=1600;
-    size_t height=1200;
+    size_t height=1080;
 
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -136,7 +136,11 @@ int main(int argc, char ** argv)
     ImGuiIO &io=ImGui::GetIO();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
+#ifdef __APPLE__    
+    ImGui_ImplOpenGL3_Init("#version 410");
+#else
     ImGui_ImplOpenGL3_Init();
+#endif
 
     ImGui::StyleColorsDark();
 
@@ -166,8 +170,16 @@ int main(int argc, char ** argv)
 //    debugScreen->setVisible(true);
 
 #ifndef NDEBUG
-    glDebugMessageCallback(debugMessage, nullptr);
-    glEnable(GL_DEBUG_OUTPUT);
+    GLint majorVersion, minorVersion;
+
+    glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+    glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
+
+    if((majorVersion >= 4) && (minorVersion >= 3))
+    {
+        glDebugMessageCallback(debugMessage, nullptr);
+        glEnable(GL_DEBUG_OUTPUT);
+    }
 #endif
 
 

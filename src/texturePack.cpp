@@ -55,6 +55,7 @@ bool TexturePack::loadConfig(const std::string &path)
         m_resolution=32;
 
     deserializer.closeObject();
+    return true;
 }
 
 bool TexturePack::loadLayers(const std::string &path)

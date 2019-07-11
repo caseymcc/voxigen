@@ -40,7 +40,7 @@ public:
     GeneratorTemplate():m_generator(new _Generator()) {}
     virtual ~GeneratorTemplate() {}
 
-    static char *typeName() { return _Generator::typeName(); }
+    static const char *typeName() { return _Generator::typeName(); }
 
     virtual void initialize(IGridDescriptors *descriptors) { m_generator->initialize(descriptors); }
     virtual void save(IGridDescriptors *descriptors) { m_generator->save(descriptors); }

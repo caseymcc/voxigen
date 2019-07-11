@@ -100,7 +100,7 @@ public:
 #ifdef IMGLIB_USE_COMPILETIME_TYPE
     ctti::type_id_t typeId() const { return m_self->typeId(); }
 #endif//IMGLIB_USE_COMPILETIME_TYPE
-    void *object() const { m_self->object(); }
+    void *object() const { return m_self->object(); }
 
     Format format() const { return m_self->format(); }
     Depth depth() const { return m_self->depth(); }
@@ -283,5 +283,26 @@ inline bool comparePixel<Format::RGBA, Depth::Float>(uint8_t *src1Data, uint8_t 
 } //namespace utils
 
 }//namespace imglib
+
+#ifdef __APPLE__
+namespace std
+{
+    template<> struct hash<imglib::Format>
+    {
+        size_t operator()(const imglib::Format &value) const
+        {
+            return size_t(value);
+        }
+    };
+
+    template<> struct hash<imglib::Depth>
+    {
+        size_t operator()(const imglib::Depth &value) const
+        {
+            return size_t(value);
+        }
+    };
+}
+#endif
 
 #endif //_imglib_image_h_
