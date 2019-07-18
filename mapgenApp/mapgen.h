@@ -22,6 +22,7 @@ private:
     void updatePlateTexture(std::vector<GLubyte> &textureBuffer);
     void updatePlateDistanceTexture(std::vector<GLubyte> &textureBuffer);
     void updateContinentTexture(std::vector<GLubyte> &textureBuffer);
+    void updateGeometryTexture(std::vector<GLubyte> &textureBuffer);
 
     void generate();
 

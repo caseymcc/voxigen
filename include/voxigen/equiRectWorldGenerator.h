@@ -8,6 +8,8 @@
 #include "voxigen/heightMap.h"
 #include "voxigen/noise.h"
 
+#include "dt/delaunay.h"
+
 #undef None
 
 #include <random>
@@ -53,8 +55,22 @@ size_t index_sorted(const std::vector<T> &container, const T &item)
 
 struct VOXIGEN_EXPORT InfluenceCell
 {
+    InfluenceCell():
+        point(false),
+        heightBase(0.0f),
+        heightRange(0.0f),
+        tectonicPlate(0),
+        plateValue(0.0f),
+        plateDistanceValue(0.0f),
+        continentValue(0.0f),
+        airCurrent(0.0f)
+    {
+
+    }
+
+    bool point;
     float heightBase;
-    float heightRangs;
+    float heightRange;
 
     int tectonicPlate;
     float plateValue;
@@ -322,105 +338,141 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 //    generateContinents();
 }
 
-//template<typename _Grid>
-//void EquiRectWorldGenerator<_Grid>::generatePlates()
-//{
-//
-//}
-
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
     glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
     int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
-    glm::ivec2 size=m_descriptors->getSize();
-
-    std::vector<float> plateMap;
-    std::vector<float> plateDistanceMap;
-    std::vector<float> continentMap;
-
-    plateMap.resize(influenceMapSize);
-    plateDistanceMap.resize(influenceMapSize);
-    continentMap.resize(influenceMapSize);
+    
     m_influenceMap.resize(influenceMapSize);
 
-    m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
-    m_influenceVectorSet->SetSize(influenceMapSize);
-
-    glm::vec3 mapPos;
-    size_t index=0;
-    mapPos.z=(float)(influenceSize.x/2.0f);
-    for(int y=0; y<influenceSize.y; y++)
-    {
-        mapPos.y=y;
-        for(int x=0; x<influenceSize.x; x++)
-        {
-            mapPos.x=x;
-            glm::vec3 pos=getSphericalCoords(influenceSize.x, influenceSize.y, mapPos);
-
-            //hasty treats x and y in reverse, need to change
-            m_influenceVectorSet->xSet[index]=pos.y;
-            m_influenceVectorSet->ySet[index]=pos.x;
-            m_influenceVectorSet->zSet[index]=pos.z;
-            index++;
-        }
-    }
-
-    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
-    m_cellularNoise->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
-    m_cellularNoise->SetSeed(m_plateSeed);
-    m_cellularNoise->SetFrequency(m_descriptorValues.m_plateFrequency);
-    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
-    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
-    m_cellularNoise->FillSet(plateMap.data(), m_influenceVectorSet.get());
+    std::vector<glm::vec3> sphere;
+    std::vector<glm::vec3> cartSphere;
+    std::vector<glm::vec2> stereographicSphere;
+    std::vector<glm::vec2> points;
     
-    //going to generate twice as I want the distance value as well, will mod HastyNoise later to produce both (as it has already done the work)
-    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Distance);
-    m_cellularNoise->FillSet(plateDistanceMap.data(), m_influenceVectorSet.get());
+    generateFibonacciSphere(16, sphere);
+    sphericalToCartesian(sphere, cartSphere);
+    cartesianToStereographic(cartSphere, stereographicSphere);
 
-    //continent map
-    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
-    m_cellularNoise->SetSeed(m_continentSeed);
-    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
-    m_cellularNoise->FillSet(continentMap.data(), m_influenceVectorSet.get());
-
-    float last=-2.0f;
-    std::vector<float> plates;
-
-    for(size_t i=0; i<influenceMapSize; i++)
-    {
-        if(plateMap[i]==last)
-            continue;
-        if(contains_sorted(plates, plateMap[i]))
-            continue;
-
-        insert_sorted(plates, plateMap[i]);
-        last=plateMap[i];
-    }
-
-    last=-2.0f;
-    size_t lastIndex=0;
+//    Delaunay delaunay;
     
-    for(size_t i=0; i<influenceMapSize; i++)
+    std::vector<Triangle> triangles;// =delaunay.triangulate(stereographicSphere);
+    std::vector<Edge> edges;// =delaunay.getEdges();
+    delaunayTriangulate(stereographicSphere, triangles, edges, points);
+
+    std::vector<glm::vec3> cartPoints;
+    std::vector<glm::vec3> sphereicalPoints;
+    std::vector<glm::vec2> eqPoints;
+
+    stereographicToCartesian(points, cartPoints);
+    cartesianToSpherical(cartPoints, sphereicalPoints);
+    sphericalToEquirectangular(sphereicalPoints, eqPoints);
+
+    for(glm::vec2 point:eqPoints)
     {
-        if(plateMap[i]==last)
-            m_influenceMap[i].tectonicPlate=lastIndex;
-        else
-        {
-            size_t index=index_sorted(plates, plateMap[i]);
-            assert(index!=std::numeric_limits<size_t>::max());
-            m_influenceMap[i].tectonicPlate=index;
+        point.x=point.x*influenceSize.x;
+        point.y=point.y*influenceSize.y;
 
-            last=plateMap[i];
-            lastIndex=index;
-        }
-        m_influenceMap[i].plateValue=plateMap[i];
-        m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
-        m_influenceMap[i].continentValue=continentMap[i];
+        size_t position=influenceSize.x*point.y+point.x;
+
+        m_influenceMap[position].point=true;
     }
-
-    m_plateCount=plates.size();
 }
+
+//template<typename _Grid>
+//void EquiRectWorldGenerator<_Grid>::generatePlates()
+//{
+//    glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
+//    int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
+//    glm::ivec2 size=m_descriptors->getSize();
+//
+//    std::vector<float> plateMap;
+//    std::vector<float> plateDistanceMap;
+//    std::vector<float> continentMap;
+//
+//    plateMap.resize(influenceMapSize);
+//    plateDistanceMap.resize(influenceMapSize);
+//    continentMap.resize(influenceMapSize);
+//    m_influenceMap.resize(influenceMapSize);
+//
+//    m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
+//    m_influenceVectorSet->SetSize(influenceMapSize);
+//
+//    glm::vec3 mapPos;
+//    size_t index=0;
+//    mapPos.z=(float)(influenceSize.x/2.0f);
+//    for(int y=0; y<influenceSize.y; y++)
+//    {
+//        mapPos.y=y;
+//        for(int x=0; x<influenceSize.x; x++)
+//        {
+//            mapPos.x=x;
+//            glm::vec3 pos=getSphericalCoords(influenceSize.x, influenceSize.y, mapPos);
+//
+//            //hasty treats x and y in reverse, need to change
+//            m_influenceVectorSet->xSet[index]=pos.y;
+//            m_influenceVectorSet->ySet[index]=pos.x;
+//            m_influenceVectorSet->zSet[index]=pos.z;
+//            index++;
+//        }
+//    }
+//
+//    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
+//    m_cellularNoise->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
+//    m_cellularNoise->SetSeed(m_plateSeed);
+//    m_cellularNoise->SetFrequency(m_descriptorValues.m_plateFrequency);
+//    m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
+//    m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+//    m_cellularNoise->FillSet(plateMap.data(), m_influenceVectorSet.get());
+//    
+//    //going to generate twice as I want the distance value as well, will mod HastyNoise later to produce both (as it has already done the work)
+//    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Distance);
+//    m_cellularNoise->FillSet(plateDistanceMap.data(), m_influenceVectorSet.get());
+//
+//    //continent map
+//    m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
+//    m_cellularNoise->SetSeed(m_continentSeed);
+//    m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
+//    m_cellularNoise->FillSet(continentMap.data(), m_influenceVectorSet.get());
+//
+//    float last=-2.0f;
+//    std::vector<float> plates;
+//
+//    for(size_t i=0; i<influenceMapSize; i++)
+//    {
+//        if(plateMap[i]==last)
+//            continue;
+//        if(contains_sorted(plates, plateMap[i]))
+//            continue;
+//
+//        insert_sorted(plates, plateMap[i]);
+//        last=plateMap[i];
+//    }
+//
+//    last=-2.0f;
+//    size_t lastIndex=0;
+//    
+//    for(size_t i=0; i<influenceMapSize; i++)
+//    {
+//        if(plateMap[i]==last)
+//            m_influenceMap[i].tectonicPlate=lastIndex;
+//        else
+//        {
+//            size_t index=index_sorted(plates, plateMap[i]);
+//            assert(index!=std::numeric_limits<size_t>::max());
+//            m_influenceMap[i].tectonicPlate=index;
+//
+//            last=plateMap[i];
+//            lastIndex=index;
+//        }
+//        m_influenceMap[i].plateValue=plateMap[i];
+//        m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
+//        m_influenceMap[i].continentValue=continentMap[i];
+//    }
+//
+//    m_plateCount=plates.size();
+//}
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateContinents()

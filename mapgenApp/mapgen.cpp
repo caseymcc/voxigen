@@ -56,7 +56,7 @@ void MapGen::initialize()
     updateTexture();
 
     m_layerIndex=0;
-    m_layerNames=packVectorString({"Tectonic Plates", "Plates Distance", "Continents"});
+    m_layerNames=packVectorString({"Tectonic Plates", "Plates Distance", "Continents", "Geometry"});
 //    if(!fs::exists(worldsDirectory))
 //        fs::create_directory(worldsDirectory);
 //
@@ -159,8 +159,10 @@ void MapGen::updateTexture()
         updatePlateTexture(textureBuffer);
     else if(m_layerIndex==1)
         updatePlateDistanceTexture(textureBuffer);
-    else
+    else if(m_layerIndex==2)
         updateContinentTexture(textureBuffer);
+    else if(m_layerIndex==3)
+        updateGeometryTexture(textureBuffer);
 }
 
 void MapGen::updatePlateTexture(std::vector<GLubyte> &textureBuffer)
@@ -254,15 +256,61 @@ void MapGen::updateContinentTexture(std::vector<GLubyte> &textureBuffer)
         m_plateColors=colorGenerator.randomColors(plateCount);
 
     size_t index=0;
-    
+
     for(size_t i=0; i<influenceMap.size(); ++i)
     {
         int elevation=32+32*influenceMap[i].continentValue;
         glm::ivec4 color=m_colorMap.color(elevation, 32);
-        
+
         textureBuffer[index++]=(GLubyte)color.r;
         textureBuffer[index++]=(GLubyte)color.g;
         textureBuffer[index++]=(GLubyte)color.b;
+        textureBuffer[index++]=255;
+    }
+
+    m_textureWidth=influenceMapSize.x;
+    m_textureHeight=influenceMapSize.y;
+
+    glBindTexture(GL_TEXTURE_2D, m_textureId);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_textureWidth, m_textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &textureBuffer[0]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    m_textureValid=true;
+}
+
+void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
+{
+    const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
+    const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
+
+    int plateCount=m_worldGenerator->getPlateCount();
+
+    RandomColor::RandomColorGenerator colorGenerator;
+
+    if(m_plateColors.size()<plateCount)
+        m_plateColors=colorGenerator.randomColors(plateCount);
+
+    size_t index=0;
+
+    for(size_t i=0; i<influenceMap.size(); ++i)
+    {
+        const bool &isPoint=influenceMap[i].point;
+
+        if(isPoint)
+        {
+            textureBuffer[index++]=(GLubyte)255;
+            textureBuffer[index++]=(GLubyte)255;
+            textureBuffer[index++]=(GLubyte)255;
+        }
+        else
+        {
+            textureBuffer[index++]=(GLubyte)0;
+            textureBuffer[index++]=(GLubyte)0;
+            textureBuffer[index++]=(GLubyte)0;
+        }
         textureBuffer[index++]=255;
     }
 

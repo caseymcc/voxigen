@@ -141,6 +141,8 @@ set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
 set(GENERIC_DISABLE_ATTRIBUTE ON CACHE BOOL "Disable support for attributes" FORCE)
 add_subdirectory(generic)
 set_target_properties(generic PROPERTIES FOLDER Libraries)
+add_subdirectory(dt)
+set_target_properties(dt PROPERTIES FOLDER Libraries)
 
 set(voxigen_headers
     include/voxigen/biome.h
@@ -212,6 +214,7 @@ set(voxigen_public_libraries
     gflags
     glog::glog
     generic
+    dt
 )
 
 set(voxigen_libraries ${voxigen_public_libraries}
