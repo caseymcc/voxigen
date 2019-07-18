@@ -22,25 +22,25 @@ enum Projections
 template<Projections _Type>
 struct ProjectionDetails
 {
-}
+};
 
 template<>
-struct ProjectionDetails<Cartesian>
+struct ProjectionDetails<Projections::Cartesian>
 {
     using PointType=glm::vec3;
-}
+};
 
 template<>
-struct ProjectionDetails<Spherical>
+struct ProjectionDetails<Projections::Spherical>
 {
     using PointType=glm::vec3;
-}
+};
 
 template<>
-struct ProjectionDetails<Spherical>
+struct ProjectionDetails<Projections::Equirectangular>
 {
-    using PointType=glm::vec3;
-}
+    using PointType=glm::vec2;
+};
 
 template<Projections _From, Projections _To>
 void projectPoint(const ProjectionDetails<_From>::PointType &inPoint, ProjectionDetails<_To>::PointType &outPoint)
@@ -50,7 +50,7 @@ void projectPoint(const ProjectionDetails<_From>::PointType &inPoint, Projection
 
 
 template<>
-void projectPoint<Cartesian, Spherical>(const ProjectionDetails<Cartesian>::PointType &inPoint, ProjectionDetails<Spherical>::PointType &outPoint)
+void projectPoint<Projections::Cartesian, Spherical>(const ProjectionDetails<Projections::Cartesian>::PointType &inPoint, ProjectionDetails<Projections::Spherical>::PointType &outPoint)
 {
     float d=sqrt((inPoint.x*inPoint.x)+(inPoint.y*inPoint.y));
 
@@ -60,7 +60,7 @@ void projectPoint<Cartesian, Spherical>(const ProjectionDetails<Cartesian>::Poin
 }
 
 template<>
-void projectPoint<Spherical, Cartesian>(const ProjectionDetails<Spherical>::PointType &inPoint, ProjectionDetails<Cartesian>::PointType &outPoint)
+void projectPoint<Projections::Spherical, Projections::Cartesian>(const ProjectionDetails<Projections::Spherical>::PointType &inPoint, ProjectionDetails<Projections::Cartesian>::PointType &outPoint)
 {
     float d=inPoint.x*cos(inPoint.z);
 
@@ -70,22 +70,57 @@ void projectPoint<Spherical, Cartesian>(const ProjectionDetails<Spherical>::Poin
 }
 
 template<>
-void projectPoint<Spherical, Equirectangular>(const ProjectionDetails<Spherical>::PointType &inPoint, ProjectionDetails<Cartesian>::PointType &outPoint)
+void projectPoint<Projections::Spherical, Projections::Equirectangular>(const ProjectionDetails<Projections::Spherical>::PointType &inPoint, ProjectionDetails<Projections::Equirectangular>::PointType &outPoint)
 {
     outPoint.x=inPoint.y/glm::two_pi<float>();
     outPoint.y=(glm::half_pi<float>()-inPoint.z)/glm::pi<float>();
 }
 
 template<>
-void projectPoint<Equirectangular, Spherical>(const ProjectionDetails<Spherical>::PointType &inPoint, ProjectionDetails<Cartesian>::PointType &outPoint)
+void projectPoint<Projections::Equirectangular, Projections::Spherical>(const ProjectionDetails<Projections::Equirectangular>::PointType &inPoint, ProjectionDetails<Projections::Spherical>::PointType &outPoint)
 {
     float theta=glm::two_pi<float>()*(inPoint.x);
     float phi=glm::half_pi<float>()-(glm::pi<float>()*(inPoint.y));
-    float d=radius*cos(phi);
+    float d=cos(phi); //asuming radius 1.0f
 
     outPoint.x=d*cos(theta);
     outPoint.y=d*sin(theta);
     outPoint.z=sin(phi);//assuming unit sphere 1.0f*
+}
+
+template<Projections _Projection>
+float perpendicularDistanceSqrd(const ProjectionDetails<_Projection>::PointType &point, const ProjectionDetails<_Projection>::PointType &lineStart,
+	const ProjectionDetails<_Projection>::PointType &lineEnd)
+{
+	using PointType=ProjectionDetails<_Projection>::PointType;
+
+	PointType delta=lineEnd-lineStart;
+	PointType pointDelta=point-lineStart;
+
+	delta=glm::normalize(delta);
+
+	float dot=glm::dot(delta, pointDelta);
+
+	delta=pointDelta-(delta*dot);
+
+	return glm::length(delta);
+}
+
+template<>
+float perpendicularDistanceSqrd<Projections::Spherical>(const ProjectionDetails<Projections::Spherical>::PointType &point, const ProjectionDetails<Projections::Spherical>::PointType &lineStart,
+	const ProjectionDetails<Projections::Spherical>::PointType &lineEnd)
+{
+	using CartPointType=ProjectionDetails<Projections::Cartesian>::PointType;
+
+	CartPointType cartPoint;
+	CartPointType cartLineStart;
+	CartPointType cartLineEnd;
+	
+	projectPoint<Projections::Spherical, Projections::Cartesian>(point, cartPoint);
+	projectPoint<Projections::Spherical, Projections::Cartesian>(lineStart, cartLineStart);
+	projectPoint<Projections::Spherical, Projections::Cartesian>(lineEnd, cartLineEnd);
+
+	return perpendicularDistanceSqrd<Projections::Cartesian>(cartPoint, cartLineStart, cartLineEnd);
 }
 
 //Notes:
@@ -116,7 +151,6 @@ inline glm::vec3 getSphericalCoords(size_t width, size_t height, const glm::vec3
     cylindricalPos.x=d*cos(theta);
     cylindricalPos.y=d*sin(theta);
     
-
     return cylindricalPos;
 }
 
@@ -302,16 +336,68 @@ inline std::vector<glm::vec3> generateFibonacciSphere(size_t count)
     return points;
 }
 
+//projects polyline from one coordinate system to another, will up-sample line if needed
 template<Projections _From, Projections _To>
-inline void resample(const std::vector<glm::vec3> &inPoints, std::vector<glm::vec2> &outPoints)
+inline void projectPolyLine(const std::vector<ProjectionDetails<_From>::PointType> &inPoints, std::vector<ProjectionDetails<_From>::PointType> &outPoints, float distanceThreshold=2.0f)
 {
-    if(outPoints.size()!=inPoints.size())
-        outPoints.resize(inPoints.size());
+	if(inPoints.size() < 2)
+		return;
 
-    for(size_t i=0; i<inPoints.size())
-        projectPoint<_From, _To>(inPoints[i], outPoints[i]);
+	using FromPointType=std::vector<ProjectionDetails<_From>::PointType>;
+	using ToPointType=std::vector<ProjectionDetails<_To>::PointType>;
 
-    for(size_t i=0; i<outPoints.size())
+	std::vector<FromPointType> nextFromPoint;
+	std::vector<ToPointType> nextToPoint;
+
+	nextFromPoint.resize(inPoints.size()-1);
+	nextToPoint.resize(inPoints.size()-1);
+
+	if(outPoints.capacity()!=inPoints.size())
+		outPoints.reserve(inPoints.size());
+	
+	for(size_t i=inPoints.size()-1; i>0; --i)
+	{
+		nextFromPoint[i-1]=inPoints[i];
+		projectPoint<_From, _To>(inPoints[i], nextToPoint[i-1]);
+	}
+
+	outPoints.resize(1);
+	
+	FromPointType inPoint=inPoints[0];
+	projectPoint<_From, _To>(inPoints[0], outPoints[0]);
+
+	while(!nextToPoint.empty())
+	{
+		ToPointType &pt1=outPoints.back();
+		ToPointType &pt2=nextToPoint.back();
+		
+		//if points are close skip up-sample
+		if(glm::distance2() <= 4.0f)
+			continue;
+
+		FromPointType &fromPt2=nextFromPoint.back();
+		FromPointType fromMidpoint=(inPoint+fromPt2)/2.0f;
+		FromPointType midpoint;
+
+		//get midpoint in original coordinates and project to new coordinates
+		projectPoint<_From, _To>(fromMidpoint, midpoint);
+
+		float distance=perpendicularDistanceSqrd<_To>(midpoint, pt1, pt2);
+
+		//check distance from point to line in new coordinates, if greater than threshold keep point
+		if(distance > distanceThreshold)
+		{
+			nextFromPoint.push_back(fromMidpoint);
+			nextToPoint.push_back(midpoint);
+		}
+		else
+		{
+			inPoint=nextFromPoint.back();
+			nextFromPoint.pop_back();
+			outPoints.push_back(nextToPoint.back());
+			nextToPoint.pop_back();
+		}
+	}
 }
 
 }//namespace voxigen
