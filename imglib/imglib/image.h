@@ -229,6 +229,12 @@ size_t sizeOf() {return sizeOfFormatDepth<_Format, _Depth>::value;};
 
 IMGLIB_EXPORT size_t sizeOfPixel(Format format, Depth depth);
 
+template<typename _Image>
+IMGLIB_EXPORT size_t sizeOfImagePixel(const _Image &image)
+{
+    return sizeOfPixel(format(image), depth(image));
+}
+
 namespace utils
 {
 
