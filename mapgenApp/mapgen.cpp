@@ -9,6 +9,8 @@
 
 #include <tuple>
 
+#include <imglib/draw.h>
+
 std::vector<char> packVectorString(const std::vector<std::string> &values)
 {
     std::vector<char> packed;
@@ -285,6 +287,7 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 {
     const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
     const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
+	imglib::SimpleImage textureImage(imglib::Format::RGBA, imglib::Depth::Bit8, influenceMapSize.x, influenceMapSize.y, &textureBuffer[0], influenceMap.size());
 
     int plateCount=m_worldGenerator->getPlateCount();
 
@@ -293,26 +296,37 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
     if(m_plateColors.size()<plateCount)
         m_plateColors=colorGenerator.randomColors(plateCount);
 
-    size_t index=0;
+//    size_t index=0;
+//
+//    for(size_t i=0; i<influenceMap.size(); ++i)
+//    {
+//        const bool &isPoint=influenceMap[i].point;
+//
+//        if(isPoint)
+//        {
+//            textureBuffer[index++]=(GLubyte)255;
+//            textureBuffer[index++]=(GLubyte)255;
+//            textureBuffer[index++]=(GLubyte)255;
+//        }
+//        else
+//        {
+//            textureBuffer[index++]=(GLubyte)0;
+//            textureBuffer[index++]=(GLubyte)0;
+//            textureBuffer[index++]=(GLubyte)0;
+//        }
+//        textureBuffer[index++]=255;
 
-    for(size_t i=0; i<influenceMap.size(); ++i)
-    {
-        const bool &isPoint=influenceMap[i].point;
-
-        if(isPoint)
-        {
-            textureBuffer[index++]=(GLubyte)255;
-            textureBuffer[index++]=(GLubyte)255;
-            textureBuffer[index++]=(GLubyte)255;
-        }
-        else
-        {
-            textureBuffer[index++]=(GLubyte)0;
-            textureBuffer[index++]=(GLubyte)0;
-            textureBuffer[index++]=(GLubyte)0;
-        }
-        textureBuffer[index++]=255;
-    }
+//    }
+	std::vector<std::vector<glm::vec2>> &lines=m_worldGenerator->m_influenceLines;
+	
+	int32_t color=0xff0000ff;
+	for(std::vector<glm::vec2> &line:lines)
+	{
+		for(size_t i=1; i<line.size(); ++i)
+		{
+			imglib::drawLine(line[i-1], line[i], color, textureImage);
+		}
+	}
 
     m_textureWidth=influenceMapSize.x;
     m_textureHeight=influenceMapSize.y;

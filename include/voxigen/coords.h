@@ -22,6 +22,7 @@ enum Projections
 template<Projections _Type>
 struct ProjectionDetails
 {
+//	using PointType=float;
 };
 
 template<>
@@ -43,7 +44,7 @@ struct ProjectionDetails<Projections::Equirectangular>
 };
 
 template<Projections _From, Projections _To>
-void projectPoint(const ProjectionDetails<_From>::PointType &inPoint, ProjectionDetails<_To>::PointType &outPoint)
+void projectPoint(const typename ProjectionDetails<_From>::PointType &inPoint, typename ProjectionDetails<_To>::PointType &outPoint)
 {
     static_assert(false);
 }

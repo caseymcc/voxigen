@@ -180,6 +180,7 @@ public:
 
     EquiRectDescriptors &getDecriptors() { return m_descriptorValues; }
 
+	std::vector<std::vector<glm::vec2>> m_influenceLines;
 private:
     void buildHeightMap(const glm::vec3 &startPos, const glm::ivec3 &lodSize, size_t stride);
 
@@ -362,22 +363,33 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     delaunayTriangulate(stereographicSphere, triangles, edges, points);
 
     std::vector<glm::vec3> cartPoints;
-    std::vector<glm::vec3> sphereicalPoints;
-    std::vector<glm::vec2> eqPoints;
-
+//    std::vector<glm::vec3> sphereicalPoints;
+//    std::vector<glm::vec2> eqPoints;
+//
     stereographicToCartesian(points, cartPoints);
-    cartesianToSpherical(cartPoints, sphereicalPoints);
-    sphericalToEquirectangular(sphereicalPoints, eqPoints);
+//    cartesianToSpherical(cartPoints, sphereicalPoints);
+//    sphericalToEquirectangular(sphereicalPoints, eqPoints);
+//
+//    for(glm::vec2 point:eqPoints)
+//    {
+//        point.x=point.x*influenceSize.x;
+//        point.y=point.y*influenceSize.y;
+//
+//        size_t position=influenceSize.x*point.y+point.x;
+//
+//        m_influenceMap[position].point=true;
+//    }
+	std::vector<glm::vec3> cartPolyLine;
 
-    for(glm::vec2 point:eqPoints)
-    {
-        point.x=point.x*influenceSize.x;
-        point.y=point.y*influenceSize.y;
+	cartPolyLine.resize(2);
+	m_influenceLines.resize(edges.size());
+	for(size_t i=0; i<edges.size(); ++i)
+	{
+		cartPolyLine[0]=cartPoints[edges[i].v];
+		cartPolyLine[1]=cartPoints[edges[i].w];
 
-        size_t position=influenceSize.x*point.y+point.x;
-
-        m_influenceMap[position].point=true;
-    }
+		projectPolyLine<Projections::Cartesian, Projections::Equirectangular>(cartPolyLine, m_influenceLines[i]);
+	}
 }
 
 //template<typename _Grid>
