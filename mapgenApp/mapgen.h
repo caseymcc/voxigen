@@ -49,6 +49,7 @@ private:
     int m_layerIndex;
     std::vector<char> m_layerNames;
 
+    int m_plateCount;
     std::vector<std::tuple<int, int, int>> m_plateColors;
     voxigen::ColorMap m_colorMap;
 };

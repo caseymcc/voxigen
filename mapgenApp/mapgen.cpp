@@ -43,18 +43,20 @@ MapGen::MapGen():
     m_worldDepth=2560;
 
     m_colorMap=voxigen::generateColorMap(64, 64);
+
+    m_plateCount=16;
 }
 
 void MapGen::initialize()
 {
 //    fs::path worldsDirectory("worlds");
-
+    //pull out generator so we can work on it directly
     m_world.create("", "TestApWorld", glm::ivec3(m_worldWidth, m_worldHeight, m_worldDepth), "EquiRectWorldGenerator");
 
-    //pull out generator so we can work on it directly
     WorldGeneratorTemplate *genTemplate=(WorldGeneratorTemplate *)&m_world.getGenerator();
     m_worldGenerator=(WorldGenerator *)genTemplate->get();
 
+    m_worldGenerator->m_plateCount=m_plateCount;
     updateTexture();
 
     m_layerIndex=0;
@@ -91,6 +93,8 @@ void MapGen::setSize(int width, int height)
 
 void MapGen::draw()
 {
+    bool forceUpdate=false;
+
     voxigen::EquiRectDescriptors &descriptors=m_worldGenerator->getDecriptors();
 
     int controlsWidth=350;
@@ -101,22 +105,31 @@ void MapGen::draw()
     ImGui::Begin("Controls", &m_show, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoBringToFrontOnFocus|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize);
     
     if(ImGui::Button("Generate"))
+    {
         generate();
+        forceUpdate=true;
+    }
 
     ImGui::Separator();
 
     ImGui::InputInt("Seed", &m_noiseSeed);
+    if(ImGui::SliderInt("Plate Count", &m_plateCount, 1000, 10000))
+    {
+        generate();
+        forceUpdate=true;
+    }
     ImGui::SliderFloat("Plate Frequency", &descriptors.m_plateFrequency, 0.0001f, 1.0f, "%.4f", 3.0f);
     ImGui::SliderFloat("Continent Frequency", &descriptors.m_continentFrequency, 0.001f, 1.0f, "%.3f", 3.0f);
 
     ImGui::Separator();
 
     if(ImGui::Combo("Layer", &m_layerIndex, &m_layerNames[0]))
-    {
-        updateTexture();
-    }
+        forceUpdate=true;
 
     ImGui::End();
+
+    if(forceUpdate)
+        updateTexture();
 
     int imageWidth=std::max(m_width-controlsWidth, 0);
 
@@ -317,9 +330,17 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 //        textureBuffer[index++]=255;
 
 //    }
+    std::vector<glm::vec2> &points=m_worldGenerator->m_influencePoints;
 	std::vector<std::vector<glm::vec2>> &lines=m_worldGenerator->m_influenceLines;
 	
-	int32_t color=0xff0000ff;
+//	int32_t color=0xff0000ff;
+    glm::tvec4<unsigned char> color;
+
+    color.r=255;
+    color.g=0;
+    color.b=0;
+    color.a=255;
+
 	for(std::vector<glm::vec2> &line:lines)
 	{
 		for(size_t i=1; i<line.size(); ++i)
@@ -327,6 +348,14 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 			imglib::drawLine(line[i-1], line[i], color, textureImage);
 		}
 	}
+
+    color.r=255;
+    color.g=255;
+    color.b=255;
+    color.a=255;
+
+    for(auto &point:points)
+        imglib::drawPoint(point, color, textureImage);
 
     m_textureWidth=influenceMapSize.x;
     m_textureHeight=influenceMapSize.y;
@@ -343,7 +372,8 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 
 void MapGen::generate()
 {
+    m_worldGenerator->m_plateCount=m_plateCount;
     m_worldGenerator->generateWorldOverview();
 
-    updateTexture();
+//    updateTexture();
 }

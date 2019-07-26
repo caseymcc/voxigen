@@ -237,6 +237,7 @@ if(VOXIGEN_RENDERING)
 
     set(voxigen_headers ${voxigen_headers}
         include/voxigen/initOpengl.h
+        include/voxigen/glm_point.h
         include/voxigen/renderAction.h
         include/voxigen/renderCube.h
         include/voxigen/renderPrepThread.h

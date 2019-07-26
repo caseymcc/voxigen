@@ -127,3 +127,8 @@ void delaunayTriangulate(std::vector<Vector2> &vertexes, std::vector<Triangle> &
 	}
 
 }
+
+inline void insertVertex(const glm::vec3 &vertex, std::vector<glm::vec3> &vertexes, std::vector<Triangle> &triangles, std::vector<Edge> &edges)
+{
+    vertexes.push_back(vertex);
+}
