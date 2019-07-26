@@ -45,6 +45,14 @@ HunterGate(
 
 project(voxigen)
 
+macro(get_target_directories target_directory_list)
+    foreach(target ${ARGN})
+        if(TARGET ${target})
+            list(APPEND ${target_directory_list} "$<TARGET_FILE_DIR:${target}>")
+        endif()
+    endforeach()
+endmacro()
+
 #setup build folders
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/)
@@ -76,6 +84,7 @@ hunter_add_package(glog)
 find_package(glog CONFIG REQUIRED)
 hunter_add_package(HastyNoise)
 find_package(HastyNoise CONFIG REQUIRED)
+
 hunter_add_package(CreateLaunchers)
 find_package(CreateLaunchers CONFIG REQUIRED)
 
@@ -210,7 +219,11 @@ set(voxigen_sources
 
 
 set(voxigen_public_libraries
-    HastyNoise::hastyNoise
+    #for debugging performance we want the release version for debug as well
+#    HastyNoise::hastyNoise
+    optimized $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_RELEASE>
+#    debug $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_RELEASE> 
+    debug $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_DEBUG> 
     gflags
     glog::glog
     generic
@@ -340,12 +353,10 @@ if(VOXIGEN_TESTAPP)
     target_include_directories(testApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_link_libraries(testApp voxigen glfw imgui::imgui)
     
-    set(testApp_public_libraries ${voxigen_public_libraries} glfw)
+    set(testApp_public_libraries ${voxigen_public_libraries} glfw HastyNoise::hastyNoise) #add hasty manually to bin directory
 
     set(testApp_vs_enviroment_dir)
-    foreach(target ${testApp_public_libraries})
-        list(APPEND testApp_vs_enviroment_dir "$<TARGET_FILE_DIR:${target}>")
-    endforeach()
+    get_target_directories(testApp_vs_enviroment_dir ${testApp_public_libraries})
     set(testApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
     create_target_launcher(testApp
@@ -374,11 +385,9 @@ if(VOXIGEN_MAPGENAPP)
     target_include_directories(mapgenApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_link_libraries(mapgenApp voxigen glfw imgui::imgui)
 
-    set(mapgenApp_public_libraries ${voxigen_public_libraries} glfw)
+    set(mapgenApp_public_libraries ${voxigen_public_libraries} glfw HastyNoise::hastyNoise) #add hasty manually to bin directory
     set(mapgenApp_vs_enviroment_dir)
-    foreach(target ${mapgenApp_public_libraries})
-        list(APPEND mapgenApp_vs_enviroment_dir "$<TARGET_FILE_DIR:${target}>")
-    endforeach()
+    get_target_directories(mapgenApp_vs_enviroment_dir ${mapgenApp_public_libraries})
     set(mapgenApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
     create_target_launcher(mapgenApp
