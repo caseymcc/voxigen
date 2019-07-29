@@ -467,6 +467,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 }
 
 #else
+struct PlateInfo
+{
+    size_t index;
+    std::vector<glm::vec2> points;
+};
+
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
@@ -477,6 +483,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     std::vector<float> plateMap;
     std::vector<float> plateDistanceMap;
     std::vector<float> continentMap;
+    std::vector<>
 
     plateMap.resize(influenceMapSize);
     plateDistanceMap.resize(influenceMapSize);
