@@ -57,10 +57,11 @@ void MapGen::initialize()
     m_worldGenerator=(WorldGenerator *)genTemplate->get();
 
 //    m_worldGenerator->m_plateCount=m_plateCount;
-    updateTexture();
 
-    m_layerIndex=0;
+    m_layerIndex=3;
     m_layerNames=packVectorString({"Tectonic Plates", "Plates Distance", "Continents", "Geometry"});
+
+	updateTexture();
 //    if(!fs::exists(worldsDirectory))
 //        fs::create_directory(worldsDirectory);
 //
@@ -314,6 +315,9 @@ void MapGen::updateHeightMapTexture(std::vector<GLubyte> &textureBuffer)
         textureBuffer[index++]=(GLubyte)color.r;
         textureBuffer[index++]=(GLubyte)color.g;
         textureBuffer[index++]=(GLubyte)color.b;
+//		textureBuffer[index++]=(GLubyte)255.0f*height;
+//		textureBuffer[index++]=(GLubyte)255.0f*height;
+//		textureBuffer[index++]=(GLubyte)255.0f*height;
         textureBuffer[index++]=255;
     }
 

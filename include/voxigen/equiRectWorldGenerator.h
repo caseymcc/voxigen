@@ -499,7 +499,7 @@ struct PlateInfo
 
 void calculateCurve(float distance, float &plate1, float &plate2, float cutoff=0.7f);
 float calculateConvergentCurve(float distance, bool plate1Ocean, bool plate2Ocean);
-float calculateDeivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean);
+float calculateDivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean);
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
@@ -705,7 +705,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         glm::vec3 point;
 
         //we want plate heights to be 0.5 to -0.5
-        details.height=distribution(generator)/2.0f;
+        details.height=(distribution(generator)+1.0f)*0.25f+0.25f;
 
         //normalize map axis
         mapPoint.x=(float)details.point.x/(float)influenceSize.x;
@@ -795,25 +795,41 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         float collision=details.neighborCollisions[neighborIndex];
 
         //normalize distance
-        m_influenceMap[i].plateDistanceValue=(plateDistanceMap[i]-plateMinDistance[index])/(plateMaxDistance[index]-plateMinDistance[index]);
+//        m_influenceMap[i].plateDistanceValue=(plateDistanceMap[i]-plateMinDistance[index])/(plateMaxDistance[index]-plateMinDistance[index]);
 //        m_influenceMap[i].heightBase=0.0f;
 
-        bool oceanPlate=(details.height<0.0f);
-        bool oceanPlate2=(details2.height<0.0f);
+        bool oceanPlate=(details.height<0.5f);
+        bool oceanPlate2=(details2.height<0.5f);
 
         float plateScale;
         float plate2Scale;
         float terrainScale=0.0f;
 
-        calculateCurve(m_influenceMap[i].plateDistanceValue, plateScale, plate2Scale);
-//        if(collision<-0.2f) //deivergent boundary
-//            terrainScale=calculateConvergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
-//        else if(collision>0.2f) //convergent boundary
-//            terrainScale=calculateConvergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+		if((oceanPlate && !oceanPlate2) || (!oceanPlate&&oceanPlate2))
+			calculateCurve(m_influenceMap[i].plateDistanceValue, plateScale, plate2Scale, 0.7f);
+		else
+			calculateCurve(m_influenceMap[i].plateDistanceValue, plateScale, plate2Scale, 0.5f);
 
-        m_influenceMap[i].heightBase=(details.height*plateScale)+(details2.height*plate2Scale)+(terrainScale*collision*0.5f);
+//		if(collision<0.0f) //divergent boundary
+//		{
+//			collision=-(collision);//reverse negative as following is expecting collision to be a magnitude
+//			terrainScale=calculateDivergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+//		}
+//        else if(collision>0.0f) //convergent boundary
+            terrainScale=calculateConvergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+
+        m_influenceMap[i].heightBase=(details.height*plateScale)+(details2.height*plate2Scale)+(terrainScale*collision*0.25f);
+
+//		if(m_influenceMap[i].heightBase>1.0f)
+//			m_influenceMap[i].heightBase=1.0f;
+//		if(m_influenceMap[i].heightBase<0.0f)
+//			m_influenceMap[i].heightBase=0.0f;
     }
 
+	for(size_t y=1; i<influenceSize.y; y++)
+	{
+
+	}
 
     time2=chrono::high_resolution_clock::now();
     processingTime=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();
@@ -862,7 +878,8 @@ inline float orogenicCurve(float distance)
     if(distance>0.6)
     {
         distance=(distance-0.6)*2.5f;
-        return (distance*distance);
+		return 1.0f/(1.0f+pow(3.0f*(1.0f-distance)/distance, 2.0f));
+//        return (distance*distance);
     }
     return 0.0f;
 }
@@ -879,24 +896,25 @@ inline float divergentCurve(float distance, float cutoff=0.9)
 
 inline float calculateConvergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
 {
-    if(plate1Ocean && plate2Ocean)
-        return orogenicCurve(distance)*0.25f;
+	if(plate1Ocean && plate2Ocean)
+		return 0.0f;// orogenicCurve(distance)*0.5f;
     else if(plate1Ocean&&!plate2Ocean)
-        return subductionCurve(distance)*0.3f;
+        return 0.0f;//subductionCurve(distance)*0.7f;
     else if(!plate1Ocean&&plate2Ocean)
-        return orogenicCurve(distance)*0.3f;
-    return orogenicCurve(distance)*0.5f;
+        return 0.0f;//orogenicCurve(distance)*0.7f;
+    return orogenicCurve(distance);
 }
 
-inline float calculateDeivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
+inline float calculateDivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
 {
-    if(plate1Ocean && plate2Ocean)
-        return divergentCurve(distance, 0.7f)*0.25f;
-    else if(plate1Ocean&&!plate2Ocean)
-        return divergentCurve(distance)*0.5f;
-    else if(!plate1Ocean&&plate2Ocean)
-        return divergentCurve(distance, 0.7f)*0.5f;
-    return divergentCurve(distance)*0.5f;
+//    if(plate1Ocean && plate2Ocean)
+//        return divergentCurve(distance, 0.7f)*0.5f;
+//    else if(plate1Ocean&&!plate2Ocean)
+//        return divergentCurve(distance);
+//    else if(!plate1Ocean&&plate2Ocean)
+//        return divergentCurve(distance, 0.7f);
+//    return divergentCurve(distance);
+	return 0.0f;
 }
 
 template<typename _Grid>

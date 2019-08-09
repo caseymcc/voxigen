@@ -50,6 +50,7 @@ set(imglib_headers
     imglib/colorConversion.h
     imglib/copyTo.h
 	imglib/draw.h
+	imglib/gaussian.h
     imglib/image.h
     imglib/imageIo.h
     imglib/match.h
