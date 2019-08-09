@@ -9,7 +9,7 @@ void initNoise()
 
     if(!noiseInit)
     {
-        HastyNoise::loadSimd();
+        HastyNoise::loadSimd( );
         noiseInit=true;
     }
 }

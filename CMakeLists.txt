@@ -82,8 +82,39 @@ hunter_add_package(gflags)
 find_package(gflags CONFIG REQUIRED)
 hunter_add_package(glog)
 find_package(glog CONFIG REQUIRED)
-hunter_add_package(HastyNoise)
-find_package(HastyNoise CONFIG REQUIRED)
+
+#overide hastnoise
+message(STATUS "VOXIGEN_OVERIDE_HASTY ${VOXIGEN_OVERIDE_HASTY}")
+if(VOXIGEN_OVERIDE_HASTY AND NOT VOXIGEN_OVERIDE_HASTY STREQUAL "")
+    add_library(HastyNoise::hastyNoise SHARED IMPORTED)
+
+    set_target_properties(HastyNoise::hastyNoise PROPERTIES
+        INTERFACE_COMPILE_OPTIONS "/bigobj;/std:c++17"
+        INTERFACE_INCLUDE_DIRECTORIES "${VOXIGEN_OVERIDE_HASTY}"
+        INTERFACE_LINK_DIRECTORIES "${VOXIGEN_OVERIDE_HASTY}/build/pdb-files/Debug"
+    )
+
+    set_property(TARGET HastyNoise::hastyNoise APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+    set_target_properties(HastyNoise::hastyNoise PROPERTIES
+      IMPORTED_IMPLIB_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/Release/hastyNoise.lib"
+      IMPORTED_LOCATION_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/Release/hastyNoise.dll"
+    )
+#    set_property(TARGET HastyNoise::hastyNoise APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+#    set_target_properties(HastyNoise::hastyNoise PROPERTIES
+#      IMPORTED_IMPLIB_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/RelWithDebInfo/hastyNoise.lib"
+#      IMPORTED_LOCATION_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/RelWithDebInfo/hastyNoise.dll"
+#    )
+
+    
+    set_property(TARGET HastyNoise::hastyNoise APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+    set_target_properties(HastyNoise::hastyNoise PROPERTIES
+      IMPORTED_IMPLIB_DEBUG "${VOXIGEN_OVERIDE_HASTY}/build/Debug/hastyNoised.lib"
+      IMPORTED_LOCATION_DEBUG "${VOXIGEN_OVERIDE_HASTY}/build/Debug/hastyNoised.dll"
+      )
+else()
+    hunter_add_package(HastyNoise)
+    find_package(HastyNoise CONFIG REQUIRED)
+endif()
 
 hunter_add_package(CreateLaunchers)
 find_package(CreateLaunchers CONFIG REQUIRED)
@@ -217,13 +248,15 @@ set(voxigen_sources
     src/simpleFilesystem.cpp
 )
 
+#force debug to use HastyNoise release
+set_target_properties(HastyNoise::hastyNoise PROPERTIES
+    MAP_IMPORTED_CONFIG_RELEASE RELEASE
+    MAP_IMPORTED_CONFIG_DEBUG RELEASE
+    MAP_IMPORTED_CONFIG_RELWITHDEBUGINFO RELEASE
+)
 
 set(voxigen_public_libraries
-    #for debugging performance we want the release version for debug as well
-#    HastyNoise::hastyNoise
-    optimized $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_RELEASE>
-#    debug $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_RELEASE> 
-    debug $<TARGET_PROPERTY:HastyNoise::hastyNoise,IMPORTED_IMPLIB_DEBUG> 
+    HastyNoise::hastyNoise
     gflags
     glog::glog
     generic

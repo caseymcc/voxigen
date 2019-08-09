@@ -56,7 +56,7 @@ void MapGen::initialize()
     WorldGeneratorTemplate *genTemplate=(WorldGeneratorTemplate *)&m_world.getGenerator();
     m_worldGenerator=(WorldGenerator *)genTemplate->get();
 
-    m_worldGenerator->m_plateCount=m_plateCount;
+//    m_worldGenerator->m_plateCount=m_plateCount;
     updateTexture();
 
     m_layerIndex=0;
@@ -177,7 +177,8 @@ void MapGen::updateTexture()
     else if(m_layerIndex==2)
         updateContinentTexture(textureBuffer);
     else if(m_layerIndex==3)
-        updateGeometryTexture(textureBuffer);
+        updateHeightMapTexture(textureBuffer);
+//        updateGeometryTexture(textureBuffer);
 }
 
 void MapGen::updatePlateTexture(std::vector<GLubyte> &textureBuffer)
@@ -296,6 +297,40 @@ void MapGen::updateContinentTexture(std::vector<GLubyte> &textureBuffer)
     m_textureValid=true;
 }
 
+void MapGen::updateHeightMapTexture(std::vector<GLubyte> &textureBuffer)
+{
+    const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
+    const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
+    imglib::SimpleImage textureImage(imglib::Format::RGBA, imglib::Depth::Bit8, influenceMapSize.x, influenceMapSize.y, &textureBuffer[0], influenceMap.size());
+
+    size_t index=0;
+
+    for(size_t i=0; i<influenceMap.size(); ++i)
+    {
+        const float &height=influenceMap[i].heightBase;
+        
+        glm::ivec4 color=m_colorMap.color((size_t)64*height, 32);
+
+        textureBuffer[index++]=(GLubyte)color.r;
+        textureBuffer[index++]=(GLubyte)color.g;
+        textureBuffer[index++]=(GLubyte)color.b;
+        textureBuffer[index++]=255;
+    }
+
+    m_textureWidth=influenceMapSize.x;
+    m_textureHeight=influenceMapSize.y;
+
+    glBindTexture(GL_TEXTURE_2D, m_textureId);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_textureWidth, m_textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, &textureBuffer[0]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    m_textureValid=true;
+}
+
+
 void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 {
     const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
@@ -369,6 +404,7 @@ void MapGen::updateGeometryTexture(std::vector<GLubyte> &textureBuffer)
 
     m_textureValid=true;
 }
+
 
 void MapGen::generate()
 {

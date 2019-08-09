@@ -94,13 +94,18 @@ inline void projectPoint<Projections::Spherical, Projections::Equirectangular>(c
 template<>
 inline void projectPoint<Projections::Equirectangular, Projections::Spherical>(const ProjectionDetails<Projections::Equirectangular>::PointType &inPoint, ProjectionDetails<Projections::Spherical>::PointType &outPoint)
 {
-    float theta=glm::two_pi<float>()*(inPoint.x);
-    float phi=glm::half_pi<float>()-(glm::pi<float>()*(inPoint.y));
-    float d=cos(phi); //asuming radius 1.0f
+    outPoint.x=1.0f;
+    outPoint.y=glm::two_pi<float>()*(inPoint.x);
+    outPoint.z=glm::half_pi<float>()-(glm::pi<float>()*(inPoint.y));
+}
 
-    outPoint.x=d*cos(theta);
-    outPoint.y=d*sin(theta);
-    outPoint.z=sin(phi);//assuming unit sphere 1.0f*
+template<>
+inline void projectPoint<Projections::Equirectangular, Projections::Cartesian>(const ProjectionDetails<Projections::Equirectangular>::PointType &inPoint, ProjectionDetails<Projections::Cartesian>::PointType &outPoint)
+{
+    typename ProjectionDetails<Projections::Spherical>::PointType sphericalPoint;
+
+    projectPoint<Projections::Equirectangular, Projections::Spherical>(inPoint, sphericalPoint);
+    projectPoint<Projections::Spherical, Projections::Cartesian>(sphericalPoint, outPoint);
 }
 
 template<>
