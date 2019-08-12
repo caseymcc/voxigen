@@ -7,6 +7,8 @@
 #include <glbinding/gl/gl.h>
 using namespace gl;
 
+#include <imgui.h>
+
 class MapGen
 {
 public:
@@ -20,10 +22,13 @@ public:
 private:
     void updateTexture();
     void updatePlateTexture(std::vector<GLubyte> &textureBuffer);
+    void updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer);
     void updatePlateDistanceTexture(std::vector<GLubyte> &textureBuffer);
-    void updateContinentTexture(std::vector<GLubyte> &textureBuffer);
-    void updateGeometryTexture(std::vector<GLubyte> &textureBuffer);
+//    void updateContinentTexture(std::vector<GLubyte> &textureBuffer);
+//    void updateGeometryTexture(std::vector<GLubyte> &textureBuffer);
     void updateHeightMapTexture(std::vector<GLubyte> &textureBuffer);
+//    void updateCollisionInfoTexture(std::vector<GLubyte> &textureBuffer);
+//    void updatePlateWithInfoTexture(std::vector<GLubyte> &textureBuffer);
 
     void generate();
 
@@ -49,10 +54,15 @@ private:
 
     int m_layerIndex;
     std::vector<char> m_layerNames;
+    int m_info;
+    int m_overlay;
 
     int m_plateCount;
     std::vector<std::tuple<int, int, int>> m_plateColors;
     voxigen::ColorMap m_colorMap;
+
+    ImVec2 lastDrawPos;
+    ImVec2 lastDrawSize;
 };
 
 #endif//_voxigen_mapgen_h_

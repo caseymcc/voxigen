@@ -80,9 +80,13 @@ struct VOXIGEN_EXPORT InfluenceCell
 
     size_t tectonicPlate;
     size_t borderPlate;
+    float plateHeight;
     float plateValue;
     float plateDistanceValue;
     float continentValue;
+
+    float collision;
+    float terrainScale;
 
     float airCurrent;
 };
@@ -104,7 +108,7 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
         m_plateCountMin=8;
         m_plateCountMax=24;
 
-        m_plateFrequency=0.0005f;
+        m_plateFrequency=0.00025f;
         m_plateOctaves=3;
         m_plateLacunarity=2.0f;
 
@@ -122,7 +126,7 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
         while(m_influenceSize.y*m_influenceGridSize.y<size.y)
             m_influenceSize.y++;
 
-        m_plateFrequency=5.12f/m_influenceSize.x;
+        m_plateFrequency=2.56f/m_influenceSize.x;
         m_continentFrequency=10*m_plateFrequency;
     }
 
@@ -189,6 +193,7 @@ public:
 
     EquiRectDescriptors &getDecriptors() { return m_descriptorValues; }
 
+    int m_plateSeed;
     int m_plateCount;
     std::vector<glm::vec2> m_influencePoints;
     std::vector<std::vector<glm::vec2>> m_influenceLines;
@@ -207,7 +212,6 @@ private:
     std::unique_ptr<HastyNoise::NoiseSIMD> m_cellularNoise;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentCellular;
 
-    int m_plateSeed;
     int m_continentSeed;
 
     InfluenceMap m_influenceMap;
@@ -295,6 +299,7 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
     m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
     m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
+    
 
     m_layersPerlin=HastyNoise::CreateNoise(seed+1, m_simdLevel);
 
@@ -377,7 +382,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     std::vector<float> jitter;
     std::default_random_engine generator(m_descriptors->m_seed);
     std::uniform_real_distribution<float> jitterDistribution(-1.0f, 1.0f);
-
+    
     jitter.resize(m_plateCount);
     for(size_t i=0; i<m_plateCount; ++i)
     {
@@ -516,6 +521,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     std::vector<float> plateDistanceMap;
     std::vector<float> continentMap;
     std::vector<float> heightMap;
+    std::vector<float> terrainScaleMap;
     std::vector<PlateInfo> plateDetails;
 
     time1=chrono::high_resolution_clock::now();
@@ -526,6 +532,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     continentMap.resize(influenceMapSize);
     m_influenceMap.resize(influenceMapSize);
     heightMap.resize(influenceMapSize);
+    terrainScaleMap.resize(influenceMapSize);
 
     m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     m_influenceVectorSet->SetSize(influenceMapSize);
@@ -555,25 +562,43 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     time1=chrono::high_resolution_clock::now();
     coordsTime=chrono::duration_cast<chrono::milliseconds>(time1-time2).count();
 
-    //height map
+//height map
     m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
-    m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
-    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
-    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
+//    m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
+//    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
+//    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
+    m_continentPerlin->SetFrequency(0.01F);
+    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(heightMap.data(), m_influenceVectorSet.get());
 
-    //plate map
+    m_continentPerlin->SetFrequency(0.05F);
+    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFractalOctaves(4);
+    m_continentPerlin->FillSet(terrainScaleMap.data(), m_influenceVectorSet.get());
+
+//plate map
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
     m_cellularNoise->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
     m_cellularNoise->SetSeed(m_plateSeed);
     m_cellularNoise->SetFrequency(m_descriptorValues.m_plateFrequency);
     m_cellularNoise->SetFractalLacunarity(m_descriptorValues.m_plateLacunarity);
     m_cellularNoise->SetFractalOctaves(m_descriptorValues.m_plateOctaves);
+
+    m_cellularNoise->SetPerturbType(HastyNoise::PerturbType::GradientFractal);
+    m_cellularNoise->SetPerturbAmp(0.5f);
+    m_cellularNoise->SetPerturbFrequency(1.0f);
+    m_cellularNoise->SetPerturbFractalOctaves(5);
+    m_cellularNoise->SetPerturbFractalLacunarity(2.0f);
+    m_cellularNoise->SetPerturbFractalGain(0.5f);
+    m_cellularNoise->SetPerturbNormaliseLength(1.0f);
+
     m_cellularNoise->FillSet(plateMap.data(), m_influenceVectorSet.get());
 
     time2=chrono::high_resolution_clock::now();
     cellularPlateTime=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();
 
+//Distance Map
     //going to generate twice as I want the distance value as well, will mod HastyNoise later to produce both (as it has already done the work)
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Distance2Div);//gives distance to border
     m_cellularNoise->FillSet(plateDistanceMap.data(), m_influenceVectorSet.get());
@@ -581,13 +606,14 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     time1=chrono::high_resolution_clock::now();
     cellularDistanceTime=chrono::duration_cast<chrono::milliseconds>(time1-time2).count();
 
+//Boarder plate Map
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::ValueDistance2);//get what plate the div was tested against
     m_cellularNoise->FillSet(plate2Map.data(), m_influenceVectorSet.get());
 
     time2=chrono::high_resolution_clock::now();
     cellularPlate2Time=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();
 
-    //continent map
+//continent map
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
     m_cellularNoise->SetSeed(m_continentSeed);
     m_cellularNoise->SetFrequency(m_descriptorValues.m_continentFrequency);
@@ -622,6 +648,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     //setup plates
     std::default_random_engine generator(m_descriptors->m_seed);
     std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> distributionNorm(0.0f, 1.0f);
     std::vector<float> jitter;
     std::vector<float> plateMinDistance;
     std::vector<float> plateMaxDistance;
@@ -678,6 +705,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 
         m_influenceMap[i].tectonicPlate=lastIndex;
         m_influenceMap[i].borderPlate=last2Index;
+        m_influenceMap[i].plateHeight=(last)*0.1f+0.5f;
         m_influenceMap[i].plateValue=last;
         m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
         m_influenceMap[i].continentValue=continentMap[i];
@@ -705,7 +733,10 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         glm::vec3 point;
 
         //we want plate heights to be 0.5 to -0.5
-        details.height=(distribution(generator)+1.0f)*0.25f+0.25f;
+//        details.height=(distributionNorm(generator))*0.3f+0.3f;
+        details.height=(plates[i])*0.1f+0.5f;
+        if(details.height<0.5f)
+            details.height=details.height-0.05f;
 
         //normalize map axis
         mapPoint.x=(float)details.point.x/(float)influenceSize.x;
@@ -795,7 +826,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         float collision=details.neighborCollisions[neighborIndex];
 
         //normalize distance
-//        m_influenceMap[i].plateDistanceValue=(plateDistanceMap[i]-plateMinDistance[index])/(plateMaxDistance[index]-plateMinDistance[index]);
+        m_influenceMap[i].plateDistanceValue=(plateDistanceMap[i]-plateMinDistance[index])/(plateMaxDistance[index]-plateMinDistance[index]);
 //        m_influenceMap[i].heightBase=0.0f;
 
         bool oceanPlate=(details.height<0.5f);
@@ -809,27 +840,42 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 			calculateCurve(m_influenceMap[i].plateDistanceValue, plateScale, plate2Scale, 0.7f);
 		else
 			calculateCurve(m_influenceMap[i].plateDistanceValue, plateScale, plate2Scale, 0.5f);
+        
+//        if(i>51450)
+//            i=i;
 
-//		if(collision<0.0f) //divergent boundary
-//		{
-//			collision=-(collision);//reverse negative as following is expecting collision to be a magnitude
-//			terrainScale=calculateDivergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
-//		}
-//        else if(collision>0.0f) //convergent boundary
-            terrainScale=calculateConvergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+        if(index != borderIndex)
+        {
+            m_influenceMap[i].collision=collision;
 
-        m_influenceMap[i].heightBase=(details.height*plateScale)+(details2.height*plate2Scale)+(terrainScale*collision*0.25f);
+            if(collision<0.0f) //divergent boundary
+            {
+                collision=-(collision);//reverse negative as following is expecting collision to be a magnitude
+                terrainScale=calculateDivergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+            }
+            else if(collision>0.0f) //convergent boundary
+                terrainScale=calculateConvergentCurve(m_influenceMap[i].plateDistanceValue, oceanPlate, oceanPlate2);
+        }
+        else
+            m_influenceMap[i].collision=0.0f;
 
-//		if(m_influenceMap[i].heightBase>1.0f)
-//			m_influenceMap[i].heightBase=1.0f;
-//		if(m_influenceMap[i].heightBase<0.0f)
-//			m_influenceMap[i].heightBase=0.0f;
+        float genHeight=(heightMap[i]+1.0f)*0.05f;
+        float genTerrainScale=(terrainScaleMap[i]+1.0f)*0.2f+0.2f;
+
+        m_influenceMap[i].heightBase=((details.height+genHeight)*plateScale)+(details2.height*plate2Scale)+(terrainScale*collision*genTerrainScale);// *0.4f);
+        
+        m_influenceMap[i].terrainScale=terrainScale;
+
+		if(m_influenceMap[i].heightBase>1.0f)
+			m_influenceMap[i].heightBase=1.0f;
+		if(m_influenceMap[i].heightBase<0.0f)
+			m_influenceMap[i].heightBase=0.0f;
     }
 
-	for(size_t y=1; i<influenceSize.y; y++)
-	{
-
-	}
+//	for(size_t y=1; i<influenceSize.y; y++)
+//	{
+//
+//	}
 
     time2=chrono::high_resolution_clock::now();
     processingTime=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();
@@ -843,7 +889,8 @@ inline void calculateCurve(float distance, float &plate1, float &plate2, float c
     if(distance>cutoff)
     {
         float d=(distance-cutoff)*(1.0f/(1.0f-cutoff));
-        plate2=(d*d)*0.5f;
+        plate2=d*0.5f;
+//        plate2=(d*d)*0.5f;
         plate1=1.0f-plate2;
     }
     else
@@ -897,24 +944,23 @@ inline float divergentCurve(float distance, float cutoff=0.9)
 inline float calculateConvergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
 {
 	if(plate1Ocean && plate2Ocean)
-		return 0.0f;// orogenicCurve(distance)*0.5f;
+		return orogenicCurve(distance)*0.5f;
     else if(plate1Ocean&&!plate2Ocean)
-        return 0.0f;//subductionCurve(distance)*0.7f;
+        return subductionCurve(distance)*0.7f;
     else if(!plate1Ocean&&plate2Ocean)
-        return 0.0f;//orogenicCurve(distance)*0.7f;
+        return orogenicCurve(distance)*0.7f;
     return orogenicCurve(distance);
 }
 
 inline float calculateDivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
 {
-//    if(plate1Ocean && plate2Ocean)
-//        return divergentCurve(distance, 0.7f)*0.5f;
-//    else if(plate1Ocean&&!plate2Ocean)
-//        return divergentCurve(distance);
-//    else if(!plate1Ocean&&plate2Ocean)
-//        return divergentCurve(distance, 0.7f);
-//    return divergentCurve(distance);
-	return 0.0f;
+    if(plate1Ocean && plate2Ocean)
+        return divergentCurve(distance, 0.7f)*0.5f;
+    else if(plate1Ocean&&!plate2Ocean)
+        return divergentCurve(distance);
+    else if(!plate1Ocean&&plate2Ocean)
+        return divergentCurve(distance, 0.7f);
+    return divergentCurve(distance);
 }
 
 template<typename _Grid>
