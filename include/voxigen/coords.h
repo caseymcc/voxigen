@@ -171,7 +171,7 @@ inline float perpendicularDistanceSqrd<Projections::Spherical>(const typename Pr
 	return perpendicularDistanceSqrd<Projections::Cartesian>(cartPoint, cartLineStart, cartLineEnd);
 }
 
-void projectVector(const typename ProjectionDetails<Projections::Cartesian>::PointType &vec, const typename ProjectionDetails<Projections::Spherical>::PointType &sphericalPoint, typename ProjectionDetails<Projections::Spherical>::PointType &outVec)
+inline void projectVector(const typename ProjectionDetails<Projections::Cartesian>::PointType &vec, const typename ProjectionDetails<Projections::Spherical>::PointType &sphericalPoint, typename ProjectionDetails<Projections::Spherical>::PointType &outVec)
 {
 //    ProjectionDetails<Projections::Spherical>::PointType sphericalPoint;
 //

@@ -38,8 +38,12 @@ struct VOXIGEN_EXPORT InfluenceCell
     float terrainScale;
     
     glm::vec2 direction;
+    glm::vec2 airDirection;
     float airCurrent;
-    float heat;
+    
+    float temperature;
+    float moistureCapacity;
+    float moisture;
 };
 
 struct PlateInfo
@@ -140,4 +144,4 @@ inline float calculateDivergentCurve(float distance, bool plate1Ocean, bool plat
 }
 }//namespace voxigen
 
-#endif //_voxigen_equiRectEquiRectWorldGenerator_h_
+#endif //_voxigen_tectonics_h_

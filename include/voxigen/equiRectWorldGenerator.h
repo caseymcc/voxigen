@@ -8,10 +8,13 @@
 #include "voxigen/heightMap.h"
 #include "voxigen/noise.h"
 #include "voxigen/tectonics.h"
+#include "voxigen/weather.h"
+#include "voxigen/wrap.h"
 
 #include "voxigen/sortedVector.h"
 
 #include "glm_point.h"
+#include <glm/gtx/transform.hpp>
 
 #undef None
 
@@ -291,10 +294,10 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 }
 
 
-void rotateTangetVectorToPoint(const glm::vec3 &point, const glm::vec2 &tangentVec, glm::vec3 &outVec)
+inline void rotateTangetVectorToPoint(const glm::vec3 &point, const glm::vec2 &tangentVec, glm::vec3 &outVec)
 {
     glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
-glm::vec3 rotationVector=glm::cross(zAxis, point);
+    glm::vec3 rotationVector=glm::cross(zAxis, point);
 
     if(glm::length2(rotationVector)==0.0f)
     {//already aligned to z axis
@@ -306,12 +309,94 @@ glm::vec3 rotationVector=glm::cross(zAxis, point);
     float theta=acos(glm::dot(point, zAxis));
     glm::mat4 rotationMat=glm::rotate(theta, rotationVector);
 
-    outVec=(rotationMat*glm::vec4(tangentPlaneCoords.x, tangentPlaneCoords.y, 0.0f, 1.0f)).xyz;
+    outVec=glm::vec3(rotationMat*glm::vec4(tangentVec.x, tangentVec.y, 0.0f, 1.0f));
+}
+
+inline const std::array<glm::ivec2, 3> &getFloodPoints(const glm::vec2 &direction)
+{
+    static std::vector<std::array<glm::ivec2, 3>> points=
+    {
+        {{
+            {-1,  1},
+            { 0,  1},
+            { 1,  1}
+        }},
+        {{
+            { 0,  1},
+            { 1,  1},
+            { 1,  0}
+        }},
+        {{
+            { 1,  1},
+            { 1,  0},
+            { 1, -1}
+        }},
+        {{
+            { 1,  0},
+            { 1, -1},
+            { 0, -1}
+        }},
+        {{
+            { 1, -1},
+            { 0, -1},
+            {-1, -1}
+        }},
+        {{
+            { 0, -1},
+            {-1, -1},
+            {-1,  0}
+        }},
+        {{
+            {-1,  1},
+            {-1,  0},
+            {-1, -1}
+        }},
+        {{
+            {-1,  0},
+            {-1,  1},
+            { 0,  1}
+        }}
+    };
+
+    if(direction.x==0.0f)
+    {
+        if(direction.y<0.0f)
+            return points[4];
+        return points[0];
+    }
+
+    size_t index=0;
+    float  slope=direction.y/abs(direction.x);
+
+    if(slope<3.0f)
+        index++;
+    if(slope<0.5f/1.5f)
+        index++;
+    if(slope<-0.5f/1.5f)
+        index++;
+
+    if(direction.x<0.0f)
+        index=index+4;
+
+    return points[index];
 }
 
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
+
+    std::vector<WeatherCell> weatherCells=
+    {
+        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.45f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.6f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 1.0f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 1.0f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.6f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.45f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+    };
+
+    WeatherBands weather(weatherCells);
+
     chrono::high_resolution_clock::time_point time1;
     chrono::high_resolution_clock::time_point time2;
 
@@ -327,7 +412,11 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     std::vector<float> terrainScaleMap;
     std::vector<float> i;
     std::vector<float> nsAirCurrent;
+    std::vector<float> ewAirCurrent;
     std::vector<PlateInfo> plateDetails;
+    std::vector<float> moistureMap;
+    std::vector<float> moistureMap2;
+    std::vector<float> moistureDeltaMap;
 
     time1=chrono::high_resolution_clock::now();
 
@@ -338,9 +427,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     m_influenceMap.resize(influenceMapSize);
     heightMap.resize(influenceMapSize);
     terrainScaleMap.resize(influenceMapSize);
+    moistureMap.resize(influenceMapSize);
+    moistureMap2.resize(influenceMapSize);
+    moistureDeltaMap.resize(influenceMapSize);
     
-    ewAirCurrent.resize(influenceMapSize);
     nsAirCurrent.resize(influenceMapSize);
+    ewAirCurrent.resize(influenceMapSize);
 
     m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     m_influenceVectorSet->SetSize(influenceMapSize);
@@ -375,19 +467,19 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 //    m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
 //    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
 //    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
-    m_continentPerlin->SetFrequency(0.01F);
-    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFrequency(0.01f);
+    m_continentPerlin->SetFractalLacunarity(2.0f);
     m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(heightMap.data(), m_influenceVectorSet.get());
 
-    m_continentPerlin->SetFrequency(0.05F);
-    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFrequency(0.05f);
+    m_continentPerlin->SetFractalLacunarity(2.0f);
     m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(terrainScaleMap.data(), m_influenceVectorSet.get());
 
     m_continentPerlin->SetSeed(m_plateSeed+3);
     m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::Perlin);
-    m_continentPerlin->SetFrequency(0.05F);
+    m_continentPerlin->SetFrequency(0.01f);
     m_continentPerlin->FillSet(nsAirCurrent.data(), m_influenceVectorSet.get());
     m_continentPerlin->SetSeed(m_plateSeed+4);
     m_continentPerlin->FillSet(ewAirCurrent.data(), m_influenceVectorSet.get());
@@ -527,6 +619,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
         m_influenceMap[i].continentValue=continentMap[i];
 
+//        glm::vec2 airDirection(ewAirCurrent[i], nsAirCurrent[i]);
+//        
+//        m_influenceMap[i].airDirection=glm::normalize(airDirection);
+        m_influenceMap[i].airDirection.x=ewAirCurrent[i];
+        m_influenceMap[i].airDirection.y=nsAirCurrent[i];
+
         plateDetails[lastIndex].points.emplace_back(point.x, point.y);
 
         point.x++;
@@ -573,6 +671,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 
         details.driftDirection=tangentPlaneCoords;
         rotateTangetVectorToPoint(point, tangentPlaneCoords, details.direction);
+
 //        //cross with z axis for a rotation vector to align with the z axis
 //        glm::vec3 rotationVector=glm::cross(zAxis, point);
 //
@@ -656,13 +755,68 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         glm::vec3 direction;
         glm::vec3 sphericalDirection;
 
-        projectPoint<Projections::Equirectangular, Projections::Spherical>(point, sphericalPoint);
+        glm::vec2 normPoint((float)point.x/influenceSize.x, (float)point.y/influenceSize.y);
+        projectPoint<Projections::Equirectangular, Projections::Spherical>(normPoint, sphericalPoint);
         projectPoint<Projections::Spherical, Projections::Cartesian>(sphericalPoint, cartPoint);
         
         rotateTangetVectorToPoint(cartPoint, details.driftDirection, direction);
 
         projectVector(direction, sphericalPoint, sphericalDirection);
-        m_influenceMap[i].direction=sphericalDirection.xy;
+        m_influenceMap[i].direction.x=sphericalDirection.y;
+        m_influenceMap[i].direction.y=sphericalDirection.z;
+
+//air currents determined by banding and random vectors from before
+        float latitude=sphericalPoint.z;
+        float dir=1.0f;
+        glm::vec2 bandDirection;
+
+        if(sphericalPoint.z<0.0f)
+            dir=-1.0f;
+
+        bandDirection=weather.getWindDirection(latitude);
+//        size_t cellIndex=getCellIndex(latitude, true);
+//        const CellBand &cellBand=getCellBand(latitude);
+//
+//        bool odd=cellIndex%2;
+//        float cellBottom=cellBand.latitude-(cellBand.size*0.5f);
+//
+//        if(!odd)
+//        {
+//            float mag=(latitude-cellBottom)/cellBand.size;
+//
+//            bandDirection.x=(mag-1.0f);
+//            bandDirection.y=dir*mag;
+//        }
+//        else
+//        {
+//            float mag=(latitude-cellBottom)/cellBand.size;
+//
+//            bandDirection.x=mag;
+//            bandDirection.y=-dir*(1.0f-mag);
+//        }
+//
+//        if(latitude<0.5236f) //30 degress
+//        {
+//            float mag=latitude/0.5236f;
+//
+//            bandDirection.x=(mag-1.0f);
+//            bandDirection.y=dir*mag;
+//        }
+//        else if(latitude<1.0472f) //60 degress
+//        {
+//            float mag=(latitude-0.5236f)/0.5236f;
+//
+//            bandDirection.x=mag;
+//            bandDirection.y=-dir*(1.0f-mag);
+//        }
+//        else
+//        {
+//            float mag=(latitude-1.0472f)/0.5236f;
+//
+//            bandDirection.x=(mag-1.0f);
+//            bandDirection.y=dir*mag;
+//        }
+        m_influenceMap[i].airDirection=bandDirection;// (bandDirection+m_influenceMap[i].airDirection)/2.0f;
 
 //build terrain
         bool oceanPlate=(details.height<0.5f);
@@ -707,6 +861,20 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 		if(m_influenceMap[i].heightBase<0.0f)
 			m_influenceMap[i].heightBase=0.0f;
 
+//temperature
+        m_influenceMap[i].temperature=getTemperature(latitude);
+
+//moisture
+        float bandMoisture=weather.getMoisture(latitude);
+
+        m_influenceMap[i].moistureCapacity=bandMoisture*0.5f;
+        if(m_influenceMap[i].heightBase<0.5)
+            moistureMap[i]=1.0f;
+        //        if(m_influenceMap[i].heightBase<0.5)
+        //            moistureMap[i]=1.0f*(m_influenceMap[i].heightBase-0.25f)/0.25f;
+        else
+            moistureMap[i]=(bandMoisture*0.8)+(nsAirCurrent[i]*0.2f);// *0.5f;
+
         point.x++;
         if(point.x>=influenceSize.x)
         {
@@ -715,10 +883,120 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         }
     }
 
-//	for(size_t y=1; i<influenceSize.y; y++)
-//	{
+//    std::vector<float> *mapPointer1=&moistureMap;
+//    std::vector<float> *mapPointer2=&moistureMap2;
+    std::vector<float> &map1=moistureMap;
+    for(size_t i=0; i<influenceMapSize; i++)
+        moistureDeltaMap[i]=0.0f;
+
+    glm::ivec2 lowerImageBound(0, 0);
+    glm::ivec2 upperImageBound(influenceSize.x-1, influenceSize.y-1);
+
+    std::vector<float> floodScale={0.25f, 0.5f, 0.25f};
+    for(size_t loops=0; loops<10; ++loops)
+    {
+//        std::vector<float> &map1=*mapPointer1;
+//        std::vector<float> &map2=*mapPointer2;
+
+        size_t i=0;
+        for(size_t y=0; y<influenceSize.y; y++)
+        {
+            for(size_t x=0; x<influenceSize.x; x++)
+            {
+                if((x==200)&&(y==107))
+                    x=x;
+
+                if(map1[i]>0.0f)
+                {
+                    glm::vec2 &airDirection=m_influenceMap[i].airDirection;
+                    float magnitude=glm::length(airDirection);
+                    float moisture=map1[i];
+                    float moistureCaptured=moisture*m_influenceMap[i].moistureCapacity*magnitude;
+
+                    if(m_influenceMap[i].heightBase>0.5f)
+                        moistureDeltaMap[i]=moistureDeltaMap[i]-moistureCaptured;
+
+                    const std::array<glm::ivec2, 3> &floodPoints=getFloodPoints(airDirection);
+
+                    for(size_t j=0; j<floodPoints.size(); ++j)
+                    {
+                        glm::ivec2 currentPoint=glm::ivec2(x, y)+floodPoints[j];
+
+                        currentPoint=wrap(currentPoint, lowerImageBound, upperImageBound);
+                        size_t index=(currentPoint.y*influenceSize.x)+currentPoint.x;
+
+                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+(moistureCaptured*floodScale[j]), 1.0f);
+                    }
+//                    float xDir;
+//                    float yDir;
 //
-//	}
+//                    if(airDirection.x==0.0f)
+//                        xDir=0.0f;
+//                    else
+//                        xDir=airDirection.x/abs(airDirection.x);
+//
+//                    if(airDirection.y==0.0f)
+//                        yDir=0.0f;
+//                    else
+//                        yDir=airDirection.y/abs(airDirection.y);
+//
+//                    float slope;
+//                    
+//                    if(airDirection.x==0.0f)
+//                        slope=std::numeric_limits<float>::max();
+//                    else
+//                        slope=airDirection.y/airDirection.x;
+//
+//                    int pos1=(slope*xDir)+0.5f;
+//                    int pos2=(yDir/slope)+0.5f;
+//
+//                    if((pos1!=0)&&(pos2!=0))
+//                        moistureCaptured=moistureCaptured*0.5f;
+//
+//                    if(pos1!=0)
+//                    {
+//                        pos1=pos1/abs(pos1);
+//                        int posX=wrap((int)x+(int)xDir,` 0, (int)influenceSize.x-1);
+//                        pos1=wrap((int)y+pos1, 0, (int)influenceSize.y-1);
+//
+//                        size_t index=(pos1*influenceSize.x)+posX;
+//
+//                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+moistureCaptured, 1.0f);
+//                    }
+//                    if(pos2!=0)
+//                    {
+//                        pos2=pos2/abs(pos2);
+//                        pos2=wrap((int)x+pos2, 0, (int)influenceSize.x-1);
+//                        int posY=wrap((int)y+(int)yDir, 0, (int)influenceSize.y-1);
+//
+//                        size_t index=(posY*influenceSize.x)+pos2;
+//
+//                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+moistureCaptured, 1.0f);
+//                    }
+                }
+                ++i;
+            }
+        }
+
+        //remove moisture that was moved
+        for(size_t i=0; i<influenceMapSize; i++)
+        {
+            if(i==109768)
+                i=i;
+
+            map1[i]=map1[i]+moistureDeltaMap[i];
+            moistureDeltaMap[i]=0.0f;
+        }
+
+//        std::swap(mapPointer1, mapPointer2);
+    }
+
+    for(size_t i=0; i<influenceMapSize; i++)
+    {
+//        std::vector<float> &map=*mapPointer1;
+        
+        m_influenceMap[i].moisture=std::max(std::min(map1[i], 1.0f), 0.0f);
+    }
 
     time2=chrono::high_resolution_clock::now();
     processingTime=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();

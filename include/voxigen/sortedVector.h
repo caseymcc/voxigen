@@ -1,6 +1,9 @@
 #ifndef _voxigen_sortedContainer_h_
 #define _voxigen_sortedContainer_h_
 
+#include <vector>
+#include <algorithm>
+
 namespace voxigen
 {
 
