@@ -3,6 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/sortedVector.h"
+#include "voxigen/math_helpers.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -51,7 +52,7 @@ struct ColorMap2D
     ColorMap2D():width(0), height(0) {}
     ColorMap2D(size_t width, size_t height):width(width), height(height) {}
 
-    glm::ivec4 &color(size_t x, size_t y) { return colors[width*y+x]; }
+    glm::ivec4 &color(size_t x, size_t y) { x=clamp(x, (size_t)0, width-1); y=clamp(y, (size_t)0, height-1); return colors[width*y+x]; }
 
     size_t width;
     size_t height;

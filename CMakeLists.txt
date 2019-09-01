@@ -189,8 +189,8 @@ set(voxigen_headers
     include/voxigen/boundingBox.h
     include/voxigen/cell.h
     include/voxigen/chunk.h
-    include/voxigen/chunkHandle.h
     include/voxigen/chunkFunctions.h
+    include/voxigen/chunkHandle.h
     include/voxigen/chunkMesh.h
     include/voxigen/classFactory.h
     include/voxigen/coords.h
@@ -202,8 +202,11 @@ set(voxigen_headers
     include/voxigen/equiRectWorldGenerator.h
     include/voxigen/faces.h
     include/voxigen/filesystem.h
+    include/voxigen/fill.h
+    include/voxigen/freeQueue.h
     include/voxigen/generator.h
     include/voxigen/gridDescriptors.h
+    include/voxigen/gridFunctions.h
     include/voxigen/handleState.h
     include/voxigen/heightmapMeshBuilder.h
     include/voxigen/jsonSerializer.h
@@ -218,6 +221,10 @@ set(voxigen_headers
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleFilesystem.h
+    include/voxigen/sortedVector.h
+    include/voxigen/tectonics.h
+    include/voxigen/weather.h
+    include/voxigen/wrap.h
 )
 
 set(voxigen_inline

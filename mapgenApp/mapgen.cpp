@@ -211,36 +211,40 @@ void MapGen::draw()
     int texturePosX=mousePosition.x/lastDrawSize.x*m_textureWidth;
     int texturePosY=mousePosition.y/lastDrawSize.y*m_textureHeight;
 
-    if((m_layerIndex == 0) ||(m_layerIndex==1))
-    {
-        const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
-        const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
-        size_t index=texturePosY*influenceMapSize.x+texturePosX;
-        float value;
+    const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
+    const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
+    size_t index=texturePosY*influenceMapSize.x+texturePosX;
+    float value;
+    float overlayValue;
 
-        if((index<0)||(index>=influenceMapSize.x*influenceMapSize.y))
-            index=0;
+    if((index<0)||(index>=influenceMapSize.x*influenceMapSize.y))
+        index=0;
 
-        if(m_layerIndex==0)
-        {
-            value=influenceMap[index].heightBase;
-        }
-        else
-        {
-            if(m_overlay==0)
-                value=influenceMap[index].plateHeight;
-            else if(m_overlay==1)
-                value=influenceMap[index].collision;
-            else if(m_overlay==2)
-                value=influenceMap[index].collision*influenceMap[index].plateDistanceValue;
-            else if(m_overlay==3)
-                value=influenceMap[index].terrainScale;
-        }
-
-        ImGui::Text("Position: %d, %d : %f", texturePosX, texturePosY, value);
-    }
+    if((m_info==0) || (m_info==1))
+        value=influenceMap[index].heightBase;
+    else if(m_info==2)
+        value=influenceMap[index].plateHeight;
+    else if(m_info==3)
+        value=(float)influenceMap[index].tectonicPlate;
     else
-        ImGui::Text("Position: %d, %d", texturePosX, texturePosY);
+        value=0.0f;
+
+    ImGui::Text("Position: %d, %d : %f", texturePosX, texturePosY, value);
+
+    if(m_overlay > 0)
+    {
+        if(m_overlay==1)
+            overlayValue=influenceMap[index].collision;
+        else if(m_overlay==2)
+            overlayValue=influenceMap[index].collision*influenceMap[index].plateDistanceValue;
+        else if(m_overlay==3)
+            overlayValue=influenceMap[index].terrainScale;
+        else if(m_overlay==4)
+            overlayValue=(influenceMap[index].temperature+90.0f)/160.0f;
+        else if((m_overlay==5) || (m_overlay==6))
+            overlayValue=std::min(influenceMap[index].moisture, 1.0f);
+        ImGui::Text("Overlay: %f", overlayValue);
+    }
 
     ImGui::End();
 
@@ -371,7 +375,28 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
         glm::ivec4 color;
         
         if(m_info==0)
-            color=m_biomeColorMap.color((size_t)63*influenceMap[i].heightBase, (size_t)63*influenceMap[i].moisture);
+        {
+            color=m_biomeColorMap.color((size_t)64*influenceMap[i].heightBase, (size_t)64*influenceMap[i].moisture);
+
+            float value=(influenceMap[i].temperature+90.0f)/160.0f;
+
+            if((value<0.4f) && (influenceMap[i].heightBase>0.5f)) //polar caps
+            {
+                if(value<0.2f)
+                {
+                    color.r=255;
+                    color.g=255;
+                    color.b=255;
+                }
+                else
+                {
+                    value=5.0f*(0.4f-value);
+                    color.r=(255*value)+(color.r*(1.0f-value));
+                    color.g=(255*value)+(color.g*(1.0f-value));
+                    color.b=(255*value)+(color.b*(1.0f-value));
+                }
+            }
+        }
         else if(m_info==1)
         {
             unsigned char value=255*influenceMap[i].heightBase;
@@ -382,7 +407,7 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
             color.a=255;
         }
         else if(m_info==2)
-            color=m_biomeColorMap.color((size_t)63*influenceMap[i].plateHeight, 32);
+            color=m_biomeColorMap.color((size_t)64*influenceMap[i].plateHeight, 32);
         else if(m_info==3)
         {
             auto &plateColor=m_plateColors[influenceMap[i].tectonicPlate];
@@ -429,7 +454,7 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
             value=std::max(value, 0.0f);
             value=std::min(value, 1.0f);
 
-            color=color+(m_tempColorMap.color((size_t)63*value));
+            color=color+(m_tempColorMap.color((size_t)64*value));
         }
         else if(m_overlay==5)
         {

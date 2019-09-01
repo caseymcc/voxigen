@@ -3,6 +3,7 @@
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/sortedVector.h"
+#include "voxigen/math_helpers.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -66,7 +67,7 @@ public:
             cellBand.name=current.name;
 
             float upperLatitude=current.latitude+(current.size*0.5f);
-            float frontSize=(M_PI_2-abs(upperLatitude))*(15.0f/90.0f);
+            float frontSize=(M_PI_2-abs(upperLatitude))*(20.0f/90.0f);
 
             cellBand.size=current.size-(prevFrontSize*0.5f)-(frontSize*0.5f);
             cellBand.latitude=current.latitude+(prevFrontSize*0.25f)-(frontSize*0.25f);
@@ -167,12 +168,19 @@ public:
         float lower=band.latitude-(band.size*0.5f);
         float value=(latitude-lower)/band.size;
 
-        assert(value<=1.0f);
+        //assert(value<=1.0f);
+        value=clamp(value, 0.0f, 1.0f);
 
         if(value<0.5f)
-            return (band.moistureMiddle-band.moistureLower)*(2.0f*value)+band.moistureLower;
+        {
+            value=2*value;
+            return (band.moistureMiddle-band.moistureLower)*(1.0f-pow(value-1.0f, 2))+band.moistureLower;
+        }
         else
-            return (band.moistureUpper-band.moistureMiddle)*(2.0f*(value-0.5f))+band.moistureMiddle;
+        {
+            value=2*(value-0.5);
+            return (band.moistureUpper-band.moistureMiddle)*(pow(value, 2))+band.moistureMiddle;
+        }
     }
 
 private:

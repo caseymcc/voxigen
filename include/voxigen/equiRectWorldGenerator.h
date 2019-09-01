@@ -10,6 +10,8 @@
 #include "voxigen/tectonics.h"
 #include "voxigen/weather.h"
 #include "voxigen/wrap.h"
+#include "voxigen/fill.h"
+#include "voxigen/math_helpers.h"
 
 #include "voxigen/sortedVector.h"
 
@@ -293,106 +295,18 @@ void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
     //    generateContinents();
 }
 
-
-inline void rotateTangetVectorToPoint(const glm::vec3 &point, const glm::vec2 &tangentVec, glm::vec3 &outVec)
-{
-    glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
-    glm::vec3 rotationVector=glm::cross(zAxis, point);
-
-    if(glm::length2(rotationVector)==0.0f)
-    {//already aligned to z axis
-        outVec=glm::vec3(tangentVec.x, tangentVec.y, 0.0f);
-        return;
-    }
-
-    //get angle to rotate vector to position
-    float theta=acos(glm::dot(point, zAxis));
-    glm::mat4 rotationMat=glm::rotate(theta, rotationVector);
-
-    outVec=glm::vec3(rotationMat*glm::vec4(tangentVec.x, tangentVec.y, 0.0f, 1.0f));
-}
-
-inline const std::array<glm::ivec2, 3> &getFloodPoints(const glm::vec2 &direction)
-{
-    static std::vector<std::array<glm::ivec2, 3>> points=
-    {
-        {{
-            {-1,  1},
-            { 0,  1},
-            { 1,  1}
-        }},
-        {{
-            { 0,  1},
-            { 1,  1},
-            { 1,  0}
-        }},
-        {{
-            { 1,  1},
-            { 1,  0},
-            { 1, -1}
-        }},
-        {{
-            { 1,  0},
-            { 1, -1},
-            { 0, -1}
-        }},
-        {{
-            { 1, -1},
-            { 0, -1},
-            {-1, -1}
-        }},
-        {{
-            { 0, -1},
-            {-1, -1},
-            {-1,  0}
-        }},
-        {{
-            {-1,  1},
-            {-1,  0},
-            {-1, -1}
-        }},
-        {{
-            {-1,  0},
-            {-1,  1},
-            { 0,  1}
-        }}
-    };
-
-    if(direction.x==0.0f)
-    {
-        if(direction.y<0.0f)
-            return points[4];
-        return points[0];
-    }
-
-    size_t index=0;
-    float  slope=direction.y/abs(direction.x);
-
-    if(slope<3.0f)
-        index++;
-    if(slope<0.5f/1.5f)
-        index++;
-    if(slope<-0.5f/1.5f)
-        index++;
-
-    if(direction.x<0.0f)
-        index=index+4;
-
-    return points[index];
-}
-
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
 
     std::vector<WeatherCell> weatherCells=
     {
-        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.45f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
-        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.6f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
-        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 1.0f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
-        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 1.0f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
-        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.6f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
-        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.45f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
     };
 
     WeatherBands weather(weatherCells);
@@ -480,7 +394,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     m_continentPerlin->SetSeed(m_plateSeed+3);
     m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::Perlin);
     m_continentPerlin->SetFrequency(0.01f);
+    m_continentPerlin->SetPerturbType(HastyNoise::PerturbType::Gradient);
+    m_continentPerlin->SetPerturbAmp(0.5f);
+    m_continentPerlin->SetPerturbFrequency(1.0f);
+
     m_continentPerlin->FillSet(nsAirCurrent.data(), m_influenceVectorSet.get());
+    
     m_continentPerlin->SetSeed(m_plateSeed+4);
     m_continentPerlin->FillSet(ewAirCurrent.data(), m_influenceVectorSet.get());
 
@@ -774,49 +693,8 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
             dir=-1.0f;
 
         bandDirection=weather.getWindDirection(latitude);
-//        size_t cellIndex=getCellIndex(latitude, true);
-//        const CellBand &cellBand=getCellBand(latitude);
-//
-//        bool odd=cellIndex%2;
-//        float cellBottom=cellBand.latitude-(cellBand.size*0.5f);
-//
-//        if(!odd)
-//        {
-//            float mag=(latitude-cellBottom)/cellBand.size;
-//
-//            bandDirection.x=(mag-1.0f);
-//            bandDirection.y=dir*mag;
-//        }
-//        else
-//        {
-//            float mag=(latitude-cellBottom)/cellBand.size;
-//
-//            bandDirection.x=mag;
-//            bandDirection.y=-dir*(1.0f-mag);
-//        }
-//
-//        if(latitude<0.5236f) //30 degress
-//        {
-//            float mag=latitude/0.5236f;
-//
-//            bandDirection.x=(mag-1.0f);
-//            bandDirection.y=dir*mag;
-//        }
-//        else if(latitude<1.0472f) //60 degress
-//        {
-//            float mag=(latitude-0.5236f)/0.5236f;
-//
-//            bandDirection.x=mag;
-//            bandDirection.y=-dir*(1.0f-mag);
-//        }
-//        else
-//        {
-//            float mag=(latitude-1.0472f)/0.5236f;
-//
-//            bandDirection.x=(mag-1.0f);
-//            bandDirection.y=dir*mag;
-//        }
-        m_influenceMap[i].airDirection=bandDirection;// (bandDirection+m_influenceMap[i].airDirection)/2.0f;
+//        m_influenceMap[i].airDirection=bandDirection;// (bandDirection+m_influenceMap[i].airDirection)/2.0f;
+        m_influenceMap[i].airDirection=(bandDirection+m_influenceMap[i].airDirection)/2.0f;
 
 //build terrain
         bool oceanPlate=(details.height<0.5f);
@@ -873,7 +751,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         //        if(m_influenceMap[i].heightBase<0.5)
         //            moistureMap[i]=1.0f*(m_influenceMap[i].heightBase-0.25f)/0.25f;
         else
-            moistureMap[i]=(bandMoisture*0.8)+(nsAirCurrent[i]*0.2f);// *0.5f;
+            moistureMap[i]=(bandMoisture*0.9)+(nsAirCurrent[i]*0.1f);// *0.5f;
 
         point.x++;
         if(point.x>=influenceSize.x)
@@ -887,13 +765,24 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 //    std::vector<float> *mapPointer2=&moistureMap2;
     std::vector<float> &map1=moistureMap;
     for(size_t i=0; i<influenceMapSize; i++)
-        moistureDeltaMap[i]=0.0f;
+    {
+        if(m_influenceMap[i].heightBase>0.5f)
+            moistureDeltaMap[i]=0.0f;
+        else
+            moistureDeltaMap[i]=1.0f;
+    }
 
     glm::ivec2 lowerImageBound(0, 0);
     glm::ivec2 upperImageBound(influenceSize.x-1, influenceSize.y-1);
 
+
+    size_t breakX=186;
+    size_t breakY=168;
+    size_t breakIndex=breakY*influenceSize.x+breakX;
+    size_t loops=10;
+
     std::vector<float> floodScale={0.25f, 0.5f, 0.25f};
-    for(size_t loops=0; loops<10; ++loops)
+    for(size_t loop=0; loop<loops; ++loop)
     {
 //        std::vector<float> &map1=*mapPointer1;
 //        std::vector<float> &map2=*mapPointer2;
@@ -903,90 +792,35 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         {
             for(size_t x=0; x<influenceSize.x; x++)
             {
-                if((x==200)&&(y==107))
+                if((x==breakX)&&(y>=breakY))
                     x=x;
 
                 if(map1[i]>0.0f)
                 {
                     glm::vec2 &airDirection=m_influenceMap[i].airDirection;
                     float magnitude=glm::length(airDirection);
-                    float moisture=map1[i];
+                    float moisture=moistureDeltaMap[i];// map1[i];
                     float moistureCaptured=moisture*m_influenceMap[i].moistureCapacity*magnitude;
 
                     if(m_influenceMap[i].heightBase>0.5f)
                         moistureDeltaMap[i]=moistureDeltaMap[i]-moistureCaptured;
 
-                    const std::array<glm::ivec2, 3> &floodPoints=getFloodPoints(airDirection);
-
-                    for(size_t j=0; j<floodPoints.size(); ++j)
-                    {
-                        glm::ivec2 currentPoint=glm::ivec2(x, y)+floodPoints[j];
-
-                        currentPoint=wrap(currentPoint, lowerImageBound, upperImageBound);
-                        size_t index=(currentPoint.y*influenceSize.x)+currentPoint.x;
-
-                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+(moistureCaptured*floodScale[j]), 1.0f);
-                    }
-//                    float xDir;
-//                    float yDir;
-//
-//                    if(airDirection.x==0.0f)
-//                        xDir=0.0f;
-//                    else
-//                        xDir=airDirection.x/abs(airDirection.x);
-//
-//                    if(airDirection.y==0.0f)
-//                        yDir=0.0f;
-//                    else
-//                        yDir=airDirection.y/abs(airDirection.y);
-//
-//                    float slope;
-//                    
-//                    if(airDirection.x==0.0f)
-//                        slope=std::numeric_limits<float>::max();
-//                    else
-//                        slope=airDirection.y/airDirection.x;
-//
-//                    int pos1=(slope*xDir)+0.5f;
-//                    int pos2=(yDir/slope)+0.5f;
-//
-//                    if((pos1!=0)&&(pos2!=0))
-//                        moistureCaptured=moistureCaptured*0.5f;
-//
-//                    if(pos1!=0)
-//                    {
-//                        pos1=pos1/abs(pos1);
-//                        int posX=wrap((int)x+(int)xDir,` 0, (int)influenceSize.x-1);
-//                        pos1=wrap((int)y+pos1, 0, (int)influenceSize.y-1);
-//
-//                        size_t index=(pos1*influenceSize.x)+posX;
-//
-//                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+moistureCaptured, 1.0f);
-//                    }
-//                    if(pos2!=0)
-//                    {
-//                        pos2=pos2/abs(pos2);
-//                        pos2=wrap((int)x+pos2, 0, (int)influenceSize.x-1);
-//                        int posY=wrap((int)y+(int)yDir, 0, (int)influenceSize.y-1);
-//
-//                        size_t index=(posY*influenceSize.x)+pos2;
-//
-//                        moistureDeltaMap[index]=std::min(moistureDeltaMap[index]+moistureCaptured, 1.0f);
-//                    }
+                    fillPoints(glm::vec2(x, y), airDirection, moistureDeltaMap, influenceSize, moistureCaptured);
+//                    const std::array<glm::ivec2, 3> &floodPoints=getFloodPoints(airDirection);
                 }
                 ++i;
             }
         }
 
         //remove moisture that was moved
-        for(size_t i=0; i<influenceMapSize; i++)
-        {
-            if(i==109768)
-                i=i;
-
-            map1[i]=map1[i]+moistureDeltaMap[i];
-            moistureDeltaMap[i]=0.0f;
-        }
+//        for(size_t i=0; i<influenceMapSize; i++)
+//        {
+//            if(i==breakIndex)
+//                i=i;
+//
+//            map1[i]=map1[i]+moistureDeltaMap[i];
+//            moistureDeltaMap[i]=0.0f;
+//        }
 
 //        std::swap(mapPointer1, mapPointer2);
     }
@@ -995,7 +829,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     {
 //        std::vector<float> &map=*mapPointer1;
         
-        m_influenceMap[i].moisture=std::max(std::min(map1[i], 1.0f), 0.0f);
+        m_influenceMap[i].moisture=std::max(std::min(map1[i]+moistureDeltaMap[i], 1.0f), 0.0f);
     }
 
     time2=chrono::high_resolution_clock::now();
