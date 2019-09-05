@@ -1,6 +1,5 @@
 #include "voxigen/heightmapMeshBuilder.h"
 #include "voxigen/simpleShapes.h"
-//#include <GL/glew.h>
 
 namespace voxigen
 {
@@ -174,18 +173,14 @@ void RegionRenderer<_RegionHandle>::setHandle(SharedRegionHandle handle)
 template<typename _RegionHandle>
 void RegionRenderer<_RegionHandle>::build()
 {
-    if(m_vertexArrayGen)
-        return;
+    if(!m_vertexArrayGen)
+    {
+        gl::glGenVertexArrays(1, &m_vertexArray);
+        m_vertexArrayGen=true;
 
-    gl::glGenVertexArrays(1, &m_vertexArray);
-    m_vertexArrayGen=true;
+        m_infoText=gltCreateText();
+    }
 
-    m_infoText=gltCreateText();
-}
-
-template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::buildOutline(unsigned int dummy)
-{
     if(!m_outlineInstanceGen)
     {
         const std::vector<float> &outlineVertices=SimpleCube<Region::sizeX::value*Chunk::sizeX::value,
@@ -239,20 +234,20 @@ void RegionRenderer<_RegionHandle>::buildOutline(unsigned int dummy)
 }
 
 template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::draw(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset)
+void RegionRenderer<_RegionHandle>::draw(const glm::ivec3 &offset)
 {
     if(m_meshBuffer.valid)
     {
-        m_program.uniform(offsetId)=glm::vec3(offset);
+        m_program.uniform(m_offsetId)=glm::vec3(offset);
 
         if(!m_meshBuffer.ready)
         {
-            gl::GLenum result=gl::glClientWaitSync(m_meshBuffer.sync, gl::SyncObjectMask::GL_NONE_BIT, 0);
+            gl::GLenum result=glClientWaitSync((gl::GLsync)m_meshBuffer.sync, gl::SyncObjectMask::GL_NONE_BIT, 0);
 
             if((result==gl::GL_ALREADY_SIGNALED)||(result==gl::GL_CONDITION_SATISFIED))
             {
                 m_meshBuffer.ready=true;
-                gl::glDeleteSync(m_meshBuffer.sync);
+                gl::glDeleteSync((gl::GLsync)m_meshBuffer.sync);
                 m_meshBuffer.sync=nullptr;
             }
             else
@@ -263,7 +258,7 @@ void RegionRenderer<_RegionHandle>::draw(opengl_util::Program *program, size_t o
         gl::glBindVertexArray(m_vertexArray);
 
         // Draw the mesh
-        gl::glDrawElements(gl::GL_TRIANGLES, m_meshBuffer.indices, m_meshBuffer.indexType, 0);
+        gl::glDrawElements(gl::GL_TRIANGLES, m_meshBuffer.indices, (gl::GLenum)m_meshBuffer.indexType, 0);
         assert(gl::glGetError()==gl::GL_NO_ERROR);
     }
 }
@@ -281,7 +276,7 @@ void RegionRenderer<_RegionHandle>::drawInfo(const glm::mat4x4 &projectionViewMa
 }
 
 template<typename _RegionHandle>
-void RegionRenderer<_RegionHandle>::drawOutline(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset, size_t colorId)
+void RegionRenderer<_RegionHandle>::drawOutline(const glm::ivec3 &offset)
 {
     glm::vec3 color(1.0f, 1.0f, 1.0f);
 
@@ -430,7 +425,7 @@ void RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>::proce
     LOG(INFO)<<"RenderPrepThread - RegionRenderer "<<renderer<<"("<<renderer->getHandle()->getHash()<<") building mesh";
 #endif//LOG_PROCESS_QUEUE
 
-    mesh.indexType=gl::GL_UNSIGNED_INT;
+    mesh.indexType=(unsigned int)gl::GL_UNSIGNED_INT;
 
     gl::glGenBuffers(1, &mesh.vertexBuffer);
     gl::glGenBuffers(1, &mesh.indexBuffer);

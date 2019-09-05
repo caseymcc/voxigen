@@ -20,7 +20,7 @@
 namespace generic
 {
 
-class generic_EXPORT Attributes
+class GENERIC_EXPORT Attributes
 {
 public:
 	void addAttribute(SharedAttribute attribute);
@@ -58,7 +58,7 @@ private:
 
 #pragma warning(pop)
 
-void generic_EXPORT merge(Attributes &dst, const Attributes &src);
+void GENERIC_EXPORT merge(Attributes &dst, const Attributes &src);
 
 }//namespace generic
 

@@ -18,11 +18,11 @@ bool EquiRectDescriptors::load(const char *json)
     bool retValue=true;
     
     if(document.HasMember("noiseScale"))
-        m_noiseScale=document["noiseScale"].GetDouble();
+        m_noiseScale=document["noiseScale"].GetFloat();
     else
         retValue=false;
     if(document.HasMember("continentFrequency"))
-        m_continentFrequency=document["continentFrequency"].GetDouble();
+        m_continentFrequency=document["continentFrequency"].GetFloat();
     else
         retValue=false;
     if(document.HasMember("continentOctaves"))
@@ -30,15 +30,15 @@ bool EquiRectDescriptors::load(const char *json)
     else
         retValue=false;
     if(document.HasMember("continentLacunarity"))
-        m_continentLacunarity=document["continentLacunarity"].GetDouble();
+        m_continentLacunarity=document["continentLacunarity"].GetFloat();
     else
         retValue=false;
     if(document.HasMember("seaLevel"))
-        m_seaLevel=document["seaLevel"].GetDouble();
+        m_seaLevel=document["seaLevel"].GetFloat();
     else
         retValue=false;
     if(document.HasMember("continentalShelf"))
-        m_continentalShelf=document["continentalShelf"].GetDouble();
+        m_continentalShelf=document["continentalShelf"].GetFloat();
     else
         retValue=false;
 

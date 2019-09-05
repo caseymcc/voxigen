@@ -17,8 +17,9 @@ set(generic_sources
     attribute.cpp
     attributeContainer.cpp
     attributes.cpp
-    jsonSerializer.cpp
     errorMsg.cpp
+    jsonSerializer.cpp
+    log.cpp
 )
 
 set(generic_headers
@@ -29,6 +30,7 @@ set(generic_headers
     generic/callIf.h
     generic/errorMsg.h
     generic/jsonSerializer.h
+    generic/log.h
     generic/serializer.h
     generic/types.h
 )

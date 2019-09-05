@@ -53,6 +53,7 @@ set(imglib_headers
 	imglib/gaussian.h
     imglib/image.h
     imglib/imageIo.h
+    imglib/location.h
     imglib/match.h
     imglib/ppm.h
     imglib/simpleImage.h
@@ -152,14 +153,14 @@ if(IMGLIB_USE_OPENCL)
 endif()
 
 
-add_library(imglib STATIC
+add_library(imglib
     ${imglib_sources}
     ${imglib_headers}
     ${embededFiles}
 )
 
-include(GenerateExportHeader)
-generate_export_header(imglib)
+#include(GenerateExportHeader)
+#generate_export_header(imglib)
 
 target_link_libraries(imglib ${imglib_libraries})
 

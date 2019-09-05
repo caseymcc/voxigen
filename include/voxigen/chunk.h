@@ -10,7 +10,7 @@
 #include <type_traits>
 
 #ifdef DEBUG_ALLOCATION
-#include <glog/logging.h>
+#include "voxigen/log.h"
 #endif//DEBUG_ALLOCATION
 
 namespace voxigen
@@ -71,7 +71,7 @@ m_lod(lod)
     m_cells.resize(size);
     
 #ifdef DEBUG_ALLOCATION
-    LOG(INFO)<<"chunk ("<<m_hash<<") allocate - data "<<std::hex<<m_cells.data()<<std::dec<<" size"<<size<<"\n";
+    Log::debug("chunk (%d) allocate - data %x size %d\n", m_hash, m_cells.data(), size);
 #endif
 }
 
@@ -79,7 +79,7 @@ template<typename _Cell, size_t _x, size_t _y, size_t _z>
 Chunk<_Cell, _x, _y, _z>::~Chunk()
 {
 #ifdef DEBUG_ALLOCATION
-    LOG(INFO)<<"chunk ("<<m_hash<<") freed - data "<<std::hex<<m_cells.data()<<std::dec<<"\n";
+    Log::debug("chunk (%d) freed - data %x\n", m_hash, m_cells.data());
 #endif
 };
 

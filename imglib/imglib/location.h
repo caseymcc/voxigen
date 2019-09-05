@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 #include <memory>
-#include "imglib_export.h"
-
-#include "imglib/location.h"
 
 namespace imglib
 {

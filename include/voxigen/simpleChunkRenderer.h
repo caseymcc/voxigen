@@ -52,6 +52,12 @@ public:
         Empty
     };
 
+    static void buildPrograms();
+    static void useProgram();
+    static void updateProgramProjection(const glm::mat4 &projection);
+    static void useOutlineProgram();
+    static void updateOutlineProgramProjection(const glm::mat4 &projection);
+
     static glm::ivec3 getSize() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
     State getState() { return m_state; }
@@ -71,8 +77,7 @@ public:
     void setEmpty();
     const glm::vec3 &getChunkOffset() { return m_chunkOffset; }
 
-    void build();//unsigned int instanceData);
-    void buildOutline(unsigned int instanceData);
+    void build();
 
 //    void buildMesh();
     MeshBuffer clearMesh();
@@ -88,7 +93,7 @@ public:
 
     bool incrementCopy();
     
-    void draw(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset);
+    void draw(const glm::ivec3 &offset);
     void drawInfo(const glm::mat4x4 &projectionViewMat, const glm::ivec3 &offset);
 
     void startOcculsionQuery();
@@ -96,7 +101,7 @@ public:
     bool checkOcculsionQuery(unsigned int &samples);
 
 //#ifndef NDEBUG
-    void drawOutline(opengl_util::Program *program, size_t offsetId, const glm::ivec3 &offset, size_t colorId);
+    void drawOutline(const glm::ivec3 &offset);
 //#endif //NDEBUG
 
 //    const RegionChunkIndex<RegionType, ChunkType> getIndex() { RegionChunkIndex<RegionType, ChunkType> index; index.regionIndex=m_chunkHandle->regionIndex(); index.chunkIndex=m_chunkHandle->chunkIndex(); return index; }
@@ -129,6 +134,21 @@ private:
     RenderAction m_action;
     SharedChunkHandle m_chunkHandle;
     SharedTextureAtlas m_textureAtlas;
+
+    static std::string vertShader;
+    static std::string fragmentShader;
+    static opengl_util::Program m_program;
+    static size_t m_projectionViewId;
+    static size_t m_offsetId;
+
+    static std::string vertOutlineShader;
+    static std::string fragmentOutlineShader;
+    static opengl_util::Program m_outlineProgram;
+    static size_t m_outlineProjectionViewId;
+    static size_t m_outlineOffsetId;
+    static size_t m_outlineColorId;
+    static bool m_outlineInstanceGen;
+    static unsigned int m_outlineInstanceVertices;
 
 //#ifndef NDEBUG
     bool m_outlineBuilt;

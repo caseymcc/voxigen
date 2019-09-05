@@ -5,6 +5,13 @@ option(VOXIGEN_RENDERING "Enable simple rendering" ON)
 option(VOXIGEN_TEXTURE "Setup texture classes" ON)
 option(VOXIGEN_TESTAPP "Build test app" ON)
 option(VOXIGEN_MAPGENAPP "Build mapgen app" ON)
+option(VOXIGEN_INSTALL_LIBS "Build mapgen app" OFF)
+
+if(VOXIGEN_TESTAPP)
+    #requires texture and rendering
+    set(VOXIGEN_TEXTURE ON CACHE BOOL "Setup texture classes")
+    set(VOXIGEN_RENDERING ON CACHE BOOL "Enable simple rendering")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/CMakeModules)
 
@@ -43,15 +50,10 @@ HunterGate(
     LOCAL
 )
 
-project(voxigen)
+project(voxigen VERSION 0.0.1)
+set(library_targets)
 
-macro(get_target_directories target_directory_list)
-    foreach(target ${ARGN})
-        if(TARGET ${target})
-            list(APPEND ${target_directory_list} "$<TARGET_FILE_DIR:${target}>")
-        endif()
-    endforeach()
-endmacro()
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/targetInfo.cmake)
 
 #setup build folders
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/)
@@ -99,13 +101,6 @@ if(VOXIGEN_OVERIDE_HASTY AND NOT VOXIGEN_OVERIDE_HASTY STREQUAL "")
       IMPORTED_IMPLIB_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/Release/hastyNoise.lib"
       IMPORTED_LOCATION_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/Release/hastyNoise.dll"
     )
-#    set_property(TARGET HastyNoise::hastyNoise APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
-#    set_target_properties(HastyNoise::hastyNoise PROPERTIES
-#      IMPORTED_IMPLIB_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/RelWithDebInfo/hastyNoise.lib"
-#      IMPORTED_LOCATION_RELEASE "${VOXIGEN_OVERIDE_HASTY}/build/RelWithDebInfo/hastyNoise.dll"
-#    )
-
-    
     set_property(TARGET HastyNoise::hastyNoise APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
     set_target_properties(HastyNoise::hastyNoise PROPERTIES
       IMPORTED_IMPLIB_DEBUG "${VOXIGEN_OVERIDE_HASTY}/build/Debug/hastyNoised.lib"
@@ -159,6 +154,11 @@ if(VOXIGEN_USE_FILESYSTEM EQUAL ${VOXIGEN_BOOST_FILESYSTEM})
     find_package(Boost REQUIRED COMPONENTS filesystem)
 endif()
 
+if(VOXIGEN_RENDERING)
+    add_subdirectory(opengl_util)
+    set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
+endif()
+
 if(VOXIGEN_TEXTURE)
     hunter_add_package(PNG)
     find_package(PNG)
@@ -176,15 +176,14 @@ if(VOXIGEN_TEXTURE)
     set_target_properties(imglib PROPERTIES FOLDER Libraries)
 endif()
 
-add_subdirectory(opengl_util)
-set_target_properties(opengl_util PROPERTIES FOLDER Libraries)
 set(GENERIC_DISABLE_ATTRIBUTE ON CACHE BOOL "Disable support for attributes" FORCE)
 add_subdirectory(generic)
 set_target_properties(generic PROPERTIES FOLDER Libraries)
-add_subdirectory(dt)
-set_target_properties(dt PROPERTIES FOLDER Libraries)
+#add_subdirectory(dt)
+#set_target_properties(dt PROPERTIES FOLDER Libraries)
 
 set(voxigen_headers
+    include/voxigen/activeVolume.h
     include/voxigen/biome.h
     include/voxigen/boundingBox.h
     include/voxigen/cell.h
@@ -207,7 +206,8 @@ set(voxigen_headers
     include/voxigen/handleState.h
     include/voxigen/heightmapMeshBuilder.h
     include/voxigen/jsonSerializer.h
-    include/voxigen/nativeGL.h
+    include/voxigen/log.h
+    include/voxigen/meshBuffer.h
     include/voxigen/noise.h
     include/voxigen/object.h
     include/voxigen/processQueue.h
@@ -218,17 +218,14 @@ set(voxigen_headers
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
     include/voxigen/simpleFilesystem.h
+    include/voxigen/voxigen_export.h
 )
 
 set(voxigen_inline
+    include/voxigen/activeVolume.inl
     include/voxigen/chunkHandle.inl
     include/voxigen/processQueue.inl
-    include/voxigen/renderCube.inl
-    include/voxigen/renderPrepThread.inl
     include/voxigen/regionHandle.inl
-    include/voxigen/simpleChunkRenderer.inl
-    include/voxigen/simpleRegionRenderer.inl
-    include/voxigen/simpleRenderer.inl
 )
 
 set(voxigen_sources
@@ -243,7 +240,6 @@ set(voxigen_sources
     src/object.cpp
     src/regular2DGrid.cpp
     src/simpleCamera.cpp
-    src/nativeGL.cpp
     src/noise.cpp
     src/simpleFilesystem.cpp
 )
@@ -260,7 +256,7 @@ set(voxigen_public_libraries
     gflags
     glog::glog
     generic
-    dt
+#    dt
 )
 
 set(voxigen_libraries ${voxigen_public_libraries}
@@ -284,8 +280,8 @@ if(VOXIGEN_RENDERING)
     set(voxigen_headers ${voxigen_headers}
         include/voxigen/initOpengl.h
         include/voxigen/glm_point.h
+        include/voxigen/nativeGL.h
         include/voxigen/renderAction.h
-        include/voxigen/renderCube.h
         include/voxigen/renderPrepThread.h
         include/voxigen/simpleChunkRenderer.h
         include/voxigen/simpleRegionRenderer.h
@@ -293,11 +289,24 @@ if(VOXIGEN_RENDERING)
         include/voxigen/simpleShapes.h
     )
 
-    set(voxigen_sources ${voxigen_sources}
-        src/initOpengl.cpp
+    set(voxigen_inline
+        include/voxigen/renderPrepThread.inl
+        include/voxigen/simpleChunkRenderer.inl
+        include/voxigen/simpleRegionRenderer.inl
+        include/voxigen/simpleRenderer.inl
     )
 
-    set(voxigen_libraries ${voxigen_libraries} glbinding::glbinding) #globjects::globjects)
+    set(voxigen_sources ${voxigen_sources}
+        src/initOpengl.cpp
+        src/nativeGL.cpp
+        src/renderPrepThread.cpp
+    )
+
+    set(voxigen_libraries ${voxigen_libraries} 
+        glbinding::glbinding
+        #glbinding::glbinding-aux
+        #globjects::globjects
+    )
 endif()
 
 if(VOXIGEN_TEXTURE)
@@ -330,18 +339,15 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${VOXIGEN_OUTPUT_DIRECTORY_RELEASE})
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-add_library(voxigen SHARED
+add_library(voxigen
     ${voxigen_headers}
     ${voxigen_inline}
     ${voxigen_sources}
 )
-else()
-add_library(voxigen STATIC
-    ${voxigen_headers}
-    ${voxigen_inline}
-    ${voxigen_sources}
-)
+list(APPEND library_targets voxigen)
+
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(voxigen PUBLIC -DVOXIGEN_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE)
 endif()
 
 target_compile_definitions(voxigen PUBLIC "-DVOXIGEN_USE_FILESYSTEM=${VOXIGEN_USE_FILESYSTEM}")
@@ -381,15 +387,22 @@ if(VOXIGEN_TESTAPP)
         testApp/renderingOptions.h
     )
     
+    set(testApp_libraries
+        voxigen 
+        glfw 
+        imgui::imgui
+    )
+
     add_executable(testApp ${testApp_sources})
+    list(APPEND library_targets testApp)
 
     target_include_directories(testApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-    target_link_libraries(testApp voxigen glfw imgui::imgui)
+    target_link_libraries(testApp ${testApp_libraries})
     
-    set(testApp_public_libraries ${voxigen_public_libraries} glfw HastyNoise::hastyNoise) #add hasty manually to bin directory
+#    set(testApp_public_libraries ${voxigen_public_libraries} glfw) #add hasty manually to bin directory
 
     set(testApp_vs_enviroment_dir)
-    get_target_directories(testApp_vs_enviroment_dir ${testApp_public_libraries})
+    get_target_link_directories(testApp_vs_enviroment_dir ${testApp_libraries})
     set(testApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
     create_target_launcher(testApp
@@ -414,13 +427,14 @@ if(VOXIGEN_MAPGENAPP)
     )
     
     add_executable(mapgenApp ${mapgenApp_sources})
+    list(APPEND library_targets mapgenApp)
 
     target_include_directories(mapgenApp PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_link_libraries(mapgenApp voxigen glfw imgui::imgui)
 
-    set(mapgenApp_public_libraries ${voxigen_public_libraries} glfw HastyNoise::hastyNoise) #add hasty manually to bin directory
+    set(mapgenApp_public_libraries ${voxigen_public_libraries} glfw) #add hasty manually to bin directory
     set(mapgenApp_vs_enviroment_dir)
-    get_target_directories(mapgenApp_vs_enviroment_dir ${mapgenApp_public_libraries})
+    get_target_link_directories(mapgenApp_vs_enviroment_dir ${mapgenApp_public_libraries})
     set(mapgenApp_vs_working_dir ${CMAKE_CURRENT_LIST_DIR})
     
     create_target_launcher(mapgenApp
@@ -428,4 +442,125 @@ if(VOXIGEN_MAPGENAPP)
         WORKING_DIRECTORY "${mapgenApp_vs_working_dir}"
     )
 endif()
+
+
+##installer
+#include(GNUInstallDirs) 
+#
+## Layout. This works for all platforms:
+##   * <prefix>/lib*/cmake/<PROJECT-NAME>
+##   * <prefix>/lib*/
+##   * <prefix>/include/
+#set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+#set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+#
+## Configuration
+#set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+#set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
+#set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+#set(namespace "${PROJECT_NAME}::")
+#
+## Include module with fuction 'write_basic_package_version_file'
+#include(CMakePackageConfigHelpers)
+#
+## Configure '<PROJECT-NAME>ConfigVersion.cmake'
+## Use:
+##   * PROJECT_VERSION
+#write_basic_package_version_file(
+#    "${version_config}" COMPATIBILITY SameMajorVersion
+#)
+#
+## Configure '<PROJECT-NAME>Config.cmake'
+## Use variables:
+##   * TARGETS_EXPORT_NAME
+##   * PROJECT_NAME
+#configure_package_config_file(
+#    "cmake/Config.cmake.in"
+#    "${project_config}"
+#    INSTALL_DESTINATION "${config_install_dir}"
+#)
+#
+## Targets:
+##   * <prefix>/lib/libname.a
+##   * header location after install: <prefix>/include/${PROJECT_NAME}/include.hpp
+##   * headers can be included by C++ code `#include <${PROJECT_NAME}/include.hpp>`
+#message(STATUS "library_targets: ${library_targets}")
+#install(
+#    TARGETS ${library_targets}
+#    EXPORT "${TARGETS_EXPORT_NAME}"
+#    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+#    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+#    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+#    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+#)
+#
+## Headers:
+#install(
+#    FILES ${voxigen_headers}
+#    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
+#)
+#
+## Config
+##   * <prefix>/lib/cmake/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake
+##   * <prefix>/lib/cmake/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake
+#install(
+#    FILES "${project_config}" "${version_config}"
+#    DESTINATION "${config_install_dir}"
+#)
+#
+## Config
+##   * <prefix>/lib/cmake/${PROJECT_NAME}/${PROJECT_NAME}Targets.cmake
+#install(
+#    EXPORT "${TARGETS_EXPORT_NAME}"
+#    NAMESPACE "${namespace}"
+#    DESTINATION "${config_install_dir}"
+#)
+#
+#if(MSVC)
+#    #install pdbs
+#    get_cmake_property(is_multi GENERATOR_IS_MULTI_CONFIG)
+#
+#    if(is_multi)
+#      set(config_suffix "$<CONFIG>")
+#    else()
+#      set(config_suffix "")
+#    endif() 
+#
+#    if(BUILD_SHARED_LIBS)
+#      set(pdb_dst ${CMAKE_INSTALL_BINDIR})
+#    else()
+#      set(pdb_dst ${CMAKE_INSTALL_LIBDIR})
+#    endif() 
+#
+#    install(
+#        DIRECTORY "${pdb_output_dir}/${config_suffix}/"
+#        DESTINATION ${pdb_dst}
+#    )
+#endif()
+
+#install any targets that voxigen uses
+#if(VOXIGEN_INSTALL_LIBS)
+#    set(voxigen_link_files)
+#    set(voxigen_link_libs)
+#    get_target_link_libraries(voxigen_link_files voxigen_link_libs voxigen)
+#    message(STATUS "voxigen_link_files: ${voxigen_link_files}")
+#    message(STATUS "voxigen_link_libs: ${voxigen_link_libs}")
+#
+#    foreach(target_name ${voxigen_link_files})
+#        add_custom_command(TARGET voxigen
+#            POST_BUILD
+#            COMMAND COMMAND copy "$<TARGET_FILE:${target_name}>" "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_NAME:${target_name}>"
+#            COMMENT "Copying ${target_name}\n"
+#        )
+#    endforeach()
+#
+#    foreach(target_name ${voxigen_link_libs})
+#        add_custom_command(TARGET voxigen
+#            POST_BUILD
+#            COMMAND COMMAND copy "$<TARGET_LINKER_FILE:${target_name}>" "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_LINKER_FILE_NAME:${target_name}>"
+#            COMMENT "Copying ${target_name}\n"
+#        )
+#    endforeach()
+#endif()
+
 

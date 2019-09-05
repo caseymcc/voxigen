@@ -244,8 +244,8 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 
     while(m_processThreadRunning)
     {
-        Process::Type type;
-        size_t lod;
+//        Process::Type type;
+//        size_t lod;
 //        SharedChunkHandle chunkHandle=m_processQueue.getNextProcessRequest(lock, type, lod);
         SharedChunkHandle chunkHandle;
 
@@ -305,7 +305,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef GenerateRegionRequest<RegionType> GenerateRegionRequest;
 
-    GenerateRegionRequest *generateRequest=dynamic_cast<GenerateRegionRequest *>(request);
+    GenerateRegionRequest *generateRequest=static_cast<GenerateRegionRequest *>(request);
     SharedRegionHandle regionHandle=generateRequest->handle.lock();
 
     if(!regionHandle)
@@ -322,7 +322,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef GenerateRequest<RegionType, ChunkType> GenerateRequest;
 
-    GenerateRequest *generateRequest=dynamic_cast<GenerateRequest *>(request);
+    GenerateRequest *generateRequest=static_cast<GenerateRequest *>(request);
     SharedChunkHandle chunkHandle=generateRequest->chunkHandle.lock();
 
     if(!chunkHandle)
@@ -339,7 +339,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef ReadRequest<RegionType, ChunkType> ReadRequest;
 
-    ReadRequest *readRequest=dynamic_cast<ReadRequest *>(request);
+    ReadRequest *readRequest=static_cast<ReadRequest *>(request);
     SharedChunkHandle chunkHandle=readRequest->chunkHandle.lock();
 
     if(!chunkHandle)
@@ -356,7 +356,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef WriteRequest<RegionType, ChunkType> WriteRequest;
 
-    WriteRequest *writeRequest=dynamic_cast<WriteRequest *>(request);
+    WriteRequest *writeRequest=static_cast<WriteRequest *>(request);
     SharedChunkHandle chunkHandle=writeRequest->chunkHandle;
 
     if(!chunkHandle)
@@ -373,7 +373,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef UpdateRequest<RegionType, ChunkType> UpdateRequest;
 
-    UpdateRequest *updateRequest=dynamic_cast<UpdateRequest *>(request);
+    UpdateRequest *updateRequest=static_cast<UpdateRequest *>(request);
     SharedChunkHandle chunkHandle=updateRequest->chunkHandle.lock();
 
     if(!chunkHandle)
@@ -389,7 +389,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef ReleaseRequest<RegionType, ChunkType> ReleaseRequest;
 
-    ReleaseRequest *releaseRequest=dynamic_cast<ReleaseRequest *>(request);
+    ReleaseRequest *releaseRequest=static_cast<ReleaseRequest *>(request);
     SharedChunkHandle chunkHandle=releaseRequest->chunkHandle.lock();
 
     if(!chunkHandle)
@@ -592,7 +592,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef GenerateRegionRequest<RegionType> GenerateRegionRequest;
 
-    GenerateRegionRequest *generateRequest=dynamic_cast<GenerateRegionRequest *>(request);
+    GenerateRegionRequest *generateRequest=static_cast<GenerateRegionRequest *>(request);
     typename ProcessQueueType::SharedRegionHandle handle=generateRequest->getHandle();
 
     if(!handle)
@@ -612,7 +612,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef GenerateRequest<RegionType, ChunkType> GenerateRequest;
 
-    GenerateRequest *generateRequest=dynamic_cast<GenerateRequest *>(request);
+    GenerateRequest *generateRequest=static_cast<GenerateRequest *>(request);
     typename ProcessQueueType::SharedChunkHandle chunkHandle=generateRequest->getChunkHandle();
     
     if(!chunkHandle)
@@ -632,7 +632,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef ReadRequest<RegionType, ChunkType> ReadRequest;
 
-    ReadRequest *readRequest=dynamic_cast<ReadRequest *>(request);
+    ReadRequest *readRequest=static_cast<ReadRequest *>(request);
     typename ProcessQueueType::SharedChunkHandle chunkHandle=readRequest->getChunkHandle();
 
     if(!chunkHandle)
@@ -652,7 +652,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef UpdateRequest<RegionType, ChunkType> UpdateRequest;
 
-    UpdateRequest *updateRequest=dynamic_cast<UpdateRequest *>(request);
+    UpdateRequest *updateRequest=static_cast<UpdateRequest *>(request);
     typename ProcessQueueType::SharedChunkHandle chunkHandle=updateRequest->getChunkHandle();
 
     if(!chunkHandle)
@@ -672,7 +672,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 {
     typedef ReleaseRequest<RegionType, ChunkType> ReleaseRequest;
 
-    ReleaseRequest *releaseRequest=dynamic_cast<ReleaseRequest *>(request);
+    ReleaseRequest *releaseRequest=static_cast<ReleaseRequest *>(request);
     typename ProcessQueueType::SharedChunkHandle chunkHandle=releaseRequest->getChunkHandle();
 
     if(!chunkHandle)

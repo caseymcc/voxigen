@@ -19,7 +19,10 @@ public:
     void makeCurrent();
 
 private:
+#pragma warning(push)
+#pragma warning(disable:4251)
     std::unique_ptr<NativeStruct> hidden;
+#pragma warning(pop)
 };
 
 }//namespace voxigen

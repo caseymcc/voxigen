@@ -5,6 +5,8 @@
 #include "voxigen/faces.h"
 
 #include <array>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/integer.hpp>
 
 namespace voxigen
 {
@@ -92,7 +94,7 @@ void buildVertices_x(std::vector<glm::ivec3> &vertexes, size_t &vertIndex, const
 template<typename _Mesh, typename _Cell>
 void buildHeightmapMesh(_Mesh &mesh, const std::vector<_Cell> &cells, const glm::ivec2 &cellsSize, size_t lod)
 {
-    size_t stride=glm::pow(2, lod);
+    size_t stride=glm::pow(2u, (unsigned int)lod);
     glm::ivec2 size=cellsSize/(int)stride;
 
     glm::ivec3 position(0, 0, 0);

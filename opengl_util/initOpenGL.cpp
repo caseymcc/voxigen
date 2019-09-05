@@ -1,6 +1,5 @@
 #include "opengl_util/initOpenGL.h"
 
-//#include <GL/glew.h>
 #include <glbinding/gl/gl.h>
 
 namespace opengl_util
@@ -12,7 +11,6 @@ void initOpenGL()
 
     if(!_initOpenGL)
     {
-//        glewInit();
         _initOpenGL=true;
     }
 }

@@ -27,6 +27,7 @@
 //#include <rapidjson/filewritestream.h>
 //#include <rapidjson/filereadstream.h>
 //#include <rapidjson/document.h>
+#include "voxigen/cell.h"
 
 namespace voxigen
 {

@@ -42,7 +42,7 @@ private:
 inline void ChunkMesh::addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 4> &quad)
 {
     size_t index=m_verticies.size();
-    size_t vertIndex=index;
+    int vertIndex=(int)index;
     m_verticies.resize(index+4);
 
     for(size_t i=0; i<4; ++i)

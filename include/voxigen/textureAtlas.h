@@ -60,6 +60,9 @@ public:
     size_t resolution() const { return m_textureResolution; }
 
 private:
+    //these items are private and not used outside of the class api
+#pragma warning(push)
+#pragma warning(disable:4251)
     size_t m_version;
     std::vector<TextureEntry> m_textureEntries;
     BlockMap m_blockMap;
@@ -75,6 +78,7 @@ private:
 
     std::string m_imagePath;
     imglib::SimpleImage m_image;
+#pragma warning(pop)
 };
 
 typedef std::shared_ptr<TextureAtlas> SharedTextureAtlas;

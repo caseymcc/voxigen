@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <string>
 
-//#include <GL/glew.h>
 #include <glbinding/gl/gl.h>
 
 namespace opengl_util

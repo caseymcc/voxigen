@@ -14,7 +14,7 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
 
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") allocating by generate\n";
+    Log::debug("ChunkHandle (%d, %d) allocating by generate\n", m_regionHash, m_hash);
 #endif
     m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, chunkOffset, lod);
 
@@ -32,7 +32,7 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
     {
 #ifdef DEBUG_ALLOCATION
         allocated++;
-        LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") deleting by generate\n";
+        Log::debug("ChunkHandle (%d, %d) deleting by generate\n", m_regionHash, m_hash);
 #endif
         m_chunk.reset(nullptr);//drop chunks that are empty
         setEmpty(true);
@@ -51,7 +51,7 @@ void ChunkHandle<_Chunk>::release()
     {
 #ifdef DEBUG_ALLOCATION
         allocated--;
-        LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") freeing ("<<allocated<<")\n";
+        Log::debug("ChunkHandle (%d, %d) freeing (%d)\n", m_regionHash, m_hash, allocated);
 #endif
     }
     m_chunk.reset(nullptr); 
@@ -67,7 +67,7 @@ void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string 
 
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    LOG(INFO)<<"ChunkHandle ("<<m_regionHash<<" ,"<<m_hash<<") allocating by read\n";
+    Log::debug("ChunkHandle (%d, %d) allocating by read\n", m_regionHash, m_hash);
 #endif
     m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, offset, lod);
 

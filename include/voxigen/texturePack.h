@@ -145,6 +145,9 @@ private:
 
     TextureInfo getTextureInfo(generic::Deserializer &deserializer);
 
+//these items are private and not used outside of the class api
+#pragma warning(push)
+#pragma warning(disable:4251)
     std::string m_name;
     std::string m_description;
     std::string m_path;
@@ -160,6 +163,7 @@ private:
 
     std::unordered_map<TextureKey, size_t> m_textureMap;
     std::vector<TextureInfo> m_textureInfo;
+#pragma warning(pop)
 };
 
 }//namespace voxigen

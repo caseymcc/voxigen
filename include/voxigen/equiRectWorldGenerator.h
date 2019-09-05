@@ -9,8 +9,10 @@
 #include "voxigen/noise.h"
 
 #include "glm_point.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/integer.hpp>
 
-#include "dt/delaunay.h"
+//#include "dt/delaunay.h"
 
 #undef None
 
@@ -321,7 +323,6 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     //    m_plateCount=plateDistribution(generator);
 
-    std::uniform_real_distribution<float> jitterDistribution(m_descriptorValues.m_plateCountMin, m_descriptorValues.m_plateCountMax);
     generateWorldOverview();
 }
 
@@ -360,7 +361,7 @@ template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 {
 
-    generatePlates();
+//    generatePlates();
     //    generateContinents();
 }
 
@@ -902,29 +903,29 @@ inline void calculateCurve(float distance, float &plate1, float &plate2, float c
 
 inline float subductionCurve(float distance)
 {
-    if(distance>0.9)
+    if(distance>0.9f)
     {
-        distance=(distance-0.9)*10.0f;
-        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.5f+0.5;
+        distance=(distance-0.9f)*10.0f;
+        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.5f+0.5f;
     }
-    else if(distance>0.8)
+    else if(distance>0.8f)
     {
-        distance=(distance-0.8)*10.0f;
-        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.3+0.2;
+        distance=(distance-0.8f)*10.0f;
+        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.3f+0.2f;
     }
-    if(distance>0.6)
+    if(distance>0.6f)
     {
-        distance=(distance-0.6)*5.0f;
-        return (distance*distance)*0.2;
+        distance=(distance-0.6f)*5.0f;
+        return (distance*distance)*0.2f;
     }
     return 0.0f;
 }
 
 inline float orogenicCurve(float distance)
 {
-    if(distance>0.6)
+    if(distance>0.6f)
     {
-        distance=(distance-0.6)*2.5f;
+        distance=(distance-0.6f)*2.5f;
 		return 1.0f/(1.0f+pow(3.0f*(1.0f-distance)/distance, 2.0f));
 //        return (distance*distance);
     }
@@ -1018,7 +1019,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 //    ChunkType::Cells &cells=chunk->getCells();
     
     typename ChunkType::CellType *cells=(typename ChunkType::CellType *)buffer;
-    size_t stride=glm::pow(2, lod);
+    size_t stride=glm::pow(2u, (unsigned int)lod);
     glm::ivec3 lodChunkSize=chunkSize/(int)stride;
     float noiseScale=m_descriptorValues.m_noiseScale/stride;
 
@@ -1075,7 +1076,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
     int seaLevel=(size.z/2);
     float heightScale=((float)size.z/2.0f);
     unsigned int validCells=0;
-    glm::ivec3 blockIndex;
+//    glm::ivec3 blockIndex;
 
     size_t index=0;
     size_t heightIndex=0;
@@ -1129,7 +1130,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
 template<typename _Grid>
 unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &startPos, const glm::ivec3 &regionSize, void *buffer, size_t bufferSize, size_t lod)
 {
-    size_t stride=glm::pow(2, lod);
+    size_t stride=glm::pow(2u, (unsigned int)lod);
     glm::ivec2 lodSize=glm::ivec2(regionSize.x, regionSize.y)/(int)stride;
 
     typename _Grid::RegionHandleType::Cell *cells=(typename _Grid::RegionHandleType::Cell *)buffer;
@@ -1205,7 +1206,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
 //
 //    HeightMapCell *cells=(HeightMapCell *)buffer;
 //
-//    size_t stride=glm::pow(2, lod);
+//    size_t stride=glm::pow(2u, (unsigned int)lod);
 //    glm::ivec3 lodSize=regionSize/(int)stride;
 //    float noiseScale=m_descriptorValues.m_noiseScale/stride;
 //

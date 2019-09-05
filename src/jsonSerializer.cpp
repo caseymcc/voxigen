@@ -466,10 +466,10 @@ uint64_t JsonUnserializer::getUInt64()
 float JsonUnserializer::getFloat()
 {
     if(m_hidden->iteratorValid)
-        return m_hidden->currentIterator->value.GetDouble();
+        return m_hidden->currentIterator->value.GetFloat();
     else if(m_hidden->valueIteratorValid)
     {
-        double value=m_hidden->currentValueIterator->GetDouble();
+        float value=m_hidden->currentValueIterator->GetFloat();
 
         advanceValueIterator();
         return value;

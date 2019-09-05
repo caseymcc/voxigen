@@ -1,5 +1,5 @@
-#ifndef _voxigen_renderCube_h_
-#define _voxigen_renderCube_h
+#ifndef _voxigen_activeVolume_h_
+#define _voxigen_activeVolume_h
 
 #include "voxigen/regularGrid.h"
 #include "voxigen/freeQueue.h"
@@ -8,29 +8,6 @@
 
 namespace voxigen
 {
-
-//enum class RenderState
-//{
-//    Idle,
-//    RequestRenderer,
-//    Meshing,
-//    Updating
-//};
-//
-//template<typename _SharedChunkHandle, typename _ChunkRenderer>
-//struct ChunkRenderInfo
-//{
-//    typedef _SharedChunkHandle SharedChunkHandle;
-//    typedef _ChunkRenderer ChunkRenderer;
-//
-//    ChunkRenderInfo():state(RenderState::Idle), renderer(nullptr) {}
-//
-//    void release() { state=RenderState::Idle; chunkHandle.reset(); renderer=nullptr; }
-//
-//    RenderState state;
-//    SharedChunkHandle chunkHandle;
-//    ChunkRenderer *renderer;
-//};
 
 template<typename _Region>
 struct RegionIndex
@@ -277,27 +254,22 @@ glm::ivec3 operator-(const RegionChunkIndex<_Region, _Chunk> &value1, const glm:
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-//RenderCube
+//ActiveVolume
 /////////////////////////////////////////////////////////////////////////////////////////
-//template<typename _Grid, typename _ChunkRenderer>
-template<typename _Grid, typename _Renderer, typename _Index>
-class RenderCube//:public RegularGridTypes<_Grid>
+template<typename _Grid, typename _Container, typename _Index>
+class ActiveVolume//:public RegularGridTypes<_Grid>
 {
 public:
     typedef typename _Grid::GridType GridType;
     typedef typename _Grid::DescriptorType DescriptorType;
-//    typedef typename _Grid::ChunkType ChunkType;
-//    typedef typename _Grid::ChunkHandleType ChunkHandleType;
-//    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
 
-    typedef _Renderer RendererType;
-    typedef std::vector<RendererType> Renderers;
-//    typedef ChunkRenderInfo<SharedChunkHandle, _ChunkRenderer> ChunkRenderInfoType;
+    typedef _Container ContainerType;
+    typedef std::vector<ContainerType> Renderers;
 
     typedef _Index Index;
 
-    RenderCube(GridType *grid, DescriptorType *descriptors, RenderPrepThread *prepThread);
-    ~RenderCube();
+    ActiveVolume(GridType *grid, DescriptorType *descriptors);
+    ~ActiveVolume();
 
     void setViewRadius(const glm::ivec3 &radius);
     void setOutlineInstance(unsigned int outlineInstanceId);
@@ -306,19 +278,20 @@ public:
     void updateCamera(const Index &index);
     void update(const Index &index);
 
-    void draw(opengl_util::Program *program, size_t offsetId);
-    void drawInfo(const glm::mat4x4 &projectionViewMat);
-    void drawOutline(opengl_util::Program *program, size_t offsetId, size_t colorId);
+//    void draw();
+//    void drawInfo(const glm::mat4x4 &projectionViewMat);
+//    void drawOutline();
 
+    glm::ivec3 relativeCameraIndex();
 //    ChunkRenderInfoType *getChunkRenderInfo(const Key &key);
-    RendererType *getRenderInfo(const Index &index);// const Key &key);
-    std::vector<RendererType *> getRenderers() { return m_renderCube; }
+    ContainerType *getRenderInfo(const Index &index);// const Key &key);
+    const std::vector<ContainerType *> &getVolume() { return m_volume; }
 
 private:
-    glm::ivec3 calcCubeSize(const glm::ivec3 &radius);
+    glm::ivec3 calcVolumeSize(const glm::ivec3 &radius);
 
-    _Renderer *getFreeRenderer();
-    void releaseRenderer(_Renderer *renderer);
+    _Container *getFreeContainer();
+    void releaseContainer(_Container *container);
 
 //    void updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size);
     void releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size);
@@ -326,14 +299,12 @@ private:
     void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size);
 
 //    void releaseChunkInfo(ChunkRenderInfoType &renderInfo);
-    void releaseInfo(_Renderer *renderInfo);
+    void releaseInfo(_Container *containerInfo);
     
     GridType *m_grid;
     const DescriptorType *m_descriptors;
-    RenderPrepThread *m_renderPrepThread;
 
     glm::ivec3 m_viewRadius;
-    unsigned int m_outlineInstanceId;
 
 //    glm::ivec3 m_cameraRegionIndex;
 //    glm::ivec3 m_cameraChunkIndex;
@@ -343,18 +314,20 @@ private:
 //    glm::ivec3 m_regionIndex;
 //    glm::ivec3 m_chunkIndex;
 
-//    std::unordered_map<Key::Type, size_t> m_renderCubeMap;
-//    std::vector<ChunkRenderInfoType> m_renderCube;
-    std::vector<RendererType *> m_renderCube;
-    glm::ivec3 m_renderCubeSize;
-    glm::ivec3 m_renderCubeCenterIndex;
 
-    std::vector<RendererType *>m_rendererReleaseQueue;
-    FreeQueue<RendererType> m_rendererQueue;
+
+//    std::unordered_map<Key::Type, size_t> m_volumeMap;
+//    std::vector<ChunkRenderInfoType> m_volume;
+    std::vector<ContainerType *> m_volume;
+    glm::ivec3 m_volumeSize;
+    glm::ivec3 m_volumeCenterIndex;
+
+    std::vector<ContainerType *>m_containerReleaseQueue;
+    FreeQueue<ContainerType> m_containerQueue;
 };
 
 }//namespace voxigen
 
-#include "renderCube.inl"
+#include "activeVolume.inl"
 
-#endif //_voxigen_renderCube_h
+#endif //_voxigen_activeVolume_h

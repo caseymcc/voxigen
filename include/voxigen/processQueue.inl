@@ -55,7 +55,7 @@ void ProcessQueue<_Grid>::addGenerateRegion(SharedRegionHandle handle, size_t lo
     {
         glm::ivec3 regionIndex=handle->regionIndex();
 
-        LOG(INFO)<<"Adding generate region ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<")";
+        Log::debug("Adding generate region (%d, %d, %d)", regionIndex.x, regionIndex.y, regionIndex.z);
     }
 #endif
     checkInputThread();
@@ -73,7 +73,8 @@ void ProcessQueue<_Grid>::addGenerate(SharedChunkHandle chunkHandle, size_t lod)
         glm::ivec3 regionIndex=chunkHandle->regionIndex();
         glm::ivec3 chunkIndex=chunkHandle->chunkIndex();
 
-        LOG(INFO)<<"Adding generate chunk ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<"  "<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<")";
+        Log::debug("Adding generate chunk (%d, %d, %d  %d, %d, %d)",
+            regionIndex.x, regionIndex.y, regionIndex.z, chunkIndex.x, chunkIndex.y, chunkIndex.z);
     }
 #endif
     checkInputThread();
@@ -215,15 +216,15 @@ typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessR
         {
         case Process::Type::UpdateQueue:
             {
-                UpdateQueueRequest *updateRequest=dynamic_cast<UpdateQueueRequest *>(request.get());
+                UpdateQueueRequest *updateRequest=static_cast<UpdateQueueRequest *>(request.get());
 
                 //position changed so update queue priority
                 ProcessCompare<ChunkType>::currentRegion=updateRequest->regionIndex;
                 ProcessCompare<ChunkType>::currentChunk=updateRequest->chunkIndex;
 
 #ifdef LOG_PROCESS_QUEUE
-                LOG(INFO)<<"Updating queue pos ("<<updateRequest->regionIndex.x<<", "<<updateRequest->regionIndex.y<<", "<<updateRequest->regionIndex.z<<"  "<<updateRequest->chunkIndex.x<<", "<<updateRequest->chunkIndex.y<<", "<<updateRequest->chunkIndex.z<<")";
-//                LOG(INFO)<<"Setting chunk pos ("<<request->regionIndex.x<<", "<<request->regionIndex.y<<", "<<request->regionIndex.z<<"  "<<request->chunkIndex.x<<", "<<request->chunkIndex.y<<", "<<request->chunkIndex.z<<")";
+                Log::debug("Updating queue pos (%d, %d, %d  %d, %d, %d)",
+                    updateRequest->regionIndex.x, updateRequest->regionIndex.y, updateRequest->regionIndex.z, updateRequest->chunkIndex.x, updateRequest->chunkIndex.y, updateRequest->chunkIndex.z);
 #endif//LOG_PROCESS_QUEUE
                 std::make_heap(m_priorityQueue.begin(), m_priorityQueue.end(), ProcessCompare<ChunkType>());
 
@@ -282,7 +283,8 @@ typename ProcessQueue<_Grid>::SharedRequest ProcessQueue<_Grid>::getNextProcessR
         glm::ivec3 regionIndex=chunkHandle->regionIndex();
         glm::ivec3 chunkIndex=chunkHandle->chunkIndex();
 
-        LOG(INFO)<<"Processing chunk ("<<regionIndex.x<<", "<<regionIndex.y<<", "<<regionIndex.z<<"  "<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<") distance "<<request->distance;
+        Log::debug("Processing chunk (%d, %d, %d  %d, %d, %d) distance %d",
+            regionIndex.x, regionIndex.y, regionIndex.z, chunkIndex.x, chunkIndex.y, chunkIndex.z, request->distance);
     }
 #endif
 

@@ -12,7 +12,7 @@
 #include "voxigen/simpleShapes.h"
 #include "voxigen/object.h"
 #include "voxigen/renderPrepThread.h"
-#include "voxigen/renderCube.h"
+#include "voxigen/activeVolume.h"
 #include "voxigen/voxigen_gltext.h"
 
 #include <string>
@@ -65,9 +65,9 @@ public:
 //    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
 
     typedef RegionChunkIndex<typename _Grid::RegionType, typename _Grid::ChunkType> RegionChunkIndexType;
-    typedef RenderCube<GridType, ChunkRendererType, RegionChunkIndexType> RenderCubeType;
+    typedef ActiveVolume<GridType, ChunkRendererType, RenderPrepThread, RegionChunkIndexType> ActiveVolumeType;
     typedef RegionIndex<typename _Grid::RegionType> RegionIndexType;
-    typedef RenderCube<GridType, RegionRendererType, RegionIndexType> RegionRenderCubeType;
+    typedef ActiveVolume<GridType, RegionRendererType, RenderPrepThread, RegionIndexType> RegionActiveVolumeType;
 
     typedef prep::RequestMesh<_Grid, ChunkRendererType> ChunkRequestMesh;
     typedef prep::RequestMesh<_Grid, RegionRendererType> RegionRequestMesh;
@@ -84,6 +84,10 @@ public:
     void updateView();
     
     void draw();
+    
+    template<size_t _drawType, typename _ActiveVolume>
+    void drawActiveVolume(_ActiveVolume &activeVolume);
+
     void update(bool &regionsUpdated, bool &chunksUpdated);
 
     void setCamera(SimpleFpsCamera *camera);
@@ -159,8 +163,8 @@ private:
 //    glm::ivec3 m_playerChunkIndex;
     RegionChunkIndexType m_playerIndex;
 
-    RenderCubeType m_renderCube;
-    RegionRenderCubeType m_regionRenderCube;
+    ActiveVolumeType m_activeChunkVolume;
+    RegionActiveVolumeType m_activeRegionVolume;
 
     gl::GLuint m_textureAtlasId;
     SharedTextureAtlas m_textureAtlas;

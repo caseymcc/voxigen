@@ -4,34 +4,13 @@
 #include "voxigen/defines.h"
 #include "voxigen/chunk.h"
 #include "voxigen/textureAtlas.h"
+#include "voxigen/meshBuffer.h"
 
 #include <array>
-
-//#include <GL/glew.h>
-#include <glbinding/gl/gl.h>
 
 namespace voxigen
 {
 
-using namespace gl;
-
-struct MeshBuffer
-{
-    MeshBuffer():valid(false), ready(false) {}
-
-    bool valid;
-    bool ready;
-
-//    unsigned int vertexArray;
-    unsigned int vertexBuffer;
-    unsigned int indexBuffer;
-    unsigned int indices;
-
-    GLenum indexType;
-
-    GLsync sync;
-//    void *sync;
-};
 
 class ChunkTextureMesh
 {

@@ -8,6 +8,9 @@
 
 #include <array>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/integer.hpp>
+
 namespace voxigen
 {
 //#define SIMPLE_MESH
@@ -227,8 +230,8 @@ Vertex indexToVertex(size_t index, size_t stride)
 template<typename _Chunk, typename _ChunkMesh>
 void addFace(_ChunkMesh &mesh, size_t face, const glm::ivec3 &position, unsigned int cellType, size_t stride)
 {
-    glm::ivec3 pos;
-    unsigned int vertIndex[4];
+//    glm::ivec3 pos;
+//    unsigned int vertIndex[4];
 
     auto faceQuad=faces[face];
     for(size_t i=0; i<4; ++i)
@@ -368,7 +371,7 @@ void checkY(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm:
 template<typename _Chunk, typename _ChunkMesh>
 void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
 {
-    size_t stride=glm::pow(2, chunk->getLod());
+    size_t stride=glm::pow(2u, (unsigned int)chunk->getLod());
     glm::ivec3 size(_Chunk::sizeX::value/stride, _Chunk::sizeY::value/stride, _Chunk::sizeZ::value/stride);
 
     const int requiredScratchSize=(size.x+1)*(size.y+1)*(size.z+1);
