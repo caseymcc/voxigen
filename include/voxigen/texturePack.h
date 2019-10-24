@@ -123,7 +123,8 @@ public:
     TexturePack();
     ~TexturePack();
 
-    bool load(const std::string &path);
+//    template<typename _FileIO=generic::StdFileIO>
+//    bool load(const std::string &path, void *userData=nullptr);
 
     size_t getLayerInfoId(std::string name);
 
@@ -138,10 +139,13 @@ public:
     size_t getResolution() const;
     std::string getPath() const;
 
+    template<typename _FileIO>
+    friend std::shared_ptr<TexturePack> generateTexturePack(const std::string &path, void *userData);
+
 private:
-    bool loadConfig(const std::string &path);
-    bool loadLayers(const std::string &path);
-    bool loadBlocks(const std::string &path);
+    bool loadConfig(generic::Deserializer &deserializer);
+    bool loadLayers(generic::Deserializer &deserializer);
+    bool loadBlocks(generic::Deserializer &deserializer);
 
     TextureInfo getTextureInfo(generic::Deserializer &deserializer);
 
@@ -165,6 +169,97 @@ private:
     std::vector<TextureInfo> m_textureInfo;
 #pragma warning(pop)
 };
+
+typedef std::shared_ptr<TexturePack> SharedTexturePack;
+
+template<typename _FileIO=generic::StdFileIO>
+inline SharedTexturePack generateTexturePack(const std::string &path, void *userData=nullptr)
+{
+    std::shared_ptr<TexturePack> texturePack(new TexturePack());
+    generic::JsonDeserializer deserializer;
+
+    typename _FileIO::Type *pathFile=generic::open<_FileIO>(path+"/pack.json", "rb", userData);
+
+    if(pathFile==nullptr)
+        return false;
+
+    typename _FileIO::Type *layerFile=generic::open<_FileIO>(path+"/layerProperties.json", "rb", userData);
+
+    if(pathFile==nullptr)
+    {
+        generic::close<_FileIO>(pathFile);
+        return false;
+    }
+
+    typename _FileIO::Type *textureFile=generic::open<_FileIO>(path+"/blockTextureMapping.json", "rb", userData);
+
+    if(pathFile==nullptr)
+    {
+        generic::close<_FileIO>(pathFile);
+        generic::close<_FileIO>(layerFile);
+        return false;
+    }
+
+    size_t packFileSize=generic::size<_FileIO>(pathFile);
+    size_t layerFileSize=generic::size<_FileIO>(layerFile);
+    size_t textureFileSize=generic::size<_FileIO>(textureFile);
+
+    size_t bufferSize=std::max(packFileSize+1, std::max(layerFileSize+1, textureFileSize+1));
+    std::string buffer(bufferSize, 0);
+    size_t readSize;
+
+//load pack info
+    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), packFileSize, pathFile);
+
+    if(readSize==0)
+    {
+        generic::close<_FileIO>(pathFile);
+        generic::close<_FileIO>(layerFile);
+        generic::close<_FileIO>(textureFile);
+        return false;
+    }
+
+    buffer[readSize]=0;
+    deserializer.parse(buffer);
+    texturePack->loadConfig(deserializer);
+
+//load layer information
+    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), layerFileSize, layerFile);
+
+    if(readSize==0)
+    {
+        generic::close<_FileIO>(pathFile);
+        generic::close<_FileIO>(layerFile);
+        generic::close<_FileIO>(textureFile);
+        return false;
+    }
+
+    buffer[readSize]=0;
+    deserializer.parse(buffer);
+    texturePack->loadLayers(deserializer);
+
+//load block textures
+    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), textureFileSize, textureFile);
+
+    if(readSize==0)
+    {
+        generic::close<_FileIO>(pathFile);
+        generic::close<_FileIO>(layerFile);
+        generic::close<_FileIO>(textureFile);
+        return false;
+    }
+
+    buffer[readSize]=0;
+    deserializer.parse(buffer);
+    texturePack->loadBlocks(deserializer);
+    
+    generic::close<_FileIO>(pathFile);
+    generic::close<_FileIO>(layerFile);
+    generic::close<_FileIO>(textureFile);
+
+    texturePack->m_path=path;
+    return texturePack;
+}
 
 }//namespace voxigen
 

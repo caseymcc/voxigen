@@ -13,8 +13,8 @@ m_lastUpdatePosition(0.0f, 0.0f, 0.0),
 m_projectionViewMatUpdated(true),
 m_camera(nullptr),
 m_queryComplete(true),
-m_activeChunkVolume(grid, &grid->getDescriptors(), &m_renderPrepThread),
-m_activeRegionVolume(grid, &grid->getDescriptors(), &m_renderPrepThread),
+m_activeChunkVolume(grid, &grid->getDescriptors()),
+m_activeRegionVolume(grid, &grid->getDescriptors()),
 m_showRegions(true),
 m_showChunks(true)
 {

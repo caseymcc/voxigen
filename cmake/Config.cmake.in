@@ -1,0 +1,32 @@
+include(CMakeFindDependencyMacro) 
+
+if("@VOXIGEN_USE_FILESYSTEM@" EQUAL "@VOXIGEN_BOOST_FILESYSTEM@")
+  find_dependency(Boost CONFIG REQUIRED filesystem)
+endif()
+
+find_dependency(glm CONFIG REQUIRED)
+find_dependency(RapidJSON CONFIG REQUIRED)
+find_dependency(gflags CONFIG REQUIRED)
+find_dependency(glog CONFIG REQUIRED)
+
+if(NOT "@VOXIGEN_OVERIDE_HASTY@")
+    find_dependency(HastyNoise CONFIG REQUIRED)
+endif()
+
+if("@VOXIGEN_RENDERING@")
+    find_dependency(glbinding CONFIG REQUIRED)
+endif()
+
+if("@VOXIGEN_TEXTURE@")
+    find_dependency(PNG)
+endif()
+
+if("@VOXIGEN_TESTAPP@" OR "@VOXIGEN_MAPGENAPP@")
+    find_dependency(glfw3 REQUIRED)
+    find_dependency(imgui CONFIG REQUIRED)
+endif()
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")
+check_required_components("@PROJECT_NAME@")

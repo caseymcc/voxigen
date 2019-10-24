@@ -65,9 +65,9 @@ public:
 //    typedef std::unordered_map<RegionHash, RegionRendererType> RegionRendererMap;
 
     typedef RegionChunkIndex<typename _Grid::RegionType, typename _Grid::ChunkType> RegionChunkIndexType;
-    typedef ActiveVolume<GridType, ChunkRendererType, RenderPrepThread, RegionChunkIndexType> ActiveVolumeType;
+    typedef ActiveVolume<GridType, ChunkRendererType, RegionChunkIndexType> ActiveVolumeType;
     typedef RegionIndex<typename _Grid::RegionType> RegionIndexType;
-    typedef ActiveVolume<GridType, RegionRendererType, RenderPrepThread, RegionIndexType> RegionActiveVolumeType;
+    typedef ActiveVolume<GridType, RegionRendererType, RegionIndexType> RegionActiveVolumeType;
 
     typedef prep::RequestMesh<_Grid, ChunkRendererType> ChunkRequestMesh;
     typedef prep::RequestMesh<_Grid, RegionRendererType> RegionRequestMesh;

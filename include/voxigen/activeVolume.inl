@@ -308,11 +308,11 @@ void ActiveVolume<_Grid, _Container, _Index>::update(const Index &index)
             for(size_t x=0; x<copySize.x; x++)
             {
 //                assert(m_volume[indexTo] == nullptr);
-                if(m_volume[indexTo])
-                    m_volume[indexTo]->refCount--;
+//                if(m_volume[indexTo])
+//                    m_volume[indexTo]->refCount--;
 
                 m_volume[indexTo]=m_volume[indexFrom];
-                m_volume[indexTo]->refCount++;
+ //               m_volume[indexTo]->refCount++;
 
                 indexFrom+=stride.x;
                 indexTo+=stride.x;
@@ -399,7 +399,7 @@ void ActiveVolume<_Grid, _Container, _Index>::releaseRegion(const glm::ivec3 &st
 
                 if(container)
                 {
-                    container->refCount--;
+//                    container->refCount--;
                     releaseInfo(container);
                 }
                 m_volume[index]=nullptr;
@@ -446,16 +446,16 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
 
                 assert(container);
 
-                if(m_volume[index])
-                {
-                    m_volume[index]->refCount--;
-                    assert(m_volume[index]->refCount>0);//suppose to be refferenced by something else
-                }
+//                if(m_volume[index])
+//                {
+//                    m_volume[index]->refCount--;
+//                    assert(m_volume[index]->refCount>0);//suppose to be refferenced by something else
+//                }
 
                 if(container)
                 {
                     m_volume[index]=container;
-                    container->refCount++;
+//                    container->refCount++;
 
 
                     //up    date chunk

@@ -88,8 +88,8 @@ public:
 
     void updatePosition(const glm::ivec3 &region, const glm::ivec3 &chunk);
 
-    glm::ivec3 size();
-    glm::ivec3 regionCellSize();
+    glm::ivec3 size() const;
+    static glm::ivec3 regionCellSize();
 
     SharedChunkHandle getChunk(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
     SharedChunkHandle getChunk(RegionHash regionHash, ChunkHash chunkHash);
@@ -260,7 +260,11 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
                 m_processQueue.updatePriorityQueue();
                 
                 if(m_processQueue.empty())
+                {
+                    //update completed before wait
+                    m_processQueue.updateCompletedQueue();
                     m_processQueue.wait(lock);
+                }
             }
             continue;
         }
@@ -481,7 +485,7 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 }
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
-glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::size()
+glm::ivec3 RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _RegionSizeY, _RegionSizeZ, _Thread>::size() const
 {
     return m_descriptors.m_size;
 }

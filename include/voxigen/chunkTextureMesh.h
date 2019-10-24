@@ -66,8 +66,19 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
     size_t vertIndex=index;
     m_verticies.resize(index+4);
 
-    const TextureAtlas::BlockEntry &block=m_textureAtlas->getBlockEntry(cellType);
-    const TextureAtlas::TextureEntry &entry=block.faces[face];
+    TextureAtlas::TextureEntry entry;
+
+    if(cellType<m_textureAtlas->size())
+    {
+        const TextureAtlas::BlockEntry &block=m_textureAtlas->getBlockEntry(cellType);
+        entry=block.faces[face];
+    }
+    else
+    {
+        entry.method=LayerMethod::unknown;
+        entry.x=0;
+        entry.y=0;
+    }
 
     short texX=entry.x;
     short texY=entry.y;

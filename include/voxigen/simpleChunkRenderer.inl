@@ -684,8 +684,8 @@ void RequestMesh<_Grid, SimpleChunkRenderer<typename _Grid::RegionType, typename
 {
     if(scratchMesh.getVerticies().capacity()==0)
     {
-        size_t vertexes=Chunk::sizeX::value*Chunk::sizeY::value*Chunk::sizeY::value*6*4; //6 faces 4 vertexes
-        size_t indexes=Chunk::sizeX::value*Chunk::sizeY::value*Chunk::sizeY::value*6*2*3; //6 faces 2 triangles per face 3 indexes per triangle 
+        size_t vertexes=Chunk::sizeX::value*Chunk::sizeY::value*Chunk::sizeZ::value*6*4; //6 faces 4 vertexes
+        size_t indexes=Chunk::sizeX::value*Chunk::sizeY::value*Chunk::sizeZ::value*6*2*3; //6 faces 2 triangles per face 3 indexes per triangle 
 
         scratchMesh.reserve(vertexes, indexes);
     }

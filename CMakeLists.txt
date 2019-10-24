@@ -7,10 +7,13 @@ option(VOXIGEN_TESTAPP "Build test app" ON)
 option(VOXIGEN_MAPGENAPP "Build mapgen app" ON)
 option(VOXIGEN_INSTALL_LIBS "Build mapgen app" OFF)
 
+message(STATUS "VOXIGEN_TESTAPP: ${VOXIGEN_TESTAPP}")
 if(VOXIGEN_TESTAPP)
     #requires texture and rendering
-    set(VOXIGEN_TEXTURE ON CACHE BOOL "Setup texture classes")
-    set(VOXIGEN_RENDERING ON CACHE BOOL "Enable simple rendering")
+    set(VOXIGEN_TEXTURE ON CACHE BOOL "Setup texture classes" FORCE)
+    set(VOXIGEN_RENDERING ON CACHE BOOL "Enable simple rendering" FORCE)
+
+    message(STATUS "VOXIGEN_RENDERING: ${VOXIGEN_RENDERING}")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/CMakeModules)

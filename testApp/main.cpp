@@ -377,16 +377,18 @@ int main(int argc, char ** argv)
 
 voxigen::SharedTextureAtlas buildTextureAtlas()
 {
-    voxigen::TexturePack texturePack;
-
     fs::path texturePackPath("resources/TexturePacks/SoA_Default");
 
-    texturePack.load(texturePackPath.string());
+    voxigen::SharedTexturePack texturePack=voxigen::generateTexturePack(texturePackPath.string());
 
-    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+//    texturePack.load(texturePackPath.string());
+
     std::vector<std::string> blockNames={"dirt", "grass", "mud", "mud_dry", "sand", "clay", "cobblestone", "stone", "granite", "slate", "snow"};
 
-    textureAtlas->build(blockNames, texturePack);
+//    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+//    textureAtlas->build(blockNames, texturePack);
+    voxigen::SharedTextureAtlas textureAtlas=generateTextureAtlas(blockNames, *texturePack);
+
     textureAtlas->save(texturePackPath.string(), "terrain");
 
     return textureAtlas;

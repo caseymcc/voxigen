@@ -9,10 +9,10 @@
 #  ifndef VOXIGEN_EXPORT
 #    ifdef VOXIGEN_EXPORTS
 /* We are building this library */
-#      define VOXIGEN_EXPORT 
+#      define VOXIGEN_EXPORT __declspec(dllexport)
 #    else
 /* We are using this library */
-#      define VOXIGEN_EXPORT 
+#      define VOXIGEN_EXPORT __declspec(dllimport)
 #    endif
 #  endif
 

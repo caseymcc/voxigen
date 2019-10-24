@@ -14,29 +14,24 @@ TexturePack::TexturePack()
 TexturePack::~TexturePack()
 {}
 
-bool TexturePack::load(const std::string &path)
+//bool TexturePack::load(const std::string &path)
+//{
+//    if(!loadConfig(path+"/pack.json"))
+//        return false;
+//
+//    if(!loadLayers(path+"/layerProperties.json"))
+//        return false;
+//
+//    if(!loadBlocks(path+"/blockTextureMapping.json"))
+//        return false;
+//
+//    m_path=path;
+//
+//    return true;
+//}
+
+bool TexturePack::loadConfig(generic::Deserializer &deserializer)
 {
-    if(!loadConfig(path+"/pack.json"))
-        return false;
-
-    if(!loadLayers(path+"/layerProperties.json"))
-        return false;
-
-    if(!loadBlocks(path+"/blockTextureMapping.json"))
-        return false;
-
-    m_path=path;
-
-    return true;
-}
-
-bool TexturePack::loadConfig(const std::string &path)
-{
-    generic::JsonDeserializer deserializer;
-
-    if(!deserializer.open(path.c_str()))
-        return false;
-
     deserializer.openObject();
     if(deserializer.key("version"))
         m_version=deserializer.getInt();
@@ -58,13 +53,8 @@ bool TexturePack::loadConfig(const std::string &path)
     return true;
 }
 
-bool TexturePack::loadLayers(const std::string &path)
+bool TexturePack::loadLayers(generic::Deserializer &deserializer)
 {
-    generic::JsonDeserializer deserializer;
-
-    if(!deserializer.open(path.c_str()))
-        return false;
-
     deserializer.openObject();
 //    if(deserializer.key("version"))
 //        m_version=deserializer.getInt();
@@ -231,13 +221,8 @@ TextureInfo TexturePack::getTextureInfo(generic::Deserializer &deserializer)
     return texture;
 }
 
-bool TexturePack::loadBlocks(const std::string &path)
+bool TexturePack::loadBlocks(generic::Deserializer &deserializer)
 {
-    generic::JsonDeserializer deserializer;
-
-    if(!deserializer.open(path.c_str()))
-        return false;
-
     deserializer.openObject();
 
     size_t version;

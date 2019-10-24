@@ -1,0 +1,80 @@
+macro(get_target_link_directories target_directory_list)
+    foreach(target ${ARGN})
+        if(TARGET ${target})
+            get_target_property(target_libraries ${target} INTERFACE_LINK_LIBRARIES)
+            if(target_libraries) 
+                #get info for targets libs
+                get_target_link_directories(${target_directory_list} ${target_libraries})
+            endif()
+
+            get_target_property(target_type ${target} TYPE)
+            if(target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "STATIC_LIBRARY"
+                OR target_type STREQUAL "SHARED_LIBRARY")
+                list(APPEND ${target_directory_list} "$<TARGET_FILE_DIR:${target}>")
+            endif ()
+        endif()
+    endforeach()
+
+    if(${target_directory_list})
+        list(REMOVE_DUPLICATES ${target_directory_list})
+    endif()
+endmacro()
+
+macro(_get_target_link_libraries addTarget target_file_list target_linker_file_list)
+    message("addTarget: ${addTarget}  target_file_list: ${target_file_list}  target_linker_file_list: ${target_linker_file_list}")
+    foreach(target ${ARGN})
+        if(TARGET ${target})
+            message("target: ${target}")
+            get_target_property(target_libraries ${target} INTERFACE_LINK_LIBRARIES)
+            if(target_libraries) 
+                #get info for targets libs
+                _get_target_link_libraries(TRUE ${target_file_list} ${target_linker_file_list} ${target_libraries})
+            endif()
+
+            if(${addTarget})
+                get_target_property(target_type ${target} TYPE)
+                if(target_type STREQUAL "SHARED_LIBRARY")
+                    list(APPEND ${target_file_list} "${target}")
+                endif()
+                if(target_type STREQUAL "STATIC_LIBRARY"
+                    OR target_type STREQUAL "SHARED_LIBRARY")
+                    message("adding: ${target}")
+                    list(APPEND ${target_linker_file_list} "${target}")
+                endif ()
+            endif()
+        endif()
+    endforeach()
+
+    if(${target_file_list})
+        list(REMOVE_DUPLICATES ${target_file_list})
+    endif()
+    if(${target_linker_file_list})
+        list(REMOVE_DUPLICATES ${target_linker_file_list})
+    endif()
+endmacro()
+
+macro(get_target_link_libraries target_file_list target_linker_file_list)
+    _get_target_link_libraries(FALSE ${target_file_list} ${target_linker_file_list} ${ARGN})
+endmacro()
+
+macro(get_target_link_libs target_list)
+    foreach(target ${ARGN})
+        if(TARGET ${target})
+            get_target_property(target_libraries ${target} INTERFACE_LINK_LIBRARIES)
+            if(target_libraries) 
+                #get info for targets libs
+                get_target_link_libs(${target_list} ${target_libraries})
+            endif()
+
+            get_target_property(target_type ${target} TYPE)
+            if(target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "STATIC_LIBRARY"
+                OR target_type STREQUAL "SHARED_LIBRARY")
+                list(APPEND ${target_list} "${target}")
+            endif ()
+        endif()
+    endforeach()
+
+    if(${target_list})
+        list(REMOVE_DUPLICATES ${target_list})
+    endif()
+endmacro()
