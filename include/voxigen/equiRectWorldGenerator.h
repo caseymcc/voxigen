@@ -309,14 +309,16 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
     };
 
-    WeatherBands weather(weatherCells);
+	glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
+	int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
+	glm::ivec2 size=m_descriptors->getSize();
+
+    WeatherBands weather(seed, influenceSize, weatherCells);
 
     chrono::high_resolution_clock::time_point time1;
     chrono::high_resolution_clock::time_point time2;
 
-    glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
-    int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
-    glm::ivec2 size=m_descriptors->getSize();
+    
 
     std::vector<float> plateMap;
     std::vector<float> plate2Map;
