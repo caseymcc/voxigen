@@ -171,6 +171,8 @@ void MapGen::draw()
     ImGui::RadioButton("Temp", &overlay, 4);
     ImGui::RadioButton("Moisture", &overlay, 5);
     ImGui::RadioButton("Moisture GreyScale", &overlay, 6);
+    ImGui::RadioButton("Weather Cells", &overlay, 7);
+    ImGui::RadioButton("Weather Bands", &overlay, 8);
 
     if(overlay!=m_overlay)
     {
@@ -233,6 +235,8 @@ void MapGen::draw()
 
     if(m_overlay > 0)
     {
+        overlayValue=0.0f;
+
         if(m_overlay==1)
             overlayValue=influenceMap[index].collision;
         else if(m_overlay==2)
@@ -243,6 +247,10 @@ void MapGen::draw()
             overlayValue=(influenceMap[index].temperature+90.0f)/160.0f;
         else if((m_overlay==5) || (m_overlay==6))
             overlayValue=std::min(influenceMap[index].moisture, 1.0f);
+        else if(m_overlay==7)
+            overlayValue=(float)influenceMap[index].weatherCell;
+        else if(m_overlay==8)
+            overlayValue=(float)influenceMap[index].weatherBand;
         ImGui::Text("Overlay: %f", overlayValue);
     }
 
@@ -468,6 +476,25 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
             if(influenceMap[i].heightBase > 0.5f)
                 color=color+glm::ivec4(value, value, value, 255);
         }
+        else if(m_overlay==7)
+        {
+            auto &plateColor=m_plateColors[influenceMap[i].weatherCell];
+
+            color.r=std::get<0>(plateColor);
+            color.g=std::get<1>(plateColor);
+            color.b=std::get<2>(plateColor);
+            color.a=255;
+        }
+        else if(m_overlay==8)
+        {
+            auto &plateColor=m_plateColors[influenceMap[i].weatherBand];
+
+            color.r=std::get<0>(plateColor);
+            color.g=std::get<1>(plateColor);
+            color.b=std::get<2>(plateColor);
+            color.a=255;
+        }
+
         
         color.r=std::min(color.r, 255);
         color.g=std::min(color.g, 255);

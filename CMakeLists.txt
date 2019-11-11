@@ -213,6 +213,7 @@ set(voxigen_headers
     include/voxigen/nativeGL.h
     include/voxigen/noise.h
     include/voxigen/object.h
+    include/voxigen/perturbedWeather.h
     include/voxigen/processQueue.h
     include/voxigen/regular2DGrid.h
     include/voxigen/regularGrid.h

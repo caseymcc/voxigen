@@ -37,6 +37,9 @@ struct VOXIGEN_EXPORT InfluenceCell
     float collision;
     float terrainScale;
     
+    size_t weatherCell;
+    size_t weatherBand;
+
     glm::vec2 direction;
     glm::vec2 airDirection;
     float airCurrent;

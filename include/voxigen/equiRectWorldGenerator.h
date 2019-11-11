@@ -9,6 +9,7 @@
 #include "voxigen/noise.h"
 #include "voxigen/tectonics.h"
 #include "voxigen/weather.h"
+#include "voxigen/perturbedWeather.h"
 #include "voxigen/wrap.h"
 #include "voxigen/fill.h"
 #include "voxigen/math_helpers.h"
@@ -301,24 +302,30 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 
     std::vector<WeatherCell> weatherCells=
     {
-        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
-        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
-        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
-        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
-        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
-        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+//        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+//        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+//        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+//        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+//        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+//        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+        {"South Polar Cell"  , rads(-90.0f), rads(-60.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"South Ferrell Cell", rads(-60.0f), rads(-30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"South Hadley Cell" , rads(-30.0f), rads(0.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"Noth Hadley Cell"  , rads(0.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"North Ferrell Cell", rads(30.0f) , rads(60.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+        {"North Polar Cell"  , rads(60.0f) , rads(90.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+
     };
 
 	glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
 	int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
 	glm::ivec2 size=m_descriptors->getSize();
 
-    WeatherBands weather(seed, influenceSize, weatherCells);
+//    WeatherBands weather(weatherCells);
+    PerturbedWeatherBands weather(m_plateSeed+10, influenceSize, weatherCells);
 
     chrono::high_resolution_clock::time_point time1;
     chrono::high_resolution_clock::time_point time2;
-
-    
 
     std::vector<float> plateMap;
     std::vector<float> plate2Map;
@@ -687,6 +694,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         m_influenceMap[i].direction.y=sphericalDirection.z;
 
 //air currents determined by banding and random vectors from before
+        glm::vec2 latLong(sphericalPoint.y, sphericalPoint.z);
         float latitude=sphericalPoint.z;
         float dir=1.0f;
         glm::vec2 bandDirection;
@@ -694,9 +702,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         if(sphericalPoint.z<0.0f)
             dir=-1.0f;
 
-        bandDirection=weather.getWindDirection(latitude);
-//        m_influenceMap[i].airDirection=bandDirection;// (bandDirection+m_influenceMap[i].airDirection)/2.0f;
-        m_influenceMap[i].airDirection=(bandDirection+m_influenceMap[i].airDirection)/2.0f;
+        m_influenceMap[i].weatherCell=weather.getCellIndex(latLong);
+        m_influenceMap[i].weatherBand=weather.getBandIndex(latLong);
+
+        bandDirection=weather.getWindDirection(latLong);
+        m_influenceMap[i].airDirection=bandDirection;
+//        m_influenceMap[i].airDirection=(bandDirection+m_influenceMap[i].airDirection)/2.0f;
 
 //build terrain
         bool oceanPlate=(details.height<0.5f);
@@ -745,7 +756,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         m_influenceMap[i].temperature=getTemperature(latitude);
 
 //moisture
-        float bandMoisture=weather.getMoisture(latitude);
+        float bandMoisture=weather.getMoisture(latLong);
 
         m_influenceMap[i].moistureCapacity=bandMoisture*0.5f;
         if(m_influenceMap[i].heightBase<0.5)
