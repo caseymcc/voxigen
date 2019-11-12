@@ -60,6 +60,7 @@ public:
 
     void generateWeatherBands(const std::vector<WeatherCell> &cells, std::vector<WeatherBand> &bands)
     {
+        float prevFrontUpperLatitude=0.0f;
         float prevFrontSize=0.0f;
         float prevMoisture=m_cells[0].moisture;
 
@@ -74,15 +75,24 @@ public:
             cellBand.name=current.name;
 
             float upperLatitude=current.upperLatitude;//current.latitude+(current.size*0.5f);
-            float frontSize=(M_PI_2-abs(upperLatitude))*(20.0f/90.0f);
+//            float frontSize=(M_PI_2-abs(upperLatitude))*(20.0f/90.0f);
             float currentSize=current.upperLatitude-current.lowerLatitude;
+            float nextSize=next.upperLatitude-next.lowerLatitude;
 
-            cellBand.size=currentSize-(prevFrontSize*0.5f)-(frontSize*0.5f);
-            //            cellBand.latitude=current.latitude+(prevFrontSize*0.25f)-(frontSize*0.25f
-            float currentLatitude=(currentSize/2.0f)+current.lowerLatitude;
-            float cellBandLatitude=currentLatitude+(prevFrontSize*0.25f)-(frontSize*0.25f);
-            cellBand.lowerLatitude=cellBandLatitude-(cellBand.size*0.5f);
-            cellBand.upperLatitude=cellBandLatitude+(cellBand.size*0.5f);
+            float frontRatio=0.2f;//(M_PI_2-abs(upperLatitude))*(0.4f/M_PI_2);
+            float frontLowerLatitude=current.upperLatitude-(currentSize*frontRatio);
+            float frontUpperLatitude=current.upperLatitude+(nextSize*frontRatio);
+
+//            cellBand.size=currentSize-(prevFrontSize*0.5f)-(frontSize*0.5f);
+//            cellBand.latitude=current.latitude+(prevFrontSize*0.25f)-(frontSize*0.25f
+//            float currentLatitude=(currentSize/2.0f)+current.lowerLatitude;
+//            float cellBandLatitude=currentLatitude+(prevFrontSize*0.25f)-(frontSize*0.25f);
+//            cellBand.lowerLatitude=cellBandLatitude-(cellBand.size*0.5f);
+//            cellBand.upperLatitude=cellBandLatitude+(cellBand.size*0.5f);
+            cellBand.lowerLatitude=prevFrontUpperLatitude;
+            cellBand.upperLatitude=frontLowerLatitude;
+            cellBand.size=cellBand.upperLatitude-cellBand.lowerLatitude;
+
             cellBand.moistureLower=(current.moisture+prevMoisture)*0.5f;
             cellBand.moistureMiddle=current.moisture;
 
@@ -93,10 +103,10 @@ public:
                 frontMoisture=0.2f;
 
             front.name=current.name+"/"+next.name+" front";
-            front.size=frontSize;
+            front.size=frontUpperLatitude-frontLowerLatitude;// frontSize;
             float frontLatitude=upperLatitude;
-            front.lowerLatitude=frontLatitude-(front.size*0.5f);
-            front.upperLatitude=frontLatitude+(front.size*0.5f);
+            front.lowerLatitude=frontLowerLatitude;// frontLatitude-(front.size*0.5f);
+            front.upperLatitude=frontUpperLatitude;// frontLatitude+(front.size*0.5f);
             front.moistureLower=(current.moisture+frontMoisture)*0.5f;
             front.moistureMiddle=frontMoisture;
             front.moistureUpper=(next.moisture+frontMoisture)*0.5f;
@@ -106,7 +116,8 @@ public:
 
             bands.push_back(front);
 
-            prevFrontSize=frontSize;
+            prevFrontUpperLatitude=frontUpperLatitude;
+//            prevFrontSize=frontSize;
             prevMoisture=frontMoisture;
         }
 
@@ -116,12 +127,15 @@ public:
             WeatherBand cellBand;
 
             cellBand.name=current.name;
-            float currentSize=current.upperLatitude-current.lowerLatitude;
-            cellBand.size=currentSize-(prevFrontSize*0.5f);
-            float currentLatitude=(currentSize/2.0f)+current.lowerLatitude;
-            float cellBandLatitude=currentLatitude+(prevFrontSize*0.25f);
-            cellBand.lowerLatitude=cellBandLatitude-(cellBand.size*0.5f);
-            cellBand.upperLatitude=cellBandLatitude+(cellBand.size*0.5f);
+//            float currentSize=current.upperLatitude-current.lowerLatitude;
+//            cellBand.size=currentSize-(prevFrontSize*0.5f);
+//            float currentLatitude=(currentSize/2.0f)+current.lowerLatitude;
+//            float cellBandLatitude=currentLatitude+(prevFrontSize*0.25f);
+//            cellBand.lowerLatitude=cellBandLatitude-(cellBand.size*0.5f);
+//            cellBand.upperLatitude=cellBandLatitude+(cellBand.size*0.5f);
+            cellBand.lowerLatitude=prevFrontUpperLatitude;
+            cellBand.upperLatitude=current.upperLatitude;
+            cellBand.size=cellBand.upperLatitude-cellBand.lowerLatitude;
             cellBand.moistureLower=(current.moisture+prevMoisture)*0.5f;
             cellBand.moistureMiddle=current.moisture;
             cellBand.moistureUpper=current.moisture;

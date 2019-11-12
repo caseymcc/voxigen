@@ -33,7 +33,7 @@ public:
         size_t simdLevel=HastyNoise::GetFastestSIMD();
         std::unique_ptr<HastyNoise::NoiseSIMD> noise=HastyNoise::CreateNoise(seed, simdLevel);
 
-        glm::ivec2 noiseSize(size.x, m_cells.size());
+        glm::ivec2 noiseSize(size.x, m_cells.size()-1);
         int noiseVectorSize=HastyNoise::AlignedSize(noiseSize.x*noiseSize.y, simdLevel);
 
         std::unique_ptr<HastyNoise::VectorSet> noiseSet=std::make_unique<HastyNoise::VectorSet>(simdLevel);
@@ -62,8 +62,9 @@ public:
             }
         }
 
+
         noise->SetNoiseType(HastyNoise::NoiseType::Perlin);
-        noise->SetFrequency(0.01f);
+        noise->SetFrequency(0.003f);
 //        noise->SetFractalLacunarity(2.0f);
 //        noise->SetFractalOctaves(4);
         noise->FillSet(noiseMap.data(), noiseSet.get());
@@ -87,16 +88,10 @@ public:
             for(int x=0; x<size.x; x++)
             {
                 WeatherCellInfo &info=infos[x];
-                float lowerNoise=noiseMap[(i*m_size.x)+x];
-                float upperNoise=noiseMap[((i+1)*m_size.x)+x];
-
-                if(upperNoise>0.0f)
-                    info.upperLatitude=cell.upperLatitude+upperNoise*(nextCellSize*0.5f);
-                else
-                    info.upperLatitude=cell.upperLatitude+upperNoise*(cellSize*0.5f);
-
+                
                 if(i>0)
                 {
+                    float lowerNoise=noiseMap[((i-1)*m_size.x)+x];
                     if(lowerNoise>0.0f)
                         info.lowerLatitude=cell.lowerLatitude+lowerNoise*(cellSize*0.5f);
                     else
@@ -104,6 +99,14 @@ public:
                 }
                 else
                     info.lowerLatitude=cell.lowerLatitude;
+
+                float upperNoise=noiseMap[(i*m_size.x)+x];
+                if(upperNoise>0.0f)
+                    info.upperLatitude=cell.upperLatitude+upperNoise*(nextCellSize*0.5f);
+                else
+                    info.upperLatitude=cell.upperLatitude+upperNoise*(cellSize*0.5f);
+
+                
 
                 info.size=info.upperLatitude-info.lowerLatitude;
             }
@@ -122,7 +125,7 @@ public:
             for(int x=0; x<size.x; x++)
             {
                 WeatherCellInfo &info=infos[x];
-                float lowerNoise=noiseMap[(i*m_size.x)+x];
+                float lowerNoise=noiseMap[((i-1)*m_size.x)+x];
 
                 info.upperLatitude=cell.upperLatitude;
 
@@ -137,6 +140,10 @@ public:
 
         std::vector<WeatherCell> tempCells(m_cells.begin(), m_cells.end());
         std::vector<WeatherBand> tempBands;
+
+        //get noise to modify the cell fronts
+//        noise->SetSeed(seed+1);
+//        noise->FillSet(noiseMap.data(), noiseSet.get());
 
         m_bandsInfo.resize(m_bands.size());
         for(int i=0; i<m_bands.size(); i++) 
