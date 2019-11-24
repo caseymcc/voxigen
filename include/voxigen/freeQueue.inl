@@ -40,10 +40,10 @@ typename FreeQueue<_Type>::Type *FreeQueue<_Type>::get()
             
             for(size_t i=0; i<growSize; ++i)
             {
-                Type item=new Type();
+                Type *item=new Type();
 
-                m_allItems.push_back(&item);
-                m_freeItems.push_back(&item);
+                m_allItems.push_back(item);
+                m_freeItems.push_back(item);
             }
         }
 

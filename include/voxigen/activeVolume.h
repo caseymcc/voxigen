@@ -5,6 +5,7 @@
 #include "voxigen/freeQueue.h"
 
 #include <memory>
+#include <functional>
 
 namespace voxigen
 {
@@ -92,6 +93,14 @@ struct RegionIndex
     void incZ()
     {
         index.z++;
+    }
+
+    std::string pos()
+    {
+        size_t size=std::snprintf(nullptr, 0, "(%d, %d, %d)", index.x, index.y, index.z);
+        std::string value(size, 0);
+        std::snprintf(&value[0], size+1, "(%d, %d, %d)", index.x, index.y, index.z);
+        return value;
     }
 
     glm::ivec3 index;
@@ -227,6 +236,14 @@ struct RegionChunkIndex
 
     glm::ivec3 region;
     glm::ivec3 chunk;
+
+    std::string pos()
+    {
+        size_t size=std::snprintf(nullptr, 0, "(%d, %d, %d) (%d, %d, %d)", region.x, region.y, region.z, chunk.x, chunk.y, chunk.z);
+        std::string value(size, 0);
+        std::snprintf(&value[0], size+1, "(%d, %d, %d) (%d, %d, %d)", region.x, region.y, region.z, chunk.x, chunk.y, chunk.z);
+        return value;
+    }
 };
 
 template<typename _Region, typename _Chunk>
@@ -268,15 +285,20 @@ public:
 
     typedef _Index Index;
 
-    ActiveVolume(GridType *grid, DescriptorType *descriptors);
+    typedef std::function<_Container *()> GetContainer;
+    typedef std::function<void (_Container *)> ReleaseContainer;
+
+    ActiveVolume(GridType *grid, DescriptorType *descriptors, GetContainer getContainer, ReleaseContainer releaseContainer);
     ~ActiveVolume();
 
     void setViewRadius(const glm::ivec3 &radius);
+    size_t getContainerCount() { return m_containerCount; }
+
     void setOutlineInstance(unsigned int outlineInstanceId);
 
-    void init(const Index &index);
+    void init(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
     void updateCamera(const Index &index);
-    void update(const Index &index);
+    void update(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
 
 //    void draw();
 //    void drawInfo(const glm::mat4x4 &projectionViewMat);
@@ -287,24 +309,31 @@ public:
     ContainerType *getRenderInfo(const Index &index);// const Key &key);
     const std::vector<ContainerType *> &getVolume() { return m_volume; }
 
+    void releaseInfo(_Container *containerInfo);
 private:
     glm::ivec3 calcVolumeSize(const glm::ivec3 &radius);
 
     _Container *getFreeContainer();
-    void releaseContainer(_Container *container);
+    void releaseFreeContainer(_Container *container);
+
+    void getMissingContainers(std::vector<ContainerType *> &load);
+
+    GetContainer getContainer;
+    ReleaseContainer releaseContainer;
 
 //    void updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size);
-    void releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size);
+    void releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size, std::vector<ContainerType *> &release);
 //    void getRegion(const glm::ivec3 &start, const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, const glm::ivec3 &size);
-    void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size);
+    void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, std::vector<ContainerType *> &load);
 
 //    void releaseChunkInfo(ChunkRenderInfoType &renderInfo);
-    void releaseInfo(_Container *containerInfo);
+    
     
     GridType *m_grid;
     const DescriptorType *m_descriptors;
 
     glm::ivec3 m_viewRadius;
+    size_t m_containerCount;
 
 //    glm::ivec3 m_cameraRegionIndex;
 //    glm::ivec3 m_cameraChunkIndex;

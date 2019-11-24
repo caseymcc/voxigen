@@ -99,7 +99,11 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
     {
         m_noiseScale=0.001f;
 
+        m_heightmapFrequency=0.005f;
+        m_heightmapOctaves=2;
+        m_heightmapLacunarity=2.2f;
         //    contientFrequency=1.0;
+
         m_continentFrequency=0.005f;
         m_continentOctaves=2;
         m_continentLacunarity=2.2f;
@@ -138,6 +142,11 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
     void init(IGridDescriptors *gridDescriptors);
 
     float m_noiseScale;
+    
+    float m_heightmapFrequency;
+    int m_heightmapOctaves;
+    float m_heightmapLacunarity;
+
     float m_continentFrequency;
     int m_continentOctaves;
     float m_continentLacunarity;
@@ -209,6 +218,7 @@ private:
     EquiRectDescriptors m_descriptorValues;
 
     size_t m_simdLevel;
+    std::unique_ptr<HastyNoise::NoiseSIMD> m_heightmapNoise;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_cellularNoise;
@@ -293,6 +303,12 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     assert(m_descriptors->m_chunkSize==glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value));
     int seed=m_descriptors->m_seed;
     m_simdLevel=HastyNoise::GetFastestSIMD();
+
+    m_heightmapNoise=HastyNoise::CreateNoise(seed, m_simdLevel);
+    m_heightmapNoise->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
+    m_heightmapNoise->SetFrequency(m_descriptorValues.m_heightmapFrequency);
+    m_heightmapNoise->SetFractalLacunarity(m_descriptorValues.m_heightmapLacunarity);
+    m_heightmapNoise->SetFractalOctaves(m_descriptorValues.m_heightmapOctaves);
 
     m_continentPerlin=HastyNoise::CreateNoise(seed, m_simdLevel);
 
@@ -568,13 +584,13 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 //    m_continentPerlin->SetFrequency(m_descriptorValues.m_continentFrequency);
 //    m_continentPerlin->SetFractalLacunarity(m_descriptorValues.m_continentLacunarity);
 //    m_continentPerlin->SetFractalOctaves(m_descriptorValues.m_continentOctaves);
-    m_continentPerlin->SetFrequency(0.01F);
-    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFrequency(0.01f);
+    m_continentPerlin->SetFractalLacunarity(2.0f);
     m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(heightMap.data(), m_influenceVectorSet.get());
 
-    m_continentPerlin->SetFrequency(0.05F);
-    m_continentPerlin->SetFractalLacunarity(2.0F);
+    m_continentPerlin->SetFrequency(0.05f);
+    m_continentPerlin->SetFractalLacunarity(2.0f);
     m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(terrainScaleMap.data(), m_influenceVectorSet.get());
 
@@ -1165,7 +1181,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
         }
     }
 
-    m_continentPerlin->FillSet(regionHeightMap.data(), regionVectorSet.get());
+    m_heightmapNoise->FillSet(regionHeightMap.data(), regionVectorSet.get());
 
     index=0;
     for(int y=0; y<regionSize.y; y+=stride)
@@ -1283,7 +1299,7 @@ void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, co
         }
     }
 
-    m_continentPerlin->FillSet(heightMap.data(), vectorSet.get());
+    m_heightmapNoise->FillSet(heightMap.data(), vectorSet.get());
 //    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodSize.x, lodSize.y, 1);
 }
 

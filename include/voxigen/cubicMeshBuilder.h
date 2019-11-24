@@ -233,7 +233,9 @@ void addFace(_ChunkMesh &mesh, size_t face, const glm::ivec3 &position, unsigned
 //    glm::ivec3 pos;
 //    unsigned int vertIndex[4];
 
-    auto faceQuad=faces[face];
+//    auto faceQuad=faces[face];
+    auto faceQuad=facesWithNormal[face];
+
     for(size_t i=0; i<4; ++i)
     {
         faceQuad[i]=(faceQuad[i]+position)*(int)stride;

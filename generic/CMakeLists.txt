@@ -68,6 +68,7 @@ set(generic_headers
     generic/filesystem.h
     generic/jsonSerializer.h
     generic/log.h
+    generic/objectHeap.h
     generic/serializer.h
     generic/stdFileIO.h
     generic/types.h

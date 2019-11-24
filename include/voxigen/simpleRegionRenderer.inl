@@ -388,78 +388,79 @@ void RegionRenderer<_RegionHandle>::updateOutlineProgramProjection(const glm::ma
     m_outlineProgram.uniform(m_outlineProjectionViewId)=projection;
 }
 
-namespace prep
-{
-template<typename _Grid>
-TexturedMesh RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>::scratchMesh;
-
-/////////////////////////////////////////////////////////////////////////
-//This is all happening inside the renderPrep thread so a opengl context is 
-//currently valid and the renderer is "locked" for changes, you should not
-//change any of the renders state
-/////////////////////////////////////////////////////////////////////////
-template<typename _Grid>
-void RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>::process()
-{
-    glm::ivec3 regionSize=details::regionCellSize<Region, Chunk>();
-
-    if(scratchMesh.getVertexes().capacity()==0)
-    {
-        //allocate worst case as this is scratch memory and will be reused
-        size_t vertexCount=regionSize.x*regionSize.y*4; //4 vertexes
-        size_t indexCount=regionSize.x*regionSize.y*2*3; //6 faces 2 triangles per face 3 indexes per triangle 
-
-        scratchMesh.reserve(vertexCount, indexCount);
-    }
-
-    SharedRegionHandle regionHandle=renderer->getHandle();
-
-    if(regionHandle->empty())
-    {
-        mesh.valid=false;
-        mesh.indices=0;
-        assert(false);//requesting mesh on empty region
-        return;
-    }
-#ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"RenderPrepThread - RegionRenderer "<<renderer<<"("<<renderer->getHandle()->getHash()<<") building mesh";
-#endif//LOG_PROCESS_QUEUE
-
-    mesh.indexType=(unsigned int)gl::GL_UNSIGNED_INT;
-
-    gl::glGenBuffers(1, &mesh.vertexBuffer);
-    gl::glGenBuffers(1, &mesh.indexBuffer);
-#ifdef LOG_PROCESS_QUEUE
-    LOG(INFO)<<"RenderPrepThread - RegionRenderer "<<renderer<<"("<<renderer->getHandle()->getHash()<<") building mesh"<<" ("<<mesh.vertexBuffer<<", "<<mesh.indexBuffer<<")";
-#endif//LOG_PROCESS_QUEUE
-
-    scratchMesh.clear();
-    scratchMesh.setTextureAtlas(textureAtlas);
-
-    glm::ivec2 cellsSize=glm::ivec2(regionSize.x, regionSize.y);
-    buildHeightmapMesh(scratchMesh, regionHandle->getHeightMap(), cellsSize, regionHandle->getHeighMapLod());
-
-    auto &vertexes=scratchMesh.getVertexes();
-    std::vector<int> &indexes=scratchMesh.getIndexes();
-
-    mesh.ready=false;
-
-    if(!indexes.empty())
-    {
-        gl::glBindBuffer(gl::GL_ARRAY_BUFFER, mesh.vertexBuffer);
-        gl::glBufferData(gl::GL_ARRAY_BUFFER, vertexes.size()*sizeof(TexturedMesh::Vertex), vertexes.data(), gl::GL_STATIC_DRAW);
-        //        assert(gl::glGetError()==gl::GL_NO_ERROR);
-
-        gl::glBindBuffer(gl::GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-        gl::glBufferData(gl::GL_ELEMENT_ARRAY_BUFFER, indexes.size()*sizeof(uint32_t), indexes.data(), gl::GL_STATIC_DRAW);
-        //        assert(gl::glGetError()==gl::GL_NO_ERROR);
-
-        mesh.sync=gl::glFenceSync(gl::GL_SYNC_GPU_COMMANDS_COMPLETE, gl::UnusedMask::GL_NONE_BIT);
-    }
-
-    mesh.valid=true;
-    mesh.indices=indexes.size();
-}
-
-}//namespace prep
+//namespace prep
+//{
+//template<typename _Grid>
+//TexturedMesh RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>::scratchMesh;
+//
+///////////////////////////////////////////////////////////////////////////
+////This is all happening inside the renderPrep thread so a opengl context is 
+////currently valid and the renderer is "locked" for changes, you should not
+////change any of the renders state
+///////////////////////////////////////////////////////////////////////////
+//template<typename _Grid>
+//void RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>::process()
+//{
+//    glm::ivec3 regionSize=details::regionCellSize<Region, Chunk>();
+//
+//    if(scratchMesh.getVertexes().capacity()==0)
+//    {
+//        //allocate worst case as this is scratch memory and will be reused
+//        size_t vertexCount=regionSize.x*regionSize.y*4; //4 vertexes
+//        size_t indexCount=regionSize.x*regionSize.y*2*3; //6 faces 2 triangles per face 3 indexes per triangle 
+//
+//        scratchMesh.reserve(vertexCount, indexCount);
+//    }
+//
+//    SharedRegionHandle regionHandle=renderer->getHandle();
+//
+//    if(regionHandle->empty())
+//    {
+//        mesh.valid=false;
+//        mesh.indices=0;
+//        assert(false);//requesting mesh on empty region
+//        return;
+//    }
+//#ifdef LOG_PROCESS_QUEUE
+//    LOG(INFO)<<"RenderPrepThread - RegionRenderer "<<renderer<<"("<<renderer->getHandle()->getHash()<<") building mesh";
+//#endif//LOG_PROCESS_QUEUE
+//
+//    mesh.indexType=(unsigned int)gl::GL_UNSIGNED_INT;
+//
+//    gl::glGenBuffers(1, &mesh.vertexBuffer);
+//    gl::glGenBuffers(1, &mesh.indexBuffer);
+//#ifdef LOG_PROCESS_QUEUE
+//    LOG(INFO)<<"RenderPrepThread - RegionRenderer "<<renderer<<"("<<renderer->getHandle()->getHash()<<") building mesh"<<" ("<<mesh.vertexBuffer<<", "<<mesh.indexBuffer<<")";
+//#endif//LOG_PROCESS_QUEUE
+//
+//    scratchMesh.clear();
+//    scratchMesh.setTextureAtlas(textureAtlas);
+//
+//    glm::ivec2 cellsSize=glm::ivec2(regionSize.x, regionSize.y);
+//    glm::ivec2 heightRange;
+//    buildHeightmapMesh(scratchMesh, regionHandle->getHeightMap(), cellsSize, heightRange, regionHandle->getHeighMapLod());
+//
+//    auto &vertexes=scratchMesh.getVertexes();
+//    std::vector<int> &indexes=scratchMesh.getIndexes();
+//
+//    mesh.ready=false;
+//
+//    if(!indexes.empty())
+//    {
+//        gl::glBindBuffer(gl::GL_ARRAY_BUFFER, mesh.vertexBuffer);
+//        gl::glBufferData(gl::GL_ARRAY_BUFFER, vertexes.size()*sizeof(TexturedMesh::Vertex), vertexes.data(), gl::GL_STATIC_DRAW);
+//        //        assert(gl::glGetError()==gl::GL_NO_ERROR);
+//
+//        gl::glBindBuffer(gl::GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+//        gl::glBufferData(gl::GL_ELEMENT_ARRAY_BUFFER, indexes.size()*sizeof(uint32_t), indexes.data(), gl::GL_STATIC_DRAW);
+//        //        assert(gl::glGetError()==gl::GL_NO_ERROR);
+//
+//        mesh.sync=gl::glFenceSync(gl::GL_SYNC_GPU_COMMANDS_COMPLETE, gl::UnusedMask::GL_NONE_BIT);
+//    }
+//
+//    mesh.valid=true;
+//    mesh.indices=indexes.size();
+//}
+//
+//}//namespace prep
 }//namespace voxigen

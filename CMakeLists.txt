@@ -284,6 +284,7 @@ if(VOXIGEN_RENDERING)
         include/voxigen/initOpengl.h
         include/voxigen/glm_point.h
         include/voxigen/nativeGL.h
+        include/voxigen/openglDebug.h
         include/voxigen/renderAction.h
         include/voxigen/renderPrepThread.h
         include/voxigen/simpleChunkRenderer.h
@@ -292,7 +293,7 @@ if(VOXIGEN_RENDERING)
         include/voxigen/simpleShapes.h
     )
 
-    set(voxigen_inline
+    set(voxigen_inline ${voxigen_inline}
         include/voxigen/renderPrepThread.inl
         include/voxigen/simpleChunkRenderer.inl
         include/voxigen/simpleRegionRenderer.inl
@@ -302,7 +303,8 @@ if(VOXIGEN_RENDERING)
     set(voxigen_sources ${voxigen_sources}
         src/initOpengl.cpp
         src/nativeGL.cpp
-        src/renderPrepThread.cpp
+        src/openglDebug.cpp
+#        src/renderPrepThread.cpp
     )
 
     set(voxigen_libraries ${voxigen_libraries} 

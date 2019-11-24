@@ -111,6 +111,10 @@ public:
 
     size_t memoryUsed() { return m_memoryUsed; }
 
+    bool inUse() { return (m_inUse>0); }
+    void addInUse() { m_inUse++; }
+    void removeInUse() { m_inUse--; }
+
 private:
     template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
     friend class RegularGrid;
@@ -129,6 +133,8 @@ private:
     ChunkHash m_hash;
     glm::ivec3 m_chunkIndex;
     UniqueChunk m_chunk;
+
+    size_t m_inUse;
 
     glm::ivec3 m_regionOffset;
 

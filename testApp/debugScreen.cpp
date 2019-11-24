@@ -102,6 +102,9 @@ void DebugScreen::updateChunkInfo(World *world, WorldRenderer *renderer)
 
     for(ChunkRenderer *chunkRenderer:chunkRenderers)
     {
+        if(!chunkRenderer)
+            continue;
+
         if(chunkRenderer->getChunkIndex() == cameraChunkIndex)
             cameraChunk=chunkRenderer;
         if(chunkRenderer->getChunkIndex() == m_renderingOptions->playerChunkIndex)

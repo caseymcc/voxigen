@@ -17,6 +17,7 @@ public:
 
     void createSharedContext();
     void makeCurrent();
+    void releaseCurrent();
 
 private:
 #pragma warning(push)

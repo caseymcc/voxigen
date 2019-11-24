@@ -80,5 +80,17 @@ void NativeGL::makeCurrent()
 
 }
 
+void NativeGL::releaseCurrent()
+{
+#if defined(_WIN32) || defined(_WIN64)
+    wglMakeCurrent(hidden->m_dc, nullptr);
+#elif __linux__
+    glXMakeCurrent(hidden->m_display, hidden->m_drawable, nullptr);
+#elif __APPLE__
+    CGLSetCurrentContext(nullptr);
+#endif
+
+}
+
 }//namespace voxigen
 

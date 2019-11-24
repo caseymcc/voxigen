@@ -67,7 +67,7 @@ void buildVertices(std::vector<glm::ivec3> &vertices, size_t &vertIndex, const s
 }
 
 template<typename _Cell, bool negY>
-void buildVertices_x(std::vector<glm::ivec3> &vertexes, size_t &vertIndex, const std::vector<_Cell> &cells, const glm::ivec2 &cellsSize, size_t &cellIndex, glm::ivec3 &position, size_t stride)
+void buildVertices_x(std::vector<glm::ivec3> &vertexes, size_t &vertIndex, const std::vector<_Cell> &cells, const glm::ivec2 &cellsSize, size_t &cellIndex, glm::ivec3 &position, size_t stride, const glm::ivec2 &heightRange)
 {
     position.x=0;
 
@@ -92,7 +92,7 @@ void buildVertices_x(std::vector<glm::ivec3> &vertexes, size_t &vertIndex, const
 }
 
 template<typename _Mesh, typename _Cell>
-void buildHeightmapMesh(_Mesh &mesh, const std::vector<_Cell> &cells, const glm::ivec2 &cellsSize, size_t lod)
+void buildHeightmapMesh(_Mesh &mesh, const std::vector<_Cell> &cells, const glm::ivec2 &cellsSize, const glm::ivec2 &heightRange, size_t lod)
 {
     size_t stride=glm::pow(2u, (unsigned int)lod);
     glm::ivec2 size=cellsSize/(int)stride;
@@ -103,17 +103,17 @@ void buildHeightmapMesh(_Mesh &mesh, const std::vector<_Cell> &cells, const glm:
 
     std::vector<glm::ivec3> vertexes((size.x+1)*(size.y+1));
     
-    buildVertices_x<_Cell, false>(vertexes, vertIndex, cells, cellsSize, index, position, stride);
+    buildVertices_x<_Cell, false>(vertexes, vertIndex, cells, cellsSize, index, position, stride, heightRange);
     position.y+=stride;
     for(size_t y=stride; y<cellsSize.y; y+=stride)
     {
-        buildVertices_x<_Cell, true>(vertexes, vertIndex, cells, cellsSize, index, position, stride);
+        buildVertices_x<_Cell, true>(vertexes, vertIndex, cells, cellsSize, index, position, stride, heightRange);
         position.y+=stride;
 //        index++;
 //        vertIndex++;
     }
     index-=size.x;
-    buildVertices_x<_Cell, false>(vertexes, vertIndex, cells, cellsSize, index, position, stride);
+    buildVertices_x<_Cell, false>(vertexes, vertIndex, cells, cellsSize, index, position, stride, heightRange);
 
     std::vector<typename _Mesh::Vertex> &meshVertexes=mesh.getVertexes();
     std::vector<int> &meshIndexes=mesh.getIndexes();
@@ -175,7 +175,7 @@ void buildHeightmapMesh(_Mesh &mesh, const std::vector<_Cell> &cells, const glm:
             position.x+=stride;
             index++;
         }
-        index++;
+//        index++;
         
         position.y+=stride;
     }

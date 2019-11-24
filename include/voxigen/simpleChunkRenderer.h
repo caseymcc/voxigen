@@ -122,6 +122,11 @@ public:
 
     void clear();
 
+    float distanceTo(const glm::ivec3 &region, const glm::ivec3 &chunk)
+    {
+        return details::distance<RegionType, ChunkType>(m_chunkHandle->regionIndex(), m_chunkHandle->chunkIndex(), region, chunk);
+    }
+
     unsigned int refCount;
 
 private:
@@ -182,27 +187,27 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////////////
 //Prep thread mesh code for SimpleChunkRenderer
 /////////////////////////////////////////////////////////////////////////////////////////////
-namespace prep
-{
-template<typename _Grid>
-struct RequestMesh<_Grid, SimpleChunkRenderer<typename _Grid::RegionType, typename _Grid::ChunkType>>:public Request
-{
-    typedef typename _Grid::RegionType Region;
-    typedef typename _Grid::ChunkType Chunk;
-    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
-    typedef SimpleChunkRenderer<Region, Chunk> ChunkRenderer;
-
-    RequestMesh(ChunkRenderer const *renderer, TextureAtlas const *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
-
-    void process() override;
-
-    static ChunkTextureMesh scratchMesh;
-    ChunkRenderer const *renderer;
-    TextureAtlas const *textureAtlas;
-    MeshBuffer mesh;
-};
-
-}//namespace prep
+//namespace prep
+//{
+//template<typename _Grid>
+//struct RequestMesh<_Grid, SimpleChunkRenderer<typename _Grid::RegionType, typename _Grid::ChunkType>>:public Request
+//{
+//    typedef typename _Grid::RegionType Region;
+//    typedef typename _Grid::ChunkType Chunk;
+//    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
+//    typedef SimpleChunkRenderer<Region, Chunk> ChunkRenderer;
+//
+//    RequestMesh(ChunkRenderer const *renderer, TextureAtlas const *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
+//
+//    void process() override;
+//
+//    static ChunkTextureMesh scratchMesh;
+//    ChunkRenderer const *renderer;
+//    TextureAtlas const *textureAtlas;
+//    MeshBuffer mesh;
+//};
+//
+//}//namespace prep
 
 }//namespace voxigen
 

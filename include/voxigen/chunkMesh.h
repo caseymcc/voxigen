@@ -28,8 +28,8 @@ public:
 //    void addFace(const std::vector<glm::ivec3>& blockFace, glm::ivec3 position, unsigned int data);
     void addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 4> &quad);
 
-    std::vector<ChunkMeshVertex> &getVerticies() { return m_verticies; }
-    std::vector<int> &getIndices() { return m_indices; }
+    std::vector<ChunkMeshVertex> &getVertexes() { return m_verticies; }
+    std::vector<int> &getIndexes() { return m_indices; }
 
     size_t memoryUsed();
 

@@ -237,7 +237,8 @@ int main(int argc, char ** argv)
         fs::create_directory(worldPath);
 
         //creating earth sizes
-        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
+//        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
+        world.create(worldDirectory, "TestWorld", glm::ivec3(10240, 10240, 1024), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());
@@ -274,6 +275,7 @@ int main(int argc, char ** argv)
     renderer.setCamera(&renderingOptions.camera);
     renderer.build();
     renderer.setViewRadius(glm::ivec3(128, 128, 128));
+//    renderer.setViewRadius(glm::ivec3(1024, 1024, 1024));
 
     renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
@@ -669,6 +671,9 @@ void updateChunkInfo()
 
     for(auto chunkRenderer:chunkRenderers)
     {
+        if(!chunkRenderer)
+            continue;
+
         std::string chunkInfo;
 
         chunkRenderer->updateInfo(chunkInfo);

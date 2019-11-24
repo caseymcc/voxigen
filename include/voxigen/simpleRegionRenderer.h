@@ -92,29 +92,29 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////////////
 //Prep thread mesh code for SimpleChunkRenderer
 /////////////////////////////////////////////////////////////////////////////////////////////
-namespace prep
-{
-template<typename _Grid>
-struct RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>:public Request
-{
-    typedef typename _Grid::RegionHandleType RegionHandle;
-    typedef typename _Grid::SharedRegionHandle SharedRegionHandle;
-    typedef typename _Grid::RegionType Region;
-    typedef typename _Grid::ChunkType Chunk;
-
-    typedef RegionRenderer<RegionHandle> Renderer;
-
-    RequestMesh(Renderer const *renderer, TextureAtlas const *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
-
-    void process() override;
-
-    static TexturedMesh scratchMesh;
-    Renderer const *renderer;
-    TextureAtlas const *textureAtlas;
-    MeshBuffer mesh;
-};
-
-}//namespace prep
+//namespace prep
+//{
+//template<typename _Grid>
+//struct RequestMesh<_Grid, RegionRenderer<typename _Grid::RegionHandleType>>:public Request
+//{
+//    typedef typename _Grid::RegionHandleType RegionHandle;
+//    typedef typename _Grid::SharedRegionHandle SharedRegionHandle;
+//    typedef typename _Grid::RegionType Region;
+//    typedef typename _Grid::ChunkType Chunk;
+//
+//    typedef RegionRenderer<RegionHandle> Renderer;
+//
+//    RequestMesh(Renderer const *renderer, TextureAtlas const *textureAtlas):Request(Mesh), renderer(renderer), textureAtlas(textureAtlas) {}
+//
+//    void process() override;
+//
+//    static TexturedMesh scratchMesh;
+//    Renderer const *renderer;
+//    TextureAtlas const *textureAtlas;
+//    MeshBuffer mesh;
+//};
+//
+//}//namespace prep
 
 }//namespace voxigen
 

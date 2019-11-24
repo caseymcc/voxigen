@@ -18,6 +18,7 @@ public:
     struct Vertex
     {
         uint8_t x, y, z;
+        int8_t nx, ny, nz;
         uint16_t tx, ty;
         uint32_t data;
     };
@@ -41,10 +42,10 @@ public:
         textOffsetY[2]=resolution;
         textOffsetY[3]=resolution;
     }
-    void addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 4> &quad);
+    void addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 5> &quad);
 
-    std::vector<Vertex> &getVerticies() { return m_verticies; }
-    std::vector<int> &getIndices() { return m_indices; }
+    std::vector<Vertex> &getVertexes() { return m_verticies; }
+    std::vector<int> &getIndexes() { return m_indices; }
 
     size_t memoryUsed();
 
@@ -60,7 +61,7 @@ private:
     std::vector<int> m_indices;
 };
 
-inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 4> &quad)
+inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const glm::ivec3 &position, const std::array<glm::ivec3, 5> &quad)
 {
     size_t index=m_verticies.size();
     size_t vertIndex=index;
@@ -124,12 +125,17 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
 
     for(size_t i=0; i<4; ++i)
     {
-        m_verticies[index].x=quad[i].x;
-        m_verticies[index].y=quad[i].y;
-        m_verticies[index].z=quad[i].z;
-        m_verticies[index].tx=texX+textOffsetX[i];
-        m_verticies[index].ty=texY+textOffsetY[i];
-        m_verticies[index].data=cellType;
+        Vertex &vertex=m_verticies[index];
+
+        vertex.x=quad[i].x;
+        vertex.y=quad[i].y;
+        vertex.z=quad[i].z;
+        vertex.nx=quad[4].x;
+        vertex.ny=quad[4].y;
+        vertex.nz=quad[4].z;
+        vertex.tx=texX+textOffsetX[i];
+        vertex.ty=texY+textOffsetY[i];
+        vertex.data=cellType;
         index++;
     }
 
