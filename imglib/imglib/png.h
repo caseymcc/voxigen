@@ -8,6 +8,8 @@ namespace imglib
 {
 
 IMGLIB_EXPORT bool loadPng(ImageWrapper image, const char *filename);
+IMGLIB_EXPORT bool loadPngBuffer(ImageWrapper image, const uint8_t *buffer, size_t bufferSize);
+
 IMGLIB_EXPORT bool savePng(ImageWrapper image, const char *filename);
 
 }//namespace imglib

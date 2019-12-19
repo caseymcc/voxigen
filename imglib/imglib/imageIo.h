@@ -4,41 +4,15 @@
 #include "imglib/png.h"
 #include "imglib/ppm.h"
 
-#if IMGLIB_USE_FILESYSTEM == 1
-#include <filesystem>
-#elif IMGLIB_USE_FILESYSTEM == 2
-#include <experimental/filesystem>
-#else
-#include <boost/filesystem.hpp>
-#endif
+#include <generic/fileIO.h>
 
 namespace imglib
 {
 
-#if IMGLIB_USE_FILESYSTEM == 1
-namespace fs=std::filesystem;
-#elif IMGLIB_USE_FILESYSTEM == 2
-#ifdef _MSC_VER
-namespace fs=std::experimental::filesystem::v1;
-#else
-namespace fs=std::experimental::filesystem;
-#endif
-#else
-namespace fs=boost::filesystem;
-#endif
-
 template<typename _ImageType>
 bool load(_ImageType &image, const std::string &location)
 {
-    fs::path path(location);
-
-    if(!path.has_extension())
-    {
-        assert(false); //can only sort by extension at the moment
-        return false;
-    }
-
-    std::string ext=path.extension().string();
+    std::string ext=generic::getExtension(location);
 
     if(ext==".png")
         return loadPng(image, location.c_str());
@@ -49,18 +23,40 @@ bool load(_ImageType &image, const std::string &location)
     return false;
 }
 
+//Template based load, allows functions to use IO provided by caller
+template<typename _FileIO, typename _ImageType>
+bool load(_ImageType &image, const std::string &location, void *userData=nullptr)
+{
+    std::string ext=generic::getExtension(location);
+
+    _FileIO::Type *fileType=generic::open<_FileIO>(location, "rb", userData);
+
+    size_t bufferSize=generic::size<_FileIO>(fileType);
+    uint8_t *buffer=(uint8_t *)malloc(sizeof(uint8_t)*bufferSize);
+
+    generic::read<_FileIO>(buffer, sizeof(uint8_t), bufferSize, fileType);
+
+    if(ext==".png")
+        return loadPngBuffer(image, buffer, bufferSize);
+ 
+    assert(false); //not supported yet
+    return false;
+}
+
+template<typename _ImageType>
+bool loadBuffer(_ImageType &image, const uint8_t *buffer, size_t size, std::string &format)
+{
+    if(format=="png")
+        return loadPngBuffer(image, buffer, size);
+
+    assert(false); //not supported yet
+    return false;
+}
+
 template<typename _ImageType>
 bool save(_ImageType &image, const std::string &location)
 {
-    fs::path path(location);
-
-    if(!path.has_extension())
-    {
-        assert(false); //can only sort by extension at the moment
-        return false;
-    }
-
-    std::string ext=path.extension().string();
+    std::string ext=generic::getExtension(location);
 
     if(ext==".png")
         return savePng(image, location.c_str());

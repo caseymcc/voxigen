@@ -1,11 +1,11 @@
 #ifndef _voxigen_debugscreen_h_
 #define _voxigen_debugscreen_h_
 
-#include <glbinding/gl/gl.h>
-using namespace gl;
-
 #include "renderingOptions.h"
 #include "world.h"
+
+#include <glbinding/gl/gl.h>
+using namespace gl;
 
 class DebugScreen
 {
@@ -21,7 +21,7 @@ public:
 
     void update(World *world);
     void updateControls();
-    void updateChunkInfo(WorldRenderer *renderer);
+    void updateChunkInfo(World *world, WorldRenderer *renderer);
 
     void build();
     void draw();

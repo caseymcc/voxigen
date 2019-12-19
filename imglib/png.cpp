@@ -169,6 +169,106 @@ bool loadPng(ImageWrapper image, const char *filename)
     return true;
 }
 
+struct BufferInfo
+{
+    BufferInfo(const uint8_t *buffer, size_t size, size_t index):buffer(buffer), size(size), index(index) {}
+
+    const uint8_t *buffer;
+    size_t index;
+    size_t size;
+};
+
+void readBuffer(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+    BufferInfo *bufferInfo=(BufferInfo *)png_get_io_ptr(png_ptr);
+
+    assert(bufferInfo->size>=bufferInfo->index+length);
+    memcpy(data, bufferInfo->buffer+bufferInfo->index, length);
+    bufferInfo->index+=length;
+}
+
+bool loadPngBuffer(ImageWrapper image, const uint8_t *buffer, size_t bufferSize)
+{
+    if(png_sig_cmp((png_const_bytep)buffer, 0, 8))
+        return false;
+
+    png_structp png_ptr;
+
+    /* initialize stuff */
+    png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+    if(!png_ptr)
+        return false;
+
+    png_infop info_ptr;
+
+    info_ptr=png_create_info_struct(png_ptr);
+    if(!info_ptr)
+        return false;
+
+    if(setjmp(png_jmpbuf(png_ptr)))
+        return false;
+
+    int width, height;
+    png_byte color_type;
+    png_byte bit_depth;
+    int number_of_passes;
+
+    BufferInfo bufferInfo(buffer, bufferSize, 8);
+
+//    png_init_io(png_ptr, file);
+    png_set_read_fn(png_ptr, (png_voidp)&bufferInfo, &readBuffer);
+    png_set_sig_bytes(png_ptr, 8);
+    png_read_info(png_ptr, info_ptr);
+
+    width=png_get_image_width(png_ptr, info_ptr);
+    height=png_get_image_height(png_ptr, info_ptr);
+    color_type=png_get_color_type(png_ptr, info_ptr);
+    bit_depth=png_get_bit_depth(png_ptr, info_ptr);
+
+    number_of_passes=png_set_interlace_handling(png_ptr);
+    png_read_update_info(png_ptr, info_ptr);
+
+    if(setjmp(png_jmpbuf(png_ptr)))
+        return false;
+
+    Format format;
+    Depth depth;
+    int channels;
+
+    if(color_type==PNG_COLOR_TYPE_GRAY)
+    {
+        channels=1;
+        format=Format::GreyScale;
+        depth=Depth::Bit8;
+    }
+    else if(color_type==PNG_COLOR_TYPE_GRAY_ALPHA)
+    {
+        channels=2;
+        format=Format::RA;
+        depth=Depth::Bit8;
+    }
+    else if(color_type==PNG_COLOR_TYPE_RGB)
+    {
+        channels=3;
+        format=Format::RGB;
+        depth=Depth::Bit8;
+    }
+    else if(color_type==PNG_COLOR_TYPE_RGB_ALPHA)
+    {
+        channels=4;
+        format=Format::RGBA;
+        depth=Depth::Bit8;
+    }
+
+    image.resize(format, depth, width, height);
+    std::vector<png_bytep> row_pointers=getRowPointers(image);
+
+    png_read_image(png_ptr, row_pointers.data());
+
+    return true;
+}
+
 bool savePng(ImageWrapper image, const char *filename)
 {
     int y;

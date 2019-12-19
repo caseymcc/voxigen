@@ -66,8 +66,8 @@ target_link_libraries(opengl_util ${opengl_util_libraries})
 #    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
 #)
 
-include(GenerateExportHeader)
-generate_export_header(opengl_util)
+#include(GenerateExportHeader)
+#generate_export_header(opengl_util)
 
 target_include_directories(opengl_util PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(opengl_util PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

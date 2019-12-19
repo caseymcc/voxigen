@@ -9,7 +9,7 @@
 namespace generic
 {
 
-class generic_EXPORT Serializer
+class GENERIC_EXPORT Serializer
 {
 public:
 	Serializer() {}
@@ -32,7 +32,7 @@ public:
 	virtual void addDouble(const double &value)=0;
 };
 
-class generic_EXPORT Deserializer
+class GENERIC_EXPORT Deserializer
 {
 public:
     Deserializer() {}

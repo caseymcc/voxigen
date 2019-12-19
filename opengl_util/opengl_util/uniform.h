@@ -10,7 +10,6 @@
 
 #include <glm/glm.hpp>
 
-//#include <GL/glew.h>
 #include <glbinding/gl/gl.h>
 
 #undef Bool

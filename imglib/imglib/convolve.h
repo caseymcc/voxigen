@@ -79,6 +79,9 @@ struct IMGLIB_EXPORT Kernel
 
 struct IMGLIB_EXPORT SeparableKernel
 {
+	SeparableKernel(){}
+
+	bool owned;
     uint8_t *kenel1;
     uint8_t *kenel2;
     size_t size;

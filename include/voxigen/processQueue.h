@@ -4,7 +4,7 @@
 #include "voxigen/voxigen_export.h"
 #include "voxigen/defines.h"
 #include "voxigen/updateQueue.h"
-#include "voxigen/chunkHandle.h"
+#include "voxigen/volume/chunkHandle.h"
 
 #include <memory>
 #include <thread>

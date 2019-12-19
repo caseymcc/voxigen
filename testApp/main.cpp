@@ -1,13 +1,14 @@
 #include "voxigen/defines.h"
-#include "voxigen/cell.h"
-#include "voxigen/regularGrid.h"
-#include "voxigen/simpleRenderer.h"
-#include "voxigen/equiRectWorldGenerator.h"
+#include "voxigen/volume/cell.h"
+#include "voxigen/volume/regularGrid.h"
+#include "voxigen/rendering/simpleRenderer.h"
+#include "voxigen/generators/equiRectWorldGenerator.h"
 
-#include "voxigen/texturePack.h"
-#include "voxigen/textureAtlas.h"
-#include "voxigen/simpleShapes.h"
-#include "voxigen/filesystem.h"
+#include "voxigen/texturing/texturePack.h"
+#include "voxigen/texturing/textureAtlas.h"
+#include "voxigen/rendering/simpleShapes.h"
+#include "voxigen/fileio/filesystem.h"
+#include "voxigen/fileio/log.h"
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
@@ -87,7 +88,32 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 //        LOG(INFO)<<"Opengl : "<<message;
 }
 
+class LogCallback:public generic::ILogCallback
+{
+public:
+    LogCallback() {};
+    virtual ~LogCallback() {};
 
+    virtual bool write(generic::LogLevel level, const std::string &entry)
+    {
+        switch(level)
+        {
+        case generic::LogLevel::Message:
+            LOG(INFO)<<entry;
+            break;
+        case generic::LogLevel::Warning:
+            LOG(WARNING)<<entry;
+            break;
+        case generic::LogLevel::Error:
+            LOG(ERROR)<<entry;
+            break;
+        case generic::LogLevel::Debug:
+            LOG(INFO)<<entry;
+            break;
+        }
+        return true;
+    }
+};
 
 int main(int argc, char ** argv)
 {
@@ -95,7 +121,10 @@ int main(int argc, char ** argv)
 //    FLAGS_logtostderr=true;
     FLAGS_alsologtostderr=true;
 
+    //setup logging
     google::InitGoogleLogging(argv[0]);
+    std::shared_ptr<LogCallback> logCallback=std::make_shared<LogCallback>();
+    voxigen::Log::attachCallback(logCallback);
 
     GLFWwindow* window;
 
@@ -206,7 +235,10 @@ int main(int argc, char ** argv)
         fs::path worldPath(worldDirectory);
         
         fs::create_directory(worldPath);
-        world.create(worldDirectory, "TestApWorld", glm::ivec3(32768, 32768, 256), "EquiRectWorldGenerator");
+
+        //creating earth sizes
+//        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
+        world.create(worldDirectory, "TestWorld", glm::ivec3(10240, 10240, 1024), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());
@@ -243,6 +275,7 @@ int main(int argc, char ** argv)
     renderer.setCamera(&renderingOptions.camera);
     renderer.build();
     renderer.setViewRadius(glm::ivec3(128, 128, 128));
+//    renderer.setViewRadius(glm::ivec3(1024, 1024, 1024));
 
     renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
@@ -318,7 +351,7 @@ int main(int argc, char ** argv)
         debugScreen->startBuild();
         debugScreen->update(&world);
         debugScreen->updateControls();
-        debugScreen->updateChunkInfo(&renderer);
+        debugScreen->updateChunkInfo(&world, &renderer);
         debugScreen->build();
 
         if(chunksUpdated)
@@ -346,16 +379,18 @@ int main(int argc, char ** argv)
 
 voxigen::SharedTextureAtlas buildTextureAtlas()
 {
-    voxigen::TexturePack texturePack;
-
     fs::path texturePackPath("resources/TexturePacks/SoA_Default");
 
-    texturePack.load(texturePackPath.string());
+    voxigen::SharedTexturePack texturePack=voxigen::generateTexturePack(texturePackPath.string());
 
-    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+//    texturePack.load(texturePackPath.string());
+
     std::vector<std::string> blockNames={"dirt", "grass", "mud", "mud_dry", "sand", "clay", "cobblestone", "stone", "granite", "slate", "snow"};
 
-    textureAtlas->build(blockNames, texturePack);
+//    voxigen::SharedTextureAtlas textureAtlas(new voxigen::TextureAtlas());
+//    textureAtlas->build(blockNames, texturePack);
+    voxigen::SharedTextureAtlas textureAtlas=generateTextureAtlas(blockNames, *texturePack);
+
     textureAtlas->save(texturePackPath.string(), "terrain");
 
     return textureAtlas;
@@ -636,6 +671,9 @@ void updateChunkInfo()
 
     for(auto chunkRenderer:chunkRenderers)
     {
+        if(!chunkRenderer)
+            continue;
+
         std::string chunkInfo;
 
         chunkRenderer->updateInfo(chunkInfo);

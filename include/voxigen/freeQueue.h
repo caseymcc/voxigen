@@ -2,9 +2,9 @@
 #define _voxigen_freeQueue_h_
 
 #include "voxigen/voxigen_export.h"
-#include "voxigen/regularGrid.h"
+#include "voxigen/volume/regularGrid.h"
 #include "voxigen/search.h"
-#include "voxigen/textureAtlas.h"
+#include "voxigen/texturing/textureAtlas.h"
 
 #include <string>
 #include <deque>

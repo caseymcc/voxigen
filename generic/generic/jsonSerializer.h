@@ -10,7 +10,7 @@ namespace generic
 
 struct JsonSerializerHidden;
 
-class generic_EXPORT JsonSerializer:public Serializer
+class GENERIC_EXPORT JsonSerializer:public Serializer
 {
 public:
     JsonSerializer();
@@ -41,7 +41,7 @@ private:
 
 struct JsonDeserializerHidden;
 
-class generic_EXPORT JsonDeserializer:public Deserializer
+class GENERIC_EXPORT JsonDeserializer:public Deserializer
 {
 public:
     JsonDeserializer();

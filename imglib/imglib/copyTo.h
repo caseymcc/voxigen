@@ -45,6 +45,8 @@ bool copyTo(_DstImage &dstImage, size_t dstX, size_t dstY, _SrcImage &srcImage)
         srcData+=srcStride;
         dstData+=dstStride;
     }
+
+    return true;
 }
 
 }//namespace imglib
