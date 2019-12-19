@@ -56,10 +56,14 @@ private:
     std::vector<char> m_layerNames;
     int m_info;
     int m_overlay;
+    int m_overlayVector;
 
     int m_plateCount;
     std::vector<std::tuple<int, int, int>> m_plateColors;
-    voxigen::ColorMap m_colorMap;
+    
+    voxigen::ColorMap m_tempColorMap;
+    voxigen::ColorMap m_moistureColorMap;
+    voxigen::ColorMap2D m_biomeColorMap;
 
     ImVec2 lastDrawPos;
     ImVec2 lastDrawSize;

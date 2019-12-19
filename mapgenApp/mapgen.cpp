@@ -42,7 +42,26 @@ MapGen::MapGen():
     m_worldHeight=2097152;
     m_worldDepth=2560;
 
-    m_colorMap=voxigen::generateColorMap(64, 64);
+    voxigen::ColorScale tempColorScale;
+
+    tempColorScale.addColorPosition(glm::ivec4(255, 255, 255, 255), 0.0f);
+    tempColorScale.addColorPosition(glm::ivec4(255, 0, 255, 255), 0.2f);
+    tempColorScale.addColorPosition(glm::ivec4(0, 0, 255, 255), 0.4f);
+    tempColorScale.addColorPosition(glm::ivec4(0, 255, 0, 255), 0.6f);
+    tempColorScale.addColorPosition(glm::ivec4(255, 0, 0, 255), 0.8f);
+    tempColorScale.addColorPosition(glm::ivec4(0, 0, 0, 255), 1.0f);
+
+    m_tempColorMap=voxigen::generateColorMap(tempColorScale, 64);
+
+    voxigen::ColorScale moistureColorScale;
+
+    moistureColorScale.addColorPosition(glm::ivec4(255, 0, 0, 255), 0.0f);
+    moistureColorScale.addColorPosition(glm::ivec4(0, 255, 0, 255), 0.5f);
+    moistureColorScale.addColorPosition(glm::ivec4(0, 0, 255, 255), 1.0f);
+
+    m_moistureColorMap=voxigen::generateColorMap(moistureColorScale, 64);
+
+    m_biomeColorMap=voxigen::generateHieghtMoistureColorMap(64, 64);
 
     m_plateCount=16;
 }
@@ -61,6 +80,7 @@ void MapGen::initialize()
     m_layerIndex=0;
     m_info=0;
     m_overlay=0;
+    m_overlayVector=0;
     m_layerNames=packVectorString({"Terrain", "Plate Info", "Tectonic Plates", "Plates Distance", "Terrain Scale"});
 
 	updateTexture();
@@ -85,7 +105,7 @@ void MapGen::initialize()
 //    else
 //        world.load(worldDirectories[0].path().string());
 
-    m_colorMap=voxigen::generateColorMap(64, 64);
+//    m_biomeColorMap=voxigen::generateHieghtMoistureColorMap(64, 64);
 }
 
 void MapGen::setSize(int width, int height)
@@ -131,9 +151,11 @@ void MapGen::draw()
 
     int info=m_info;
     ImGui::Text("Terrain");
-    ImGui::RadioButton("Height", &info, 0);
-    ImGui::RadioButton("Value", &info, 1);
-    ImGui::RadioButton("Plates", &info, 2);
+    ImGui::RadioButton("Map", &info, 0);
+    ImGui::RadioButton("Height", &info, 1);
+    ImGui::RadioButton("Value", &info, 2);
+    ImGui::RadioButton("Plates", &info, 3);
+    ImGui::RadioButton("No Map", &info, 4);
     if(info!=m_info)
     {
         m_info=info;
@@ -146,10 +168,27 @@ void MapGen::draw()
     ImGui::RadioButton("Collision", &overlay, 1);
     ImGui::RadioButton("Collision-Distance", &overlay, 2);
     ImGui::RadioButton("Scale", &overlay, 3);
+    ImGui::RadioButton("Temp", &overlay, 4);
+    ImGui::RadioButton("Moisture", &overlay, 5);
+    ImGui::RadioButton("Moisture GreyScale", &overlay, 6);
+    ImGui::RadioButton("Weather Cells", &overlay, 7);
+    ImGui::RadioButton("Weather Bands", &overlay, 8);
 
     if(overlay!=m_overlay)
     {
         m_overlay=overlay;
+        forceUpdate=true;
+    }
+
+    int overlayVector=m_overlayVector;
+    ImGui::Text("Vector");
+    ImGui::RadioButton("No Vector", &overlayVector, 0);
+    ImGui::RadioButton("Direction", &overlayVector, 1);
+    ImGui::RadioButton("Air", &overlayVector, 2);
+
+    if(overlayVector!=m_overlayVector)
+    {
+        m_overlayVector=overlayVector;
         forceUpdate=true;
     }
 
@@ -174,36 +213,46 @@ void MapGen::draw()
     int texturePosX=mousePosition.x/lastDrawSize.x*m_textureWidth;
     int texturePosY=mousePosition.y/lastDrawSize.y*m_textureHeight;
 
-    if((m_layerIndex == 0) ||(m_layerIndex==1))
-    {
-        const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
-        const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
-        size_t index=texturePosY*influenceMapSize.x+texturePosX;
-        float value;
+    const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
+    const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
+    size_t index=texturePosY*influenceMapSize.x+texturePosX;
+    float value;
+    float overlayValue;
 
-        if((index<0)||(index>=influenceMapSize.x*influenceMapSize.y))
-            index=0;
+    if((index<0)||(index>=influenceMapSize.x*influenceMapSize.y))
+        index=0;
 
-        if(m_layerIndex==0)
-        {
-            value=influenceMap[index].heightBase;
-        }
-        else
-        {
-            if(m_overlay==0)
-                value=influenceMap[index].plateHeight;
-            else if(m_overlay==1)
-                value=influenceMap[index].collision;
-            else if(m_overlay==2)
-                value=influenceMap[index].collision*influenceMap[index].plateDistanceValue;
-            else if(m_overlay==3)
-                value=influenceMap[index].terrainScale;
-        }
-
-        ImGui::Text("Position: %d, %d : %f", texturePosX, texturePosY, value);
-    }
+    if((m_info==0) || (m_info==1))
+        value=influenceMap[index].heightBase;
+    else if(m_info==2)
+        value=influenceMap[index].plateHeight;
+    else if(m_info==3)
+        value=(float)influenceMap[index].tectonicPlate;
     else
-        ImGui::Text("Position: %d, %d", texturePosX, texturePosY);
+        value=0.0f;
+
+    ImGui::Text("Position: %d, %d : %f", texturePosX, texturePosY, value);
+
+    if(m_overlay > 0)
+    {
+        overlayValue=0.0f;
+
+        if(m_overlay==1)
+            overlayValue=influenceMap[index].collision;
+        else if(m_overlay==2)
+            overlayValue=influenceMap[index].collision*influenceMap[index].plateDistanceValue;
+        else if(m_overlay==3)
+            overlayValue=influenceMap[index].terrainScale;
+        else if(m_overlay==4)
+            overlayValue=(influenceMap[index].temperature+90.0f)/160.0f;
+        else if((m_overlay==5) || (m_overlay==6))
+            overlayValue=std::min(influenceMap[index].moisture, 1.0f);
+        else if(m_overlay==7)
+            overlayValue=(float)influenceMap[index].weatherCell;
+        else if(m_overlay==8)
+            overlayValue=(float)influenceMap[index].weatherBand;
+        ImGui::Text("Overlay: %f", overlayValue);
+    }
 
     ImGui::End();
 
@@ -322,9 +371,7 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
 {
     const typename WorldGenerator::InfluenceMap &influenceMap=m_worldGenerator->getInfluenceMap();
     const glm::ivec2 &influenceMapSize=m_worldGenerator->getInfluenceMapSize();
-
     int plateCount=m_worldGenerator->getPlateCount();
-
     RandomColor::RandomColorGenerator colorGenerator;
 
     if(m_plateColors.size()<plateCount)
@@ -335,17 +382,54 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
     {
         glm::ivec4 color;
         
-        if(m_info == 0)
-            color=m_colorMap.color((size_t)64*influenceMap[i].heightBase, 32);
+        if(m_info==0)
+        {
+            color=m_biomeColorMap.color((size_t)64*influenceMap[i].heightBase, (size_t)64*influenceMap[i].moisture);
+
+            float value=(influenceMap[i].temperature+90.0f)/160.0f;
+
+            if((value<0.4f) && (influenceMap[i].heightBase>0.5f)) //polar caps
+            {
+                if(value<0.2f)
+                {
+                    color.r=255;
+                    color.g=255;
+                    color.b=255;
+                }
+                else
+                {
+                    value=5.0f*(0.4f-value);
+                    color.r=(255*value)+(color.r*(1.0f-value));
+                    color.g=(255*value)+(color.g*(1.0f-value));
+                    color.b=(255*value)+(color.b*(1.0f-value));
+                }
+            }
+        }
         else if(m_info==1)
-            color=m_colorMap.color((size_t)64*influenceMap[i].plateHeight, 32);
+        {
+            unsigned char value=255*influenceMap[i].heightBase;
+
+            color.r=value;
+            color.g=value;
+            color.b=value;
+            color.a=255;
+        }
         else if(m_info==2)
+            color=m_biomeColorMap.color((size_t)64*influenceMap[i].plateHeight, 32);
+        else if(m_info==3)
         {
             auto &plateColor=m_plateColors[influenceMap[i].tectonicPlate];
 
             color.r=std::get<0>(plateColor);
             color.g=std::get<1>(plateColor);
             color.b=std::get<2>(plateColor);
+            color.a=255;
+        }
+        else
+        {
+            color.r=0;
+            color.g=0;
+            color.b=0;
             color.a=255;
         }
 
@@ -370,6 +454,47 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
             else
                 color.g=color.g+(255.0f*influenceMap[i].terrainScale);
         }
+        else if(m_overlay==4)
+        {
+            //color scale intended for -50 to 60, temp runs -90 to 60
+            float value=(influenceMap[i].temperature+50.0f)/110.0f;
+
+            value=std::max(value, 0.0f);
+            value=std::min(value, 1.0f);
+
+            color=color+(m_tempColorMap.color((size_t)64*value));
+        }
+        else if(m_overlay==5)
+        {
+            float moisture=std::min(influenceMap[i].moisture, 1.0f);
+            color=color+(m_moistureColorMap.color((size_t)63*moisture));
+        }
+        else if(m_overlay==6)
+        {
+            unsigned char value=255*influenceMap[i].moisture;
+
+            if(influenceMap[i].heightBase > 0.5f)
+                color=color+glm::ivec4(value, value, value, 255);
+        }
+        else if(m_overlay==7)
+        {
+            auto &plateColor=m_plateColors[influenceMap[i].weatherCell];
+
+            color.r=std::get<0>(plateColor);
+            color.g=std::get<1>(plateColor);
+            color.b=std::get<2>(plateColor);
+            color.a=255;
+        }
+        else if(m_overlay==8)
+        {
+            auto &plateColor=m_plateColors[influenceMap[i].weatherBand];
+
+            color.r=std::get<0>(plateColor);
+            color.g=std::get<1>(plateColor);
+            color.b=std::get<2>(plateColor);
+            color.a=255;
+        }
+
         
         color.r=std::min(color.r, 255);
         color.g=std::min(color.g, 255);
@@ -379,6 +504,63 @@ void MapGen::updatePlateInfoTexture(std::vector<GLubyte> &textureBuffer)
         textureBuffer[index++]=(GLubyte)color.g;
         textureBuffer[index++]=(GLubyte)color.b;
         textureBuffer[index++]=255;
+    }
+
+    if(m_overlayVector>0)
+    {
+        imglib::SimpleImage textureImage(imglib::Format::RGBA, imglib::Depth::Bit8, influenceMapSize.x, influenceMapSize.y, &textureBuffer[0], influenceMap.size());
+        glm::tvec4<unsigned char> colorRed(255, 0, 0, 255);
+        glm::tvec4<unsigned char> colorWhite(255, 255, 255, 255);
+
+//        colorRed.r=255;
+//        colorRed.g=0;
+//        colorRed.b=0;
+//        colorRed.a=255;
+
+        glm::vec2 point;
+        index=0;
+
+        size_t skip=10;
+        float fskip=(float)skip;
+
+        point.y=0.0f;
+        for(size_t y=0; y<influenceMapSize.y; y+=skip)
+        {
+            index=y*influenceMapSize.x;
+            point.x=0.0f;
+            for(size_t x=0; x<influenceMapSize.x; x+=skip)
+            {
+                glm::vec2 endPoint;
+                glm::vec2 direction;
+
+                if(m_overlayVector==1)
+                    direction=influenceMap[index].direction;
+                else
+                    direction=influenceMap[index].airDirection;
+                
+                direction.y=-direction.y;//for images y origin is top left
+                endPoint=(direction*8.0f)+point;
+
+                endPoint.x=std::max(endPoint.x, 0.0f);
+                endPoint.x=std::min(endPoint.x, (float)influenceMapSize.x);
+                endPoint.y=std::max(endPoint.y, 0.0f);
+                endPoint.y=std::min(endPoint.y, (float)influenceMapSize.y);
+
+                drawLine(point, endPoint, colorRed, textureImage);
+
+//                auto &plateColor=m_plateColors[influenceMap[index].tectonicPlate];
+//
+//                colorWhite.r=std::get<0>(plateColor);
+//                colorWhite.g=std::get<1>(plateColor);
+//                colorWhite.b=std::get<2>(plateColor);
+//                colorWhite.a=255;
+
+                drawPoint(point, colorWhite, textureImage);
+                index+=skip;
+                point.x+=fskip;
+            }
+            point.y+=fskip;
+        }
     }
 
     m_textureWidth=influenceMapSize.x;
@@ -453,7 +635,7 @@ void MapGen::updatePlateDistanceTexture(std::vector<GLubyte> &textureBuffer)
 //    for(size_t i=0; i<influenceMap.size(); ++i)
 //    {
 //        int elevation=32+32*influenceMap[i].continentValue;
-//        glm::ivec4 color=m_colorMap.color(elevation, 32);
+//        glm::ivec4 color=m_biomeColorMap.color(elevation, 32);
 //
 //        textureBuffer[index++]=(GLubyte)color.r;
 //        textureBuffer[index++]=(GLubyte)color.g;
@@ -486,7 +668,7 @@ void MapGen::updateHeightMapTexture(std::vector<GLubyte> &textureBuffer)
     {
         const float &height=influenceMap[i].heightBase;
         
-        glm::ivec4 color=m_colorMap.color((size_t)64*height, 32);
+        glm::ivec4 color=m_biomeColorMap.color((size_t)64*height, 32);
 
         textureBuffer[index++]=(GLubyte)color.r;
         textureBuffer[index++]=(GLubyte)color.g;
