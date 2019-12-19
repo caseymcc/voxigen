@@ -1,27 +1,52 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 
-inline float x(const glm::vec2 &point)
+inline const float &x(const glm::vec2 &point)
 {
     return point.x;
 }
 
-inline float y(const glm::vec2 &point)
+inline const float &y(const glm::vec2 &point)
 {
     return point.y;
 }
 
-inline float x(const glm::vec3 &point)
+inline float &x(glm::vec2 &point)
 {
     return point.x;
 }
 
-inline float y(const glm::vec3 &point)
+inline float &y(glm::vec2 &point)
 {
     return point.y;
 }
 
-inline float z(const glm::vec3 &point)
+inline const float &x(const glm::vec3 &point)
+{
+    return point.x;
+}
+
+inline const float &y(const glm::vec3 &point)
+{
+    return point.y;
+}
+
+inline const float &z(const glm::vec3 &point)
+{
+    return point.z;
+}
+
+inline float &x(glm::vec3 &point)
+{
+    return point.x;
+}
+
+inline float &y(glm::vec3 &point)
+{
+    return point.y;
+}
+
+inline float &z(glm::vec3 &point)
 {
     return point.z;
 }
@@ -64,4 +89,34 @@ inline unsigned char blue(const glm::tvec4<unsigned char> &point)
 inline unsigned char alpha(const glm::tvec4<unsigned char> &point)
 {
     return point.a;
+}
+
+inline glm::vec2 normalize(const glm::vec2 &point)
+{
+    return glm::normalize(point);
+}
+
+inline glm::vec3 normalize(const glm::vec3 &point)
+{
+    return glm::normalize(point);
+}
+
+inline glm::vec4 normalize(const glm::vec4 &point)
+{
+    return glm::normalize(point);
+}
+
+inline float length(const glm::vec2 &point)
+{
+    return glm::length(point);
+}
+
+inline float length(const glm::vec3 &point)
+{
+    return glm::length(point);
+}
+
+inline float length(const glm::vec4 &point)
+{
+    return glm::length(point);
 }

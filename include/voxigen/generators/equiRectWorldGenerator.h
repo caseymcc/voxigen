@@ -7,12 +7,17 @@
 #include "voxigen/maths/coords.h"
 #include "voxigen/meshes/heightMap.h"
 #include "voxigen/noise.h"
+#include "voxigen/generators/tectonics.h"
+#include "voxigen/generators/weather.h"
+#include "voxigen/generators/perturbedWeather.h"
+#include "voxigen/wrap.h"
+#include "voxigen/fill.h"
+#include "voxigen/maths/math_helpers.h"
+#include "voxigen/sortedVector.h"
 
 #include "voxigen/maths/glm_point.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/integer.hpp>
-
-//#include "dt/delaunay.h"
 
 #undef None
 
@@ -24,86 +29,13 @@ namespace chrono=std::chrono;
 namespace voxigen
 {
 
-template< typename T >
-typename std::vector<T>::iterator
-insert_sorted(std::vector<T> &container, T const &item)
-{
-    return container.insert
-    (
-        std::upper_bound(container.begin(), container.end(), item),
-        item
-    );
-}
-
-template<class T>
-bool contains_sorted(const std::vector<T> &container, const T &item)
-{
-    auto iter=std::lower_bound(
-        container.begin(),
-        container.end(),
-        item,
-        [](const T &l, const T &r){ return l<r; });
-    return iter!=container.end()&&*iter==item;
-}
-
-template<class T>
-size_t index_sorted(const std::vector<T> &container, const T &item)
-{
-    auto iter=std::lower_bound(
-        container.begin(),
-        container.end(),
-        item,
-        [](const T &l, const T &r){ return l<r; });
-
-    if(iter!=container.end()&&*iter==item)
-        return iter-container.begin();
-    return std::numeric_limits<size_t>::max();
-}
-
-struct VOXIGEN_EXPORT InfluenceCell
-{
-    InfluenceCell():
-        point(false),
-        heightBase(0.0f),
-        heightRange(0.0f),
-        tectonicPlate(0),
-        borderPlate(0),
-        plateValue(0.0f),
-        plateDistanceValue(0.0f),
-        continentValue(0.0f),
-        airCurrent(0.0f)
-    {
-
-    }
-
-    bool point;
-    float heightBase;
-    float heightRange;
-
-    size_t tectonicPlate;
-    size_t borderPlate;
-    float plateHeight;
-    float plateValue;
-    float plateDistanceValue;
-    float continentValue;
-
-    float collision;
-    float terrainScale;
-
-    float airCurrent;
-};
-
 struct VOXIGEN_EXPORT EquiRectDescriptors
 {
     EquiRectDescriptors()
     {
         m_noiseScale=0.001f;
 
-        m_heightmapFrequency=0.005f;
-        m_heightmapOctaves=2;
-        m_heightmapLacunarity=2.2f;
         //    contientFrequency=1.0;
-
         m_continentFrequency=0.005f;
         m_continentOctaves=2;
         m_continentLacunarity=2.2f;
@@ -142,11 +74,6 @@ struct VOXIGEN_EXPORT EquiRectDescriptors
     void init(IGridDescriptors *gridDescriptors);
 
     float m_noiseScale;
-    
-    float m_heightmapFrequency;
-    int m_heightmapOctaves;
-    float m_heightmapLacunarity;
-
     float m_continentFrequency;
     int m_continentOctaves;
     float m_continentLacunarity;
@@ -218,7 +145,6 @@ private:
     EquiRectDescriptors m_descriptorValues;
 
     size_t m_simdLevel;
-    std::unique_ptr<HastyNoise::NoiseSIMD> m_heightmapNoise;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_continentPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_layersPerlin;
     std::unique_ptr<HastyNoise::NoiseSIMD> m_cellularNoise;
@@ -304,12 +230,6 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
     int seed=m_descriptors->m_seed;
     m_simdLevel=HastyNoise::GetFastestSIMD();
 
-    m_heightmapNoise=HastyNoise::CreateNoise(seed, m_simdLevel);
-    m_heightmapNoise->SetNoiseType(HastyNoise::NoiseType::PerlinFractal);
-    m_heightmapNoise->SetFrequency(m_descriptorValues.m_heightmapFrequency);
-    m_heightmapNoise->SetFractalLacunarity(m_descriptorValues.m_heightmapLacunarity);
-    m_heightmapNoise->SetFractalOctaves(m_descriptorValues.m_heightmapOctaves);
-
     m_continentPerlin=HastyNoise::CreateNoise(seed, m_simdLevel);
 
     m_continentSeed=seed;
@@ -339,6 +259,7 @@ void EquiRectWorldGenerator<_Grid>::initialize(IGridDescriptors *descriptors)
 
     //    m_plateCount=plateDistribution(generator);
 
+    std::uniform_real_distribution<float> jitterDistribution(m_descriptorValues.m_plateCountMin, m_descriptorValues.m_plateCountMax);
     generateWorldOverview();
 }
 
@@ -367,171 +288,44 @@ void EquiRectWorldGenerator<_Grid>::save(std::string &descriptors)
     descriptors.resize(size);
 }
 
-//template<typename _Grid>
-//void EquiRectWorldGenerator<_Grid>::setWorldDiscriptors(GridDescriptors descriptors)
-//{
-//
-//}
-
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generateWorldOverview()
 {
 
-//    generatePlates();
+    generatePlates();
     //    generateContinents();
 }
 
-//#define REDBLOG
-#ifdef REDBLOG
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::generatePlates()
 {
-    glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
-    int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
 
-    m_influenceMap.resize(influenceMapSize);
-
-    std::vector<glm::vec3> sphere;
-    std::vector<glm::vec3> cartSphere;
-    std::vector<glm::vec2> stereographicSphere;
-    std::vector<glm::vec2> points;
-
-    std::vector<float> jitter;
-    std::default_random_engine generator(m_descriptors->m_seed);
-    std::uniform_real_distribution<float> jitterDistribution(-1.0f, 1.0f);
-    
-    jitter.resize(m_plateCount);
-    for(size_t i=0; i<m_plateCount; ++i)
+    std::vector<WeatherCell> weatherCells=
     {
-        jitter[i]=jitterDistribution(generator);
-    }
+//        {"South Polar Cell"  , rads(-75.0f), rads(30.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+//        {"South Ferrell Cell", rads(-45.0f), rads(30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+//        {"South Hadley Cell" , rads(-15.0f), rads(30.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+//        {"Noth Hadley Cell"  , rads(15.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+//        {"North Ferrell Cell", rads(45.0f) , rads(30.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+//        {"North Polar Cell"  , rads(75.0f) , rads(30.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
+        {"South Polar Cell"  , rads(-90.0f), rads(-60.0f), 0.65f, { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"South Ferrell Cell", rads(-60.0f), rads(-30.0f), 0.75f , { 1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"South Hadley Cell" , rads(-30.0f), rads(0.0f), 0.95f , { 0.0f,  1.0f}, {-1.0f,  0.0f}},
+        {"Noth Hadley Cell"  , rads(0.0f) , rads(30.0f), 0.95f , {-1.0f,  0.0f}, { 0.0f, -1.0f}},
+        {"North Ferrell Cell", rads(30.0f) , rads(60.0f), 0.74f , { 0.0f,  1.0f}, { 1.0f,  0.0f}},
+        {"North Polar Cell"  , rads(60.0f) , rads(90.0f), 0.65f, {-1.0f,  0.0f}, { 0.0f, -1.0f}}
 
-    generateFibonacciSphere(m_plateCount, sphere, jitter);
-    sphericalToCartesian(sphere, cartSphere);
+    };
 
-    sphericalToEquirectangular(sphere, m_influencePoints);
-    for(auto &point:m_influencePoints)
-    {
-        if(point.x>1.0f)
-            point.x=1.0f;
+	glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
+	int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
+	glm::ivec2 size=m_descriptors->getSize();
 
-        point.x=point.x*influenceSize.x;
-        point.y=point.y*influenceSize.y;
-    }
+//    WeatherBands weather(weatherCells);
+    PerturbedWeatherBands weather(m_plateSeed+10, influenceSize, weatherCells);
 
-    cartesianToStereographic(cartSphere, stereographicSphere);
-
-    std::vector<Triangle> triangles;// =delaunay.triangulate(stereographicSphere);
-    std::vector<Edge> edges;// =delaunay.getEdges();
-    delaunayTriangulate(stereographicSphere, triangles, edges, points);
-
-    std::vector<glm::vec3> cartPoints;
-    //    std::vector<glm::vec3> sphereicalPoints;
-
-    stereographicToCartesian(points, cartPoints);
-    //    insertPoint(glm::vec3(0.0f, 0.0f, 1.0f), cartPoints, triangles, edges);
-
-    //    sphere.resize(2);
-    //    sphere[0]={1.0f, 0.1f, 0.0f};
-    //    sphere[1]={1.0f, -0.1f, 0.0f};
-    //
-    //    sphericalToCartesian(sphere, cartPoints);
-    //    edges.emplace_back(0,1);
-
-    std::vector<glm::vec3> cartPolyLine;
-
-    cartPolyLine.resize(2);
-    m_influenceLines.resize(edges.size());
-
-    //calculate pixel size in normalized coords
-    float distanceThresh=(2.0f*glm::pi<float>())/influenceSize.x;
-
-    //distance is measure as squared distance
-    distanceThresh=distanceThresh*distanceThresh;
-
-    for(size_t i=0; i<edges.size(); ++i)
-    {
-        cartPolyLine[0]=cartPoints[edges[i].v];
-        cartPolyLine[1]=cartPoints[edges[i].w];
-
-        projectPolyLine<Projections::Cartesian, Projections::Equirectangular>(cartPolyLine, m_influenceLines[i], distanceThresh);
-    }
-    for(size_t i=0; i<m_influenceLines.size(); ++i)
-    {
-        for(auto &point:m_influenceLines[i])
-        {
-            point.x=point.x*(influenceSize.x-1);
-            point.y=point.y*(influenceSize.y-1);
-        }
-    }
-
-    //    std::vector<glm::vec2> stereographicPolyLine;
-    //    float max=0.0f;
-    //    float min=0.0f;
-    //
-    //    m_influenceLines.resize(edges.size());
-    //    for(size_t i=0; i<edges.size(); ++i)
-    //    {
-    //        glm::vec2 &pt1=points[edges[i].v];
-    //        glm::vec2 &pt2=points[edges[i].w];
-    //
-    //        max=std::max(pt1.x, max);
-    //        max=std::max(pt1.y, max);
-    //        max=std::max(pt2.x, max);
-    //        max=std::max(pt2.y, max);
-    //
-    //        min=std::min(pt1.x, min);
-    //        min=std::min(pt1.y, min);
-    //        min=std::min(pt2.x, min);
-    //        min=std::min(pt2.y, min);
-    //
-    //        m_influenceLines[i].push_back(pt1);
-    //        m_influenceLines[i].push_back(pt2);
-    //    }
-    //
-    //    float delta=max-min;
-    //    //set points based on size
-    //    for(size_t i=0; i<m_influenceLines.size(); ++i)
-    //    {
-    //        for(auto &point:m_influenceLines[i])
-    //        {
-    //            point.x=((point.x-min)/delta)*influenceSize.x;
-    //            point.y=((point.y-min)/delta)*influenceSize.y;
-    //        }
-    //    }
-}
-
-#else
-
-struct PlateInfo
-{
-    size_t index;
-    float value;
-    glm::vec3 direction;
-
-    float height;
-
-    glm::ivec2 point;
-    glm::vec3 point3d;
-    std::vector<glm::ivec2> points;
-
-    std::vector<size_t> neighbors;
-    std::vector<float> neighborCollisions;
-};
-
-void calculateCurve(float distance, float &plate1, float &plate2, float cutoff=0.7f);
-float calculateConvergentCurve(float distance, bool plate1Ocean, bool plate2Ocean);
-float calculateDivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean);
-
-template<typename _Grid>
-void EquiRectWorldGenerator<_Grid>::generatePlates()
-{
     chrono::high_resolution_clock::time_point time1;
     chrono::high_resolution_clock::time_point time2;
-
-    glm::ivec2 influenceSize=m_descriptorValues.m_influenceSize;
-    int influenceMapSize=HastyNoise::AlignedSize(influenceSize.x*influenceSize.y, m_simdLevel);
-    glm::ivec2 size=m_descriptors->getSize();
 
     std::vector<float> plateMap;
     std::vector<float> plate2Map;
@@ -539,7 +333,13 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     std::vector<float> continentMap;
     std::vector<float> heightMap;
     std::vector<float> terrainScaleMap;
+    std::vector<float> i;
+    std::vector<float> nsAirCurrent;
+    std::vector<float> ewAirCurrent;
     std::vector<PlateInfo> plateDetails;
+    std::vector<float> moistureMap;
+    std::vector<float> moistureMap2;
+    std::vector<float> moistureDeltaMap;
 
     time1=chrono::high_resolution_clock::now();
 
@@ -550,6 +350,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     m_influenceMap.resize(influenceMapSize);
     heightMap.resize(influenceMapSize);
     terrainScaleMap.resize(influenceMapSize);
+    moistureMap.resize(influenceMapSize);
+    moistureMap2.resize(influenceMapSize);
+    moistureDeltaMap.resize(influenceMapSize);
+    
+    nsAirCurrent.resize(influenceMapSize);
+    ewAirCurrent.resize(influenceMapSize);
 
     m_influenceVectorSet=std::make_unique<HastyNoise::VectorSet>(m_simdLevel);
     m_influenceVectorSet->SetSize(influenceMapSize);
@@ -594,6 +400,18 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     m_continentPerlin->SetFractalOctaves(4);
     m_continentPerlin->FillSet(terrainScaleMap.data(), m_influenceVectorSet.get());
 
+    m_continentPerlin->SetSeed(m_plateSeed+3);
+    m_continentPerlin->SetNoiseType(HastyNoise::NoiseType::Perlin);
+    m_continentPerlin->SetFrequency(0.01f);
+    m_continentPerlin->SetPerturbType(HastyNoise::PerturbType::Gradient);
+    m_continentPerlin->SetPerturbAmp(0.5f);
+    m_continentPerlin->SetPerturbFrequency(1.0f);
+
+    m_continentPerlin->FillSet(nsAirCurrent.data(), m_influenceVectorSet.get());
+    
+    m_continentPerlin->SetSeed(m_plateSeed+4);
+    m_continentPerlin->FillSet(ewAirCurrent.data(), m_influenceVectorSet.get());
+
 //plate map
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::Value);
     m_cellularNoise->SetCellularDistanceFunction(HastyNoise::CellularDistance::Natural);
@@ -623,7 +441,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     time1=chrono::high_resolution_clock::now();
     cellularDistanceTime=chrono::duration_cast<chrono::milliseconds>(time1-time2).count();
 
-//Boarder plate Map
+//Border plate Map
     m_cellularNoise->SetCellularReturnType(HastyNoise::CellularReturnType::ValueDistance2);//get what plate the div was tested against
     m_cellularNoise->FillSet(plate2Map.data(), m_influenceVectorSet.get());
 
@@ -679,6 +497,8 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
     plateMaxDistance.resize(plates.size(), -2.0f);
     plateMinPoint.resize(plates.size());
 
+    glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
+
     for(size_t i=0; i<influenceMapSize; i++)
     {
         if(plateMap[i]!=last)
@@ -727,6 +547,12 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         m_influenceMap[i].plateDistanceValue=plateDistanceMap[i];
         m_influenceMap[i].continentValue=continentMap[i];
 
+//        glm::vec2 airDirection(ewAirCurrent[i], nsAirCurrent[i]);
+//        
+//        m_influenceMap[i].airDirection=glm::normalize(airDirection);
+        m_influenceMap[i].airDirection.x=ewAirCurrent[i];
+        m_influenceMap[i].airDirection.y=nsAirCurrent[i];
+
         plateDetails[lastIndex].points.emplace_back(point.x, point.y);
 
         point.x++;
@@ -737,7 +563,7 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         }
     }
 
-    glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
+    
 
     for(size_t i=0; i<plateDetails.size(); i++)
     {
@@ -771,21 +597,24 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         tangentPlaneCoords.y=distribution(generator);
         tangentPlaneCoords=glm::normalize(tangentPlaneCoords);
 
-        //cross with z axis for a rotation vector to align with the z axis
-        glm::vec3 rotationVector=glm::cross(zAxis, point);
+        details.driftDirection=tangentPlaneCoords;
+        rotateTangetVectorToPoint(point, tangentPlaneCoords, details.direction);
 
-        if(glm::length2(rotationVector)==0.0f)
-        {//already aligned to z axis
-            details.direction=glm::vec3(tangentPlaneCoords.x, tangentPlaneCoords.y, 0.0f);
-        }
-        else
-        {
-            //get angle to rotate vector to position
-            float theta=acos(glm::dot(point, zAxis));
-            glm::mat4 rotationMat=glm::rotate(theta, rotationVector);
-
-            details.direction=rotationMat*glm::vec4(tangentPlaneCoords.x, tangentPlaneCoords.y, 0.0f, 1.0f);
-        }
+//        //cross with z axis for a rotation vector to align with the z axis
+//        glm::vec3 rotationVector=glm::cross(zAxis, point);
+//
+//        if(glm::length2(rotationVector)==0.0f)
+//        {//already aligned to z axis
+//            details.direction=glm::vec3(tangentPlaneCoords.x, tangentPlaneCoords.y, 0.0f);
+//        }
+//        else
+//        {
+//            //get angle to rotate vector to position
+//            float theta=acos(glm::dot(point, zAxis));
+//            glm::mat4 rotationMat=glm::rotate(theta, rotationVector);
+//
+//            details.direction=rotationMat*glm::vec4(tangentPlaneCoords.x, tangentPlaneCoords.y, 0.0f, 1.0f);
+//        }
 
         size_t neighborIndex=i*plateDetails.size();
         for(size_t j=0; j<plateDetails.size(); j++)
@@ -824,6 +653,8 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         }
     }
 
+
+    point={0, 0};
     for(size_t i=0; i<influenceMapSize; i++)
     {
         size_t &index=m_influenceMap[i].tectonicPlate;
@@ -846,6 +677,39 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
         m_influenceMap[i].plateDistanceValue=(plateDistanceMap[i]-plateMinDistance[index])/(plateMaxDistance[index]-plateMinDistance[index]);
 //        m_influenceMap[i].heightBase=0.0f;
 
+//build per pixel direction
+        glm::vec3 sphericalPoint;
+        glm::vec3 cartPoint;
+        glm::vec3 direction;
+        glm::vec3 sphericalDirection;
+
+        glm::vec2 normPoint((float)point.x/influenceSize.x, (float)point.y/influenceSize.y);
+        projectPoint<Projections::Equirectangular, Projections::Spherical>(normPoint, sphericalPoint);
+        projectPoint<Projections::Spherical, Projections::Cartesian>(sphericalPoint, cartPoint);
+        
+        rotateTangetVectorToPoint(cartPoint, details.driftDirection, direction);
+
+        projectVector(direction, sphericalPoint, sphericalDirection);
+        m_influenceMap[i].direction.x=sphericalDirection.y;
+        m_influenceMap[i].direction.y=sphericalDirection.z;
+
+//air currents determined by banding and random vectors from before
+        glm::vec2 latLong(sphericalPoint.y, sphericalPoint.z);
+        float latitude=sphericalPoint.z;
+        float dir=1.0f;
+        glm::vec2 bandDirection;
+
+        if(sphericalPoint.z<0.0f)
+            dir=-1.0f;
+
+        m_influenceMap[i].weatherCell=weather.getCellIndex(latLong);
+        m_influenceMap[i].weatherBand=weather.getBandIndex(latLong);
+
+        bandDirection=weather.getWindDirection(latLong);
+        m_influenceMap[i].airDirection=bandDirection;
+//        m_influenceMap[i].airDirection=(bandDirection+m_influenceMap[i].airDirection)/2.0f;
+
+//build terrain
         bool oceanPlate=(details.height<0.5f);
         bool oceanPlate2=(details2.height<0.5f);
 
@@ -887,97 +751,104 @@ void EquiRectWorldGenerator<_Grid>::generatePlates()
 			m_influenceMap[i].heightBase=1.0f;
 		if(m_influenceMap[i].heightBase<0.0f)
 			m_influenceMap[i].heightBase=0.0f;
+
+//temperature
+        m_influenceMap[i].temperature=getTemperature(latitude);
+
+//moisture
+        float bandMoisture=weather.getMoisture(latLong);
+
+        m_influenceMap[i].moistureCapacity=bandMoisture*0.5f;
+        if(m_influenceMap[i].heightBase<0.5)
+            moistureMap[i]=1.0f;
+        //        if(m_influenceMap[i].heightBase<0.5)
+        //            moistureMap[i]=1.0f*(m_influenceMap[i].heightBase-0.25f)/0.25f;
+        else
+            moistureMap[i]=(bandMoisture*0.9)+(nsAirCurrent[i]*0.1f);// *0.5f;
+
+        point.x++;
+        if(point.x>=influenceSize.x)
+        {
+            point.x=0;
+            point.y++;
+        }
     }
 
-//	for(size_t y=1; i<influenceSize.y; y++)
-//	{
+//    std::vector<float> *mapPointer1=&moistureMap;
+//    std::vector<float> *mapPointer2=&moistureMap2;
+    std::vector<float> &map1=moistureMap;
+    for(size_t i=0; i<influenceMapSize; i++)
+    {
+        if(m_influenceMap[i].heightBase>0.5f)
+            moistureDeltaMap[i]=0.0f;
+        else
+            moistureDeltaMap[i]=1.0f;
+    }
+
+    glm::ivec2 lowerImageBound(0, 0);
+    glm::ivec2 upperImageBound(influenceSize.x-1, influenceSize.y-1);
+
+
+    size_t breakX=186;
+    size_t breakY=168;
+    size_t breakIndex=breakY*influenceSize.x+breakX;
+    size_t loops=10;
+
+    std::vector<float> floodScale={0.25f, 0.5f, 0.25f};
+    for(size_t loop=0; loop<loops; ++loop)
+    {
+//        std::vector<float> &map1=*mapPointer1;
+//        std::vector<float> &map2=*mapPointer2;
+
+        size_t i=0;
+        for(size_t y=0; y<influenceSize.y; y++)
+        {
+            for(size_t x=0; x<influenceSize.x; x++)
+            {
+                if((x==breakX)&&(y>=breakY))
+                    x=x;
+
+                if(map1[i]>0.0f)
+                {
+                    glm::vec2 &airDirection=m_influenceMap[i].airDirection;
+                    float magnitude=glm::length(airDirection);
+                    float moisture=moistureDeltaMap[i];// map1[i];
+                    float moistureCaptured=moisture*m_influenceMap[i].moistureCapacity*magnitude;
+
+                    if(m_influenceMap[i].heightBase>0.5f)
+                        moistureDeltaMap[i]=moistureDeltaMap[i]-moistureCaptured;
+
+                    fillPoints(glm::vec2(x, y), airDirection, moistureDeltaMap, influenceSize, moistureCaptured);
+//                    const std::array<glm::ivec2, 3> &floodPoints=getFloodPoints(airDirection);
+                }
+                ++i;
+            }
+        }
+
+        //remove moisture that was moved
+//        for(size_t i=0; i<influenceMapSize; i++)
+//        {
+//            if(i==breakIndex)
+//                i=i;
 //
-//	}
+//            map1[i]=map1[i]+moistureDeltaMap[i];
+//            moistureDeltaMap[i]=0.0f;
+//        }
+
+//        std::swap(mapPointer1, mapPointer2);
+    }
+
+    for(size_t i=0; i<influenceMapSize; i++)
+    {
+//        std::vector<float> &map=*mapPointer1;
+        
+        m_influenceMap[i].moisture=std::max(std::min(map1[i]+moistureDeltaMap[i], 1.0f), 0.0f);
+    }
 
     time2=chrono::high_resolution_clock::now();
     processingTime=chrono::duration_cast<chrono::milliseconds>(time2-time1).count();
 
     m_plateCount=plates.size();
-}
-#endif 
-
-inline void calculateCurve(float distance, float &plate1, float &plate2, float cutoff)
-{
-    if(distance>cutoff)
-    {
-        float d=(distance-cutoff)*(1.0f/(1.0f-cutoff));
-        plate2=d*0.5f;
-//        plate2=(d*d)*0.5f;
-        plate1=1.0f-plate2;
-    }
-    else
-    {
-        plate1=1.0f;
-        plate2=0.0f;
-    }
-}
-
-inline float subductionCurve(float distance)
-{
-    if(distance>0.9f)
-    {
-        distance=(distance-0.9f)*10.0f;
-        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.5f+0.5f;
-    }
-    else if(distance>0.8f)
-    {
-        distance=(distance-0.8f)*10.0f;
-        return (1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)))*0.3f+0.2f;
-    }
-    if(distance>0.6f)
-    {
-        distance=(distance-0.6f)*5.0f;
-        return (distance*distance)*0.2f;
-    }
-    return 0.0f;
-}
-
-inline float orogenicCurve(float distance)
-{
-    if(distance>0.6f)
-    {
-        distance=(distance-0.6f)*2.5f;
-		return 1.0f/(1.0f+pow(3.0f*(1.0f-distance)/distance, 2.0f));
-//        return (distance*distance);
-    }
-    return 0.0f;
-}
-
-inline float divergentCurve(float distance, float cutoff=0.9)
-{
-    if(distance>cutoff)
-    {
-        distance=(distance-cutoff)/(1.0f-cutoff);
-        return -(1.0f/(1.0f+pow(((1.0f-distance)/distance), 3.0f)));
-    }
-    return 0.0f;
-}
-
-inline float calculateConvergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
-{
-	if(plate1Ocean && plate2Ocean)
-		return orogenicCurve(distance)*0.5f;
-    else if(plate1Ocean&&!plate2Ocean)
-        return subductionCurve(distance)*0.7f;
-    else if(!plate1Ocean&&plate2Ocean)
-        return orogenicCurve(distance)*0.7f;
-    return orogenicCurve(distance);
-}
-
-inline float calculateDivergentCurve(float distance, bool plate1Ocean, bool plate2Ocean)
-{
-    if(plate1Ocean && plate2Ocean)
-        return divergentCurve(distance, 0.7f)*0.5f;
-    else if(plate1Ocean&&!plate2Ocean)
-        return divergentCurve(distance);
-    else if(!plate1Ocean&&plate2Ocean)
-        return divergentCurve(distance, 0.7f);
-    return divergentCurve(distance);
 }
 
 template<typename _Grid>
@@ -1092,7 +963,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateChunk(const glm::vec3 &start
     int seaLevel=(size.z/2);
     float heightScale=((float)size.z/2.0f);
     unsigned int validCells=0;
-//    glm::ivec3 blockIndex;
+    glm::ivec3 blockIndex;
 
     size_t index=0;
     size_t heightIndex=0;
@@ -1181,7 +1052,7 @@ unsigned int EquiRectWorldGenerator<_Grid>::generateRegion(const glm::vec3 &star
         }
     }
 
-    m_heightmapNoise->FillSet(regionHeightMap.data(), regionVectorSet.get());
+    m_continentPerlin->FillSet(regionHeightMap.data(), regionVectorSet.get());
 
     index=0;
     for(int y=0; y<regionSize.y; y+=stride)
@@ -1299,7 +1170,7 @@ void EquiRectWorldGenerator<_Grid>::buildHeightMap(const glm::vec3 &startPos, co
         }
     }
 
-    m_heightmapNoise->FillSet(heightMap.data(), vectorSet.get());
+    m_continentPerlin->FillSet(heightMap.data(), vectorSet.get());
 //    m_continentPerlin->FillNoiseSetMap(heightMap.data(), xMap.data(), yMap.data(), zMap.data(), lodSize.x, lodSize.y, 1);
 }
 

@@ -231,14 +231,15 @@ int main(int argc, char ** argv)
 
     if(worldDirectories.empty())
     {
-        std::string worldDirectory=worldsDirectory.string()+"/TestApWorld";
+        std::string worldName="TestAppWorld";
+        std::string worldDirectory=worldsDirectory.string()+"/"+worldName;
         fs::path worldPath(worldDirectory);
         
         fs::create_directory(worldPath);
 
         //creating earth sizes
 //        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
-        world.create(worldDirectory, "TestWorld", glm::ivec3(10240, 10240, 1024), "EquiRectWorldGenerator");
+        world.create(worldDirectory, worldName, glm::ivec3(204800, 102400, 10240), "EquiRectWorldGenerator");
     }
     else
         world.load(worldDirectories[0].path().string());

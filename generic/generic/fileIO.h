@@ -10,7 +10,7 @@ namespace generic
     template<typename _FileIO>
     typename _FileIO::Type *open(std::string filename, std::string mode, void *userData=nullptr)
     {
-        return (_FileIO::Type *)nullptr;
+        return (typename _FileIO::Type *)nullptr;
     }
 
     template<typename _FileIO>

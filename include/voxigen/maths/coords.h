@@ -171,6 +171,33 @@ inline float perpendicularDistanceSqrd<Projections::Spherical>(const typename Pr
 	return perpendicularDistanceSqrd<Projections::Cartesian>(cartPoint, cartLineStart, cartLineEnd);
 }
 
+inline void projectVector(const typename ProjectionDetails<Projections::Cartesian>::PointType &vec, const typename ProjectionDetails<Projections::Spherical>::PointType &sphericalPoint, typename ProjectionDetails<Projections::Spherical>::PointType &outVec)
+{
+//    ProjectionDetails<Projections::Spherical>::PointType sphericalPoint;
+//
+//    projectPoint<Projections::Cartesian, Projections::Spherical>(point, sphericalPoint);
+
+//    glm::mat3 mat;
+
+    float cosTheta=cos(sphericalPoint.y);
+    float sinTheta=sin(sphericalPoint.y);
+    float cosPhi=cos(sphericalPoint.z);
+    float sinPhi=sin(sphericalPoint.z);
+
+    if(cosPhi == 0.0f)
+    {//handle poles
+        outVec.x=cosTheta*cosPhi*vec.x+sinTheta*cosPhi*vec.y+sinPhi*vec.z;
+        outVec.y=0.0f;
+        outVec.z=-cosTheta*vec.x-sinTheta*vec.y;
+    }
+    else
+    {
+        outVec.x=cosTheta*cosPhi*vec.x+sinTheta*cosPhi*vec.y+sinPhi*vec.z;
+        outVec.y=-sinTheta*vec.x+cosTheta*vec.y;
+        outVec.z=-cosTheta*sinPhi*vec.x-sinTheta*sinPhi*vec.y+cosPhi*vec.z;
+    }
+}
+
 //Notes:
 //Coordinate system for this library is right-handed x,y plane with z as up. Theta is treated as azimuth and phi as inclination
 
