@@ -1,14 +1,14 @@
 #include "voxigen/defines.h"
-#include "voxigen/cell.h"
-#include "voxigen/regularGrid.h"
-#include "voxigen/simpleRenderer.h"
-#include "voxigen/equiRectWorldGenerator.h"
+#include "voxigen/volume/cell.h"
+#include "voxigen/volume/regularGrid.h"
+#include "voxigen/rendering/simpleRenderer.h"
+#include "voxigen/generators/equiRectWorldGenerator.h"
 
-#include "voxigen/texturePack.h"
-#include "voxigen/textureAtlas.h"
-#include "voxigen/simpleShapes.h"
-#include "voxigen/filesystem.h"
-#include "voxigen/log.h"
+#include "voxigen/texturing/texturePack.h"
+#include "voxigen/texturing/textureAtlas.h"
+#include "voxigen/rendering/simpleShapes.h"
+#include "voxigen/fileio/filesystem.h"
+#include "voxigen/fileio/log.h"
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>

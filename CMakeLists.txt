@@ -185,66 +185,96 @@ set_target_properties(generic PROPERTIES FOLDER Libraries)
 #add_subdirectory(dt)
 #set_target_properties(dt PROPERTIES FOLDER Libraries)
 
-set(voxigen_headers
-    include/voxigen/activeVolume.h
-    include/voxigen/biome.h
-    include/voxigen/boundingBox.h
-    include/voxigen/cell.h
-    include/voxigen/chunk.h
-    include/voxigen/chunkHandle.h
-    include/voxigen/chunkFunctions.h
-    include/voxigen/chunkMesh.h
+
+set(voxigen_fileio
+    include/voxigen/fileio/filesystem.h
+    include/voxigen/fileio/jsonSerializer.h
+    src/fileio/jsonSerializer.cpp
+    include/voxigen/fileio/log.h
+    include/voxigen/fileio/simpleFilesystem.h
+    src/fileio/simpleFilesystem.cpp
+)
+source_group("fileio" FILES ${voxigen_fileio})
+
+set(voxigen_generators
+    include/voxigen/generators/biome.h
+    src/generators/biome.cpp
+    include/voxigen/generators/equiRectWorldGenerator.h
+    src/generators/equiRectWorldGenerator.cpp
+    include/voxigen/generators/generator.h
+)
+source_group("generators" FILES ${voxigen_generators})
+
+set(voxigen_maths
+    include/voxigen/maths/boundingBox.h
+    include/voxigen/maths/coords.h
+    src/maths/coords.cpp
+)
+source_group("maths" FILES ${voxigen_maths})
+
+set(voxigen_meshbuilders
+    include/voxigen/meshbuilders/cubicMeshBuilder.h
+    include/voxigen/meshbuilders/heightmapMeshBuilder.h
+)
+source_group("meshbuilders" FILES ${voxigen_meshbuilders})
+
+set(voxigen_meshes
+    include/voxigen/meshes/chunkMesh.h
+    src/meshes/chunkMesh.cpp
+    include/voxigen/meshes/faces.h
+    include/voxigen/meshes/heightMap.h
+    include/voxigen/meshes/meshBuffer.h
+)
+source_group("meshes" FILES ${voxigen_meshes})
+
+set(voxigen_volume
+    include/voxigen/volume/activeVolume.h
+    include/voxigen/volume/activeVolume.inl
+    include/voxigen/volume/cell.h
+    include/voxigen/volume/chunk.h
+    include/voxigen/volume/chunkFunctions.h
+    include/voxigen/volume/chunkHandle.h
+    include/voxigen/volume/chunkHandle.inl
+    include/voxigen/volume/dataHandler.h
+    include/voxigen/volume/dataStore.h
+    include/voxigen/volume/gridDescriptors.h
+    src/volume/gridDescriptors.cpp
+    include/voxigen/volume/gridFunctions.h
+    include/voxigen/volume/handleState.h
+    include/voxigen/volume/region.h
+    include/voxigen/volume/regionHandle.h
+    include/voxigen/volume/regionHandle.inl
+    include/voxigen/volume/regular2DGrid.h
+    src/volume/regular2DGrid.cpp
+    include/voxigen/volume/regularGrid.h
+)
+source_group("volume" FILES ${voxigen_volume})
+
+set(voxigen_source
     include/voxigen/classFactory.h
-    include/voxigen/coords.h
-    include/voxigen/cubicMeshBuilder.h
-    include/voxigen/dataHandler.h
-    include/voxigen/dataStore.h
     include/voxigen/defines.h
     include/voxigen/entity.h
-    include/voxigen/equiRectWorldGenerator.h
-    include/voxigen/faces.h
-    include/voxigen/filesystem.h
-    include/voxigen/generator.h
-    include/voxigen/gridDescriptors.h
-    include/voxigen/handleState.h
-    include/voxigen/heightmapMeshBuilder.h
-    include/voxigen/jsonSerializer.h
-    include/voxigen/log.h
-    include/voxigen/meshBuffer.h
+    src/entity.cpp
     include/voxigen/noise.h
+    src/noise.cpp
     include/voxigen/object.h
+    src/object.cpp
     include/voxigen/processQueue.h
-    include/voxigen/regular2DGrid.h
-    include/voxigen/regularGrid.h
-    include/voxigen/region.h
-    include/voxigen/regionHandle.h
+    include/voxigen/processQueue.inl
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
-    include/voxigen/simpleFilesystem.h
+    src/simpleCamera.cpp
     include/voxigen/voxigen_export.h
 )
+source_group("source" FILES ${voxigen_source})
 
-set(voxigen_inline
-    include/voxigen/activeVolume.inl
-    include/voxigen/chunkHandle.inl
-    include/voxigen/processQueue.inl
-    include/voxigen/regionHandle.inl
-)
-
-set(voxigen_sources
-    src/biome.cpp
-    src/chunkMesh.cpp
-    src/coords.cpp
-    src/entity.cpp
-    src/equiRectWorldGenerator.cpp
-    src/gridDescriptors.cpp
-    src/jsonSerializer.cpp
-    src/noise.cpp
-    src/object.cpp
-    src/regular2DGrid.cpp
-    src/simpleCamera.cpp
-    src/noise.cpp
-    src/simpleFilesystem.cpp
+set(voxigen_source ${voxigen_source}
+    ${voxigen_fileio}
+    ${voxigen_generators}
+    ${voxigen_maths}
+    ${voxigen_meshbuilders}
+    ${voxigen_meshes}
+    ${voxigen_volume}
 )
 
 #force debug to use HastyNoise release
@@ -280,31 +310,34 @@ if(VOXIGEN_RENDERING)
 #    hunter_add_package(globjects)
 #    find_package(globjects CONFIG REQUIRED)
 
-    set(voxigen_headers ${voxigen_headers}
-        include/voxigen/initOpengl.h
-        include/voxigen/glm_point.h
-        include/voxigen/nativeGL.h
-        include/voxigen/openglDebug.h
-        include/voxigen/renderAction.h
-        include/voxigen/renderPrepThread.h
-        include/voxigen/simpleChunkRenderer.h
-        include/voxigen/simpleRegionRenderer.h
-        include/voxigen/simpleRenderer.h
-        include/voxigen/simpleShapes.h
+    set(voxigen_rendering
+        include/voxigen/rendering/initOpengl.h
+        src/rendering/initOpengl.cpp
+        include/voxigen/rendering/nativeGL.h
+        src/rendering/nativeGL.cpp
+        include/voxigen/rendering/openglDebug.h
+        src/rendering/openglDebug.cpp
+        include/voxigen/rendering/renderAction.h
+        include/voxigen/rendering/renderPrepThread.h
+        include/voxigen/rendering/renderPrepThread.inl
+        include/voxigen/rendering/simpleChunkRenderer.h
+        include/voxigen/rendering/simpleChunkRenderer.inl
+        include/voxigen/rendering/simpleRegionRenderer.h
+        include/voxigen/rendering/simpleRegionRenderer.inl
+        include/voxigen/rendering/simpleRenderer.h
+        include/voxigen/rendering/simpleShapes.h
+        include/voxigen/rendering/simpleRenderer.inl
     )
+    source_group("rendering" FILES ${voxigen_rendering})
 
-    set(voxigen_inline ${voxigen_inline}
-        include/voxigen/renderPrepThread.inl
-        include/voxigen/simpleChunkRenderer.inl
-        include/voxigen/simpleRegionRenderer.inl
-        include/voxigen/simpleRenderer.inl
+    set(voxigen_rendering_maths
+        include/voxigen/maths/glm_point.h
     )
+    source_group("maths" FILES ${voxigen_rendering_maths})
 
-    set(voxigen_sources ${voxigen_sources}
-        src/initOpengl.cpp
-        src/nativeGL.cpp
-        src/openglDebug.cpp
-#        src/renderPrepThread.cpp
+    set(voxigen_source ${voxigen_source}
+        ${voxigen_rendering}
+        ${voxigen_rendering_maths}
     )
 
     set(voxigen_libraries ${voxigen_libraries} 
@@ -315,21 +348,28 @@ if(VOXIGEN_RENDERING)
 endif()
 
 if(VOXIGEN_TEXTURE)
-    set(voxigen_headers ${voxigen_headers}
-        include/voxigen/blendMethod.h
-        include/voxigen/chunkTextureMesh.h
-        include/voxigen/layerMethod.h
-        include/voxigen/textureAtlas.h
-        include/voxigen/texturedMesh.h
-        include/voxigen/texturePack.h
+    set(voxigen_texturing
+        include/voxigen/texturing/blendMethod.h
+        src/texturing/blendMethod.cpp
+        include/voxigen/texturing/layerMethod.h
+        src/texturing/layerMethod.cpp
+        include/voxigen/texturing/textureAtlas.h
+        src/texturing/textureAtlas.cpp
+        include/voxigen/texturing/texturePack.h
+        src/texturing/texturePack.cpp
     )
+    source_group("texturing" FILES ${voxigen_texturing})
 
-    set(voxigen_sources ${voxigen_sources}
-        src/blendMethod.cpp
-        src/chunkTextureMesh.cpp
-        src/layerMethod.cpp
-        src/textureAtlas.cpp
-        src/texturePack.cpp
+    set(voxigen_texturing_meshes
+        include/voxigen/meshes/chunkTextureMesh.h
+        src/meshes/chunkTextureMesh.cpp
+        include/voxigen/meshes/texturedMesh.h
+    )
+    source_group("meshes" FILES ${voxigen_texturing_meshes})
+
+    set(voxigen_source ${voxigen_source}
+        ${voxigen_texturing}
+        ${voxigen_texturing_meshes}
     )
 
     set(voxigen_libraries ${voxigen_libraries}
@@ -345,9 +385,7 @@ if(VOXIGEN_OUTPUT_DIRECTORY_RELEASE)
 endif()
 
 add_library(voxigen
-    ${voxigen_headers}
-    ${voxigen_inline}
-    ${voxigen_sources}
+    ${voxigen_source}
 )
 list(APPEND library_targets voxigen)
 

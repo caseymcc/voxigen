@@ -1,6 +1,6 @@
 #include "marker.h"
 
-#include "voxigen/simpleShapes.h"
+#include "voxigen/rendering/simpleShapes.h"
 #include <glm/gtc/type_ptr.hpp>
 
 bool Marker::m_programInit=false;
