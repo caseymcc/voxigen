@@ -5,6 +5,7 @@
 #include "voxigen/volume/chunk.h"
 #include "voxigen/meshes/chunkMesh.h"
 #include "voxigen/meshes/faces.h"
+#include "voxigen/indexing.h"
 
 #include <array>
 
@@ -16,8 +17,8 @@ namespace voxigen
 //#define SIMPLE_MESH
 
 #ifdef SIMPLE_MESH
-template<typename _Chunk, bool _XNegFace=true, bool _XPosFace=true, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
-void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position)
+template<typename _Chunk, bool _XNegFace=true, bool _XPosFace=true, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true, bool _Neighbors=false>
+void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, _Chunk *neighbor=nullptrx)
 {
     _Chunk::CellType &cell=cells[index];
 
@@ -34,7 +35,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::xNeg], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::xNeg], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.x=_Chunk::sizeX::value-1;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::xNeg], position, cellType);
+    }
 
     if(_XPosFace)
     {
@@ -44,7 +59,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::xPos], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::xPos], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.x=0;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::xPos], position, cellType);
+    }
 
     if(_YNegFace)
     {
@@ -54,7 +83,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::yNeg], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::yNeg], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.y=_Chunk::sizeY::value-1;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::yNeg], position, cellType);
+    }
 
     if(_YPosFace)
     {
@@ -64,7 +107,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::yPos], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::yPos], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.y=0;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::yPos], position, cellType);
+    }
 
     if(_ZNegFace)
     {
@@ -74,7 +131,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::zNeg], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::zNeg], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.z=_Chunk::sizeZ::value-1;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::zNeg], position, cellType);
+    }
 
 
     if(_ZPosFace)
@@ -85,7 +156,21 @@ void checkCell(ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, gl
             mesh.addFace(faces[Face::zPos], position, cellType);
     }
     else
-        mesh.addFace(faces[Face::zPos], position, cellType);
+    {
+        if(_Neighbors)
+        {
+            _Chunk::Cells &neighborCells=neighbor->getCells();
+            glm::ivec3 coord=chunkIndexToCoords<_Chunk>(index);
+
+            coord.z=0;
+            size_t neighborIndex=chunkCoordsToIndex(coord);
+
+            if(empty(neighborCells[neighborIndex]))
+                mesh.addFace(faces[Face::xNeg], position, cellType);
+        }
+        else
+            mesh.addFace(faces[Face::zPos], position, cellType);
+    }
 
 }
 
@@ -380,22 +465,6 @@ void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
     const int requiredIndices=(size.x*size.y*size.z)*6*4;
     const int requiredVertices=requiredScratchSize;
 
-//    mesh.indicesSize=0;
-//    mesh.verticesSize=0;
-//
-//    //currently the algorithm is greedy and is expecting you to provide memory for worst case where every cube is draw
-//    //this memory is expected to be used over and over, the user is expected to copy the results from this memory
-//    if((mesh.indicesCapacity<requiredIndices)||
-//        (mesh.verticesCapacity<requiredVertices)||
-//        (mesh.scratchCapacity<requiredScratchSize))
-//    {//dont have enough space to work with
-//        return;
-//    }
-//
-//    for(size_t i=0; i<requiredScratchSize; ++i)
-//        mesh.scratch[i]=requiredScratchSize;
-////    memset((void *)mesh.scratch, 0, requiredScratchSize*sizeof(unsigned int));
-
     typename _Chunk::Cells &cells=chunk->getCells();
     glm::ivec3 position(0, 0, 0);
 
@@ -412,96 +481,81 @@ void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
 
     checkY<_Chunk, _ChunkMesh, true, false>(mesh, cells, index, position, stride);
 
-//    unsigned int *scratch=mesh.scratch;
-//    size_t scratchIndex=0;
-//    size_t verticesIndex=0;
-//    Vertex vertex;
-//
-//    for(vertex.z=0; vertex.z<=_Chunk::sizeZ::value; ++vertex.z)
-//    {
-//        for(vertex.y=0; vertex.y<=_Chunk::sizeY::value; ++vertex.y)
-//        {
-//            for(vertex.x=0; vertex.x<=_Chunk::sizeX::value; ++vertex.x)
-//            {
-//                if(scratch[scratchIndex] > 0)
-//                {
-//                    mesh.vertices[verticesIndex]=vertex;
-//                    scratch[scratchIndex]=verticesIndex;
-//
-//                    verticesIndex++;
-//                }
-//                scratchIndex++;
-//            }
-//        }
-//    }
-//    mesh.verticesSize=verticesIndex;
-
-//    for(size_t i=0; i<mesh.indicesSize; ++i)
-//    {
-//        size_t index=mesh.indices[i];
-//
-//        if(scratch[index]==requiredScratchSize)
-//        {
-//            scratch[index]=verticesIndex;
-//            mesh.vertices[verticesIndex]=indexToVertex<_Chunk>(index, stride);
-//            verticesIndex++;
-//        }
-//
-//        mesh.indices[i]=scratch[index];
-//    }
-//    mesh.verticesSize=verticesIndex;
-}
-
-//Mesh g_mesh;//global memory for handling meshing
-//
-//template<typename _Chunk>
-//void buildCubicMesh(ChunkMesh &mesh, _Chunk *chunk)
-//{
-//    if(g_mesh.indicesCapacity<indicesSize<_Chunk>())
-//    {
-//        if(g_mesh.indices!=nullptr)
-//            delete g_mesh.indices;
-//        g_mesh.indicesCapacity=indicesSize<_Chunk>();
-//        g_mesh.indices=(unsigned int *)malloc(sizeof(unsigned int)*g_mesh.indicesCapacity);
-//        g_mesh.indicesSize=0;
-//    }
-//
-//    if(g_mesh.verticesCapacity<verticesSize<_Chunk>())
-//    {
-//        if(g_mesh.vertices!=nullptr)
-//            delete g_mesh.vertices;
-//        if(g_mesh.scratch!=nullptr)
-//            delete g_mesh.scratch;
-//        g_mesh.verticesCapacity=verticesSize<_Chunk>();
-//        g_mesh.scratchCapacity=g_mesh.verticesCapacity;
-//        g_mesh.vertices=(Vertex *)malloc(sizeof(Vertex)*g_mesh.verticesCapacity);
-//        g_mesh.scratch=(unsigned int *)malloc(sizeof(unsigned int)*g_mesh.scratchCapacity);
-//        g_mesh.verticesSize=0;
-//    }
-//
-//    buildCubicMesh(g_mesh, chunk);
-//    
-//    if((g_mesh.indicesSize<=0)||(g_mesh.verticesSize<=0))
-//        return;
-//
-//    std::vector<int> &indices=mesh.getIndices();
-//    std::vector<ChunkMeshVertex> &vertices=mesh.getVerticies();
-//
-//    indices.resize(g_mesh.indicesSize);
-//    vertices.resize(g_mesh.verticesSize);
-//
-//    for(size_t i=0; i<g_mesh.indicesSize; ++i)
-//        indices[i]=g_mesh.indices[i];
-//
-//    for(size_t i=0; i<g_mesh.verticesSize; ++i)
-//    {
-//        vertices[i].x=g_mesh.vertices[i].x;
-//        vertices[i].y=g_mesh.vertices[i].y;
-//        vertices[i].z=g_mesh.vertices[i].z;
-//    }
-//}
 
 #endif//SIMPLE_MESH
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Neighbor check
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<typename _Chunk, typename _ChunkMesh, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
+void checkX(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride, std::vector<_Chunk *> *neighbors=nullptr)
+{
+    position.x=0;
+
+    checkCell<_Chunk, _ChunkMesh, false, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace, true>(mesh, cells, index, position, stride, neighbors);
+    index++;
+    position.x++;
+
+    for(size_t x=stride; x<_Chunk::sizeX::value-stride; x+=stride)
+    {
+        checkCell<_Chunk, _ChunkMesh, true, true, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace, true>(mesh, cells, index, position, stride, neighbors);
+        index++;
+        position.x++;
+    }
+
+    checkCell<_Chunk, _ChunkMesh, true, false, _YNegFace, _YPosFace, _ZNegFace, _ZPosFace, true>(mesh, cells, index, position, stride, neighbors);
+    index++;
+}
+
+
+template<typename _Chunk, typename _ChunkMesh, bool _ZNegFace=true, bool _ZPosFace=true>
+void checkY_Neighbor(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride, std::vector<_Chunk *> *neighbors=nullptr)
+{
+    position.y=0;
+
+    checkX<_Chunk, _ChunkMesh, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+    position.y++;
+
+    for(size_t y=stride; y<_Chunk::sizeY::value-stride; y+=stride)
+    {
+        position.x=0;
+
+        checkX<_Chunk, _ChunkMesh, true, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+        position.y++;
+    }
+
+    checkX<_Chunk, _ChunkMesh, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+}
+
+
+//neighbors vector follows the faces indexing, 0:-x, 1:+x, 2:-y, 3:+y, 4:-z, 5:+z
+template<typename _Chunk, typename _ChunkMesh>
+void buildCubicMesh_Neighbor(_ChunkMesh &mesh, _Chunk *chunk, std::vector<_Chunk *> *neighbors=nullptr)
+{
+    size_t stride=glm::pow(2u, (unsigned int)chunk->getLod());
+    glm::ivec3 size(_Chunk::sizeX::value/stride, _Chunk::sizeY::value/stride, _Chunk::sizeZ::value/stride);
+
+    const int requiredScratchSize=(size.x+1)*(size.y+1)*(size.z+1);
+    const int requiredIndices=(size.x*size.y*size.z)*6*4;
+    const int requiredVertices=requiredScratchSize;
+
+    typename _Chunk::Cells &cells=chunk->getCells();
+    glm::ivec3 position(0, 0, 0);
+
+    size_t index=0;
+
+    checkY_Neighbor<_Chunk, _ChunkMesh, false, true>(mesh, cells, index, position, stride);
+    position.z++;
+
+    for(size_t z=stride; z<_Chunk::sizeZ::value-stride; z+=stride)
+    {
+        checkY_Neighbor<_Chunk, _ChunkMesh, true, true>(mesh, cells, index, position, stride);
+        position.z++;
+    }
+
+    checkY_Neighbor<_Chunk, _ChunkMesh, true, false>(mesh, cells, index, position, stride);
+}
 
 } //namespace voxigen
 

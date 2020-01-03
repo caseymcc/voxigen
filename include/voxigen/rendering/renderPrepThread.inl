@@ -345,7 +345,13 @@ bool RenderPrepThread<_DataType, _Object>::buildMesh(Request *request, voxigen::
 
     scratchMesh->clear();
     scratchMesh->setTextureAtlas(objectMesh.textureAtlas);
-    voxigen::buildCubicMesh(*scratchMesh, object->getHandle()->chunk());
+
+    auto chunk=object->getHandle()->chunk();
+
+    if(chunk->hasNeighbors())
+        voxigen::buildCubicMesh_Neighbor(*scratchMesh, chunk, chunk->getNeighbors());
+    else
+        voxigen::buildCubicMesh(*scratchMesh, chunk);
 
     std::vector<Mesh::Vertex> &vertexes=scratchMesh->getVertexes();
     std::vector<int> &indexes=scratchMesh->getIndexes();

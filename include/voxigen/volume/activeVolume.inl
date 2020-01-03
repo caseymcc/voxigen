@@ -83,7 +83,11 @@ void ActiveVolume<_Grid, _Container, _Index>::init(const Index &index, std::vect
     m_volumeSize=calcVolumeSize(m_viewRadius);
     m_volume.resize(m_volumeSize.x*m_volumeSize.y*m_volumeSize.z);
 
-    std::fill(m_volume.begin(), m_volume.end(), nullptr);
+    for(auto &info:m_volume)
+    {
+        info.container=nullptr;
+    }
+//    std::fill(m_volume.begin(), m_volume.end(), nullptr);
 
     m_volumeCenterIndex=(m_volumeSize/2);
 //    glm::ivec3 centerPos=chunkIndex;
@@ -316,7 +320,7 @@ void ActiveVolume<_Grid, _Container, _Index>::update(const Index &index, std::ve
 //                if(m_volume[indexTo])
 //                    m_volume[indexTo]->refCount--;
 
-                m_volume[indexTo]=m_volume[indexFrom];
+                m_volume[indexTo].container=m_volume[indexFrom].container;
  //               m_volume[indexTo]->refCount++;
 
                 indexFrom+=stride.x;
@@ -400,7 +404,7 @@ void ActiveVolume<_Grid, _Container, _Index>::releaseRegion(const glm::ivec3 &st
             for(size_t x=0; x<size.x; x++)
             {
 //                releaseChunkInfo(m_volume[index]);
-                ContainerType *container=m_volume[index];
+                ContainerType *container=m_volume[index].container;
 //
 //                if(container)
 //                {
@@ -409,7 +413,7 @@ void ActiveVolume<_Grid, _Container, _Index>::releaseRegion(const glm::ivec3 &st
 //                }
                 if(container)
                     release.push_back(container);
-                m_volume[index]=nullptr;
+                m_volume[index].container=nullptr;
                 index++;
             }
             index+=strideX;
@@ -446,7 +450,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
 
                 if(container)
                 {
-                    m_volume[index]=container;
+                    m_volume[index].container=container;
                     typename Index::Handle handle=Index::getHandle(m_grid, renderIndex);
 
                     container->setAction(RenderAction::Idle);
@@ -461,7 +465,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
 #ifdef DEBUG_RENDERERS
                     Log::debug("*****  MainThread - Failed to get container %s", renderIndex.pos().c_str());
 #endif//DEBUG_RENDERERS
-                    m_volume[index]=nullptr;
+                    m_volume[index].container=nullptr;
                 }
 
                 index++;
@@ -493,14 +497,14 @@ void ActiveVolume<_Grid, _Container, _Index>::getMissingContainers(std::vector<C
             renderIndex.setX(startIndex);
             for(size_t x=0; x<m_volumeSize.x; x++)
             {
-                if(m_volume[index]==nullptr)
+                if(m_volume[index].container==nullptr)
                 {
                     ContainerType *container=getFreeContainer();
 
                     if(!container)
                         continue;
 
-                    m_volume[index]=container;
+                    m_volume[index].container=container;
                     typename Index::Handle handle=Index::getHandle(m_grid, renderIndex);
 
                     container->setAction(RenderAction::Idle);
@@ -693,7 +697,7 @@ typename ActiveVolume<_Grid, _Container, _Index>::ContainerType *ActiveVolume<_G
 //        assert(m_volume[renderIndex]->getChunkHandle()->key().hash==key.hash);
 #endif//NDEBUG
     
-    return m_volume[renderIndex];
+    return m_volume[renderIndex].container;
 //    auto iter=m_volumeMap.find(key.hash);
 //
 //    if(iter==m_volumeMap.end())

@@ -88,7 +88,7 @@ void TextureAtlas::save(const std::string &path, const std::string &name)
         serializer.addString(value.first);
 
         serializer.addKey("index");
-        serializer.addUInt(value.second);
+        serializer.addUInt((unsigned int)value.second);
 
         serializer.endObject();
     }
@@ -110,10 +110,10 @@ void TextureAtlas::save(const std::string &path, const std::string &name)
             serializer.startObject();
 
             serializer.addKey("x");
-            serializer.addUInt(textureEntry.x);
+            serializer.addUInt((unsigned int)textureEntry.x);
 
             serializer.addKey("y");
-            serializer.addUInt(textureEntry.y);
+            serializer.addUInt((unsigned int)textureEntry.y);
 
             serializer.endObject();
         }

@@ -183,7 +183,13 @@ TextureInfo TexturePack::getTextureInfo(generic::Deserializer &deserializer)
     TextureInfo texture;
 
     if(!deserializer.openObject())
+    {
+        texture.base=nullptr;
+        texture.overlay=nullptr;
+        texture.blendMethod=BlendMethod::alpha;
+
         return texture;
+    }
 
     if(deserializer.key("base"))
     {

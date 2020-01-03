@@ -41,6 +41,9 @@ public:
 
     _Cell &getCell(const glm::vec3 &position);
 
+    bool hasNeighbors() { return m_hasNeighbors; }
+    std::vector<Chunk *> &getNeighbors() { return m_neighbors; }
+
 private:
     ChunkHash m_hash; //unique id used to look up chunk in region
     unsigned int m_revision; //incremented as changes are made
@@ -50,7 +53,9 @@ private:
     glm::vec3 m_gridOffset; //offset in grid coords
     size_t m_lod;
     unsigned int m_validCells;
-    
+
+    bool m_hasNeighbors;
+    std::vector<Chunk *> m_neighbors;
 };
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
@@ -59,16 +64,19 @@ using UniqueChunk=std::unique_ptr<Chunk<_Cell, _x, _y, _z>>;
 
 template<typename _Cell, size_t _x, size_t _y, size_t _z>
 Chunk<_Cell, _x, _y, _z>::Chunk(ChunkHash hash, unsigned int revision, const glm::ivec3 &index, glm::vec3 gridOffset, size_t lod):
-//BoundingBox(dimensions, transform),
-m_hash(hash),
-m_revision(revision),
-m_index(index),
-m_gridOffset(gridOffset),
-m_validCells(0),
-m_lod(lod)
+    //BoundingBox(dimensions, transform),
+    m_hash(hash),
+    m_revision(revision),
+    m_index(index),
+    m_gridOffset(gridOffset),
+    m_validCells(0),
+    m_lod(lod),
+    m_hasNeighbors(false)
 {
     size_t size=(_x*_y*_z)/(lod+1);
     m_cells.resize(size);
+
+    std::fill(m_neighbors.begin(), m_neighbors.end(), nullptr);
     
 #ifdef DEBUG_ALLOCATION
     Log::debug("chunk (%d) allocate - data %x size %d\n", m_hash, m_cells.data(), size);

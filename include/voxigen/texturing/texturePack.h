@@ -82,10 +82,10 @@ struct TextureKey
 namespace std
 {
 
-template<>
+template<> 
 struct hash<voxigen::TextureKey>
 {
-    std::size_t operator()(const voxigen::TextureKey &key) const
+    size_t operator()(const voxigen::TextureKey &key) const
     {
         voxigen::TextureInfo *info;
 

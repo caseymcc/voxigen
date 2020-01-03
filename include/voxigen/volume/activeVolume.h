@@ -288,6 +288,12 @@ public:
     typedef std::function<_Container *()> GetContainer;
     typedef std::function<void (_Container *)> ReleaseContainer;
 
+    struct VolumeInfo
+    {
+        size_t lod;
+        ContainerType *container;
+    };
+
     ActiveVolume(GridType *grid, DescriptorType *descriptors, GetContainer getContainer, ReleaseContainer releaseContainer);
     ~ActiveVolume();
 
@@ -310,6 +316,7 @@ public:
     const std::vector<ContainerType *> &getVolume() { return m_volume; }
 
     void releaseInfo(_Container *containerInfo);
+
 private:
     glm::ivec3 calcVolumeSize(const glm::ivec3 &radius);
 
@@ -347,7 +354,7 @@ private:
 
 //    std::unordered_map<Key::Type, size_t> m_volumeMap;
 //    std::vector<ChunkRenderInfoType> m_volume;
-    std::vector<ContainerType *> m_volume;
+    std::vector<VolumeInfo> m_volume;
     glm::ivec3 m_volumeSize;
     glm::ivec3 m_volumeCenterIndex;
 

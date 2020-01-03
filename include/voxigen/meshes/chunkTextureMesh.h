@@ -81,8 +81,8 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
         entry.y=0;
     }
 
-    short texX=entry.x;
-    short texY=entry.y;
+    short texX=(short)entry.x;
+    short texY=(short)entry.y;
     short resolution=(short)m_textureAtlas->resolution();
 
     if(entry.method==LayerMethod::repeat)
