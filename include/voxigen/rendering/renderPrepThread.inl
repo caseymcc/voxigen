@@ -26,6 +26,10 @@ bool RenderPrepThread<_DataType, _Object>::requestPositionUpdate(const glm::ivec
     if(!request)
         return false;
 
+#ifdef DEBUG_MESH
+    Log::debug("MainThread - RenderPrepThread::requestPositionUpdate get request (%x)", request);
+#endif//DEBUG_MESH
+
     request->type=prep::Type::UpdatePos;
     request->priority=prep::Priority::UpdatePos;
     request->getRegion()=region;
@@ -44,6 +48,10 @@ bool RenderPrepThread<_DataType, _Object>::requestMesh(_Object *object, TextureA
         return false;
 
 #ifdef DEBUG_MESH
+    Log::debug("MainThread - RenderPrepThread::requestMesh get request (%x)", request);
+#endif//DEBUG_MESH
+
+#ifdef DEBUG_MESH
     auto chunkHandle=object->getChunkHandle();
 
     assert(!chunkHandle->empty());
@@ -52,9 +60,10 @@ bool RenderPrepThread<_DataType, _Object>::requestMesh(_Object *object, TextureA
     glm::ivec3 regionIndex=object->getRegionIndex();
     glm::ivec3 chunkIndex=object->getChunkIndex();
 
-    Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) requestMesh", object, 
+    Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) requestMesh (%x)", object, 
         regionIndex.x, regionIndex.y, regionIndex.z,
-        chunkIndex.x, chunkIndex.y, chunkIndex.z);
+        chunkIndex.x, chunkIndex.y, chunkIndex.z,
+        request);
 #endif//DEBUG_MESH
     request->type=prep::Type::Mesh;
     request->priority=prep::Priority::Mesh;
@@ -68,24 +77,39 @@ bool RenderPrepThread<_DataType, _Object>::requestMesh(_Object *object, TextureA
     return true;
 }
 
+//template<typename _DataType, typename _Object>
+//bool RenderPrepThread<_DataType, _Object>::returnMesh(voxigen::ChunkTextureMesh *mesh)
+//{
+//    Request *request=m_requests.get();
+//
+//    if(!request)
+//        return false;
+//
+//    request->type=prep::Type::ReturnMesh;
+//    request->priority=prep::Priority::ReturnMesh;
+//    Request::ObjectMesh &objectMesh=request->getObjectMesh();
+//
+//    objectMesh.object=nullptr;
+//    objectMesh.mesh=mesh;
+//    objectMesh.textureAtlas=nullptr;
+//
+//    m_requestCache.push_back(request);
+//    return true;
+//}
+
 template<typename _DataType, typename _Object>
-bool RenderPrepThread<_DataType, _Object>::returnMesh(voxigen::ChunkTextureMesh *mesh)
+void RenderPrepThread<_DataType, _Object>::returnMeshRequest(Request *request)
 {
-    Request *request=m_requests.get();
-
-    if(!request)
-        return false;
-
+    //change mesh request to a return
     request->type=prep::Type::ReturnMesh;
     request->priority=prep::Priority::ReturnMesh;
-    Request::ObjectMesh &objectMesh=request->getObjectMesh();
-
-    objectMesh.object=nullptr;
-    objectMesh.mesh=mesh;
-    objectMesh.textureAtlas=nullptr;
+//    Request::ObjectMesh &objectMesh=request->getObjectMesh();
+//
+//    objectMesh.object=nullptr;
+//    objectMesh.mesh=mesh;
+//    objectMesh.textureAtlas=nullptr;
 
     m_requestCache.push_back(request);
-    return true;
 }
 
 template<typename _DataType, typename _Object>
@@ -96,6 +120,10 @@ bool RenderPrepThread<_DataType, _Object>::requestCancelMesh(_Object *object)
     if(!request)
         return false;
 
+#ifdef DEBUG_MESH
+    Log::debug("MainThread - RenderPrepThread::requestCancelMesh get request (%x)", request);
+#endif//DEBUG_MESH
+
     request->type=prep::Type::CancelMesh;
     request->priority=prep::Priority::CancelMesh;
 
@@ -103,9 +131,10 @@ bool RenderPrepThread<_DataType, _Object>::requestCancelMesh(_Object *object)
     request->getChunk()=object->getChunkIndex();
 
 #ifdef DEBUG_MESH
-    Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) requestCancelMesh", object,
+    Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) requestCancelMesh (%x)", object,
         request->getRegion().x, request->getRegion().y, request->getRegion().z,
-        request->getChunk().x, request->getChunk().y, request->getChunk().z);
+        request->getChunk().x, request->getChunk().y, request->getChunk().z,
+        request);
 #endif//DEBUG_MESH
 //    Request::ObjectMesh &objectMesh=request->data.objectMesh;
 //
@@ -117,11 +146,11 @@ bool RenderPrepThread<_DataType, _Object>::requestCancelMesh(_Object *object)
     return true;
 }
 
-template<typename _DataType, typename _Object>
-void RenderPrepThread<_DataType, _Object>::returnRequest(Request *request)
-{
-    m_requests.release(request);
-}
+//template<typename _DataType, typename _Object>
+//void RenderPrepThread<_DataType, _Object>::returnRequest(Request *request)
+//{
+//    m_requests.release(request);
+//}
 
 template<typename _DataType, typename _Object>
 void RenderPrepThread<_DataType, _Object>::updateQueues(Requests &completedQueue)
@@ -152,7 +181,17 @@ void RenderPrepThread<_DataType, _Object>::updateQueues(Requests &completedQueue
         if(request->type==prep::Type::Mesh)
             completedQueue.push_back(request);
         else
+        {
+#ifdef DEBUG_MESH
+            Log::debug("MainThread - RenderPrepThread release request (%x)", request);
+
+            if(m_requests.exists(request))
+            {
+                Log::debug("MainThread - RenderPrepThread duplicate (%x)", request);
+            }
+#endif//DEBUG_MESH
             m_requests.release(request);
+        }
     }
     if(update)
     {
@@ -335,9 +374,10 @@ bool RenderPrepThread<_DataType, _Object>::buildMesh(Request *request, voxigen::
     glm::ivec3 regionIndex=object->getRegionIndex();
     glm::ivec3 chunkIndex=object->getChunkIndex();
 
-    Log::debug("RenderPrepThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) meshing", object,
+    Log::debug("RenderPrepThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) meshing (%x)", object,
         regionIndex.x, regionIndex.y, regionIndex.z,
-        chunkIndex.x, chunkIndex.y, chunkIndex.z);
+        chunkIndex.x, chunkIndex.y, chunkIndex.z,
+        request);
 #endif//DEBUG_MESH
 
     mesh->clear();
@@ -348,9 +388,9 @@ bool RenderPrepThread<_DataType, _Object>::buildMesh(Request *request, voxigen::
 
     auto chunk=object->getHandle()->chunk();
 
-    if(chunk->hasNeighbors())
-        voxigen::buildCubicMesh_Neighbor(*scratchMesh, chunk, chunk->getNeighbors());
-    else
+//    if(chunk->hasNeighbors())
+//        voxigen::buildCubicMesh_Neighbor(*scratchMesh, chunk, chunk->getNeighbors());
+//    else
         voxigen::buildCubicMesh(*scratchMesh, chunk);
 
     std::vector<Mesh::Vertex> &vertexes=scratchMesh->getVertexes();
@@ -400,9 +440,10 @@ bool RenderPrepThread<_DataType, _Object>::cancelMesh(Request *request, Requests
         {
 
 #ifdef DEBUG_MESH
-            Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) cancelMesh", currentObject,
+            Log::debug("MainThread - RenderPrepThread %x (%d, %d, %d) (%d, %d, %d) cancelMesh (%x)", currentObject,
                 region.x, region.y, region.z,
-                chunk.x, chunk.y, chunk.z);
+                chunk.x, chunk.y, chunk.z,
+                request);
 #endif//DEBUG_MESH
 
             canceled.push_back(*iter);

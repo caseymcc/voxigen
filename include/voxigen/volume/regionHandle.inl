@@ -25,7 +25,7 @@ void RegionHandle<_Region>::generate(IGridDescriptors *descriptors, Generator *g
 
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    LOG(INFO)<<"RegionHandle ("<<m_hash<<") allocating by generate\n";
+    Log::debug("RegionHandle (%x) allocating by generate\n", m_hash);
 #endif
     glm::ivec3 size=details::regionCellSize<RegionType, ChunkType>();
 
@@ -55,7 +55,7 @@ void RegionHandle<_Region>::release()
     {
 #ifdef DEBUG_ALLOCATION
         allocated--;
-        LOG(INFO)<<"RegionHandle ("<<m_hash<<") freeing ("<<allocated<<")\n";
+        Log::debug("RegionHandle (%x) freeing (%d)\n", m_hash, allocated);
 #endif
     }
     m_heightMap.clear();
@@ -181,7 +181,7 @@ void RegionHandle<_Region>::saveConfigTo(std::string configFile)
 }
 
 template<typename _Region>
-void RegionHandle<_Region>::addConfig(SharedChunkHandle handle)
+void RegionHandle<_Region>::addConfig(ChunkHandleType *handle)
 {
     if(handle->empty())
     {

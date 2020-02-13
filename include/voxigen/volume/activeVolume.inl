@@ -62,7 +62,7 @@ glm::ivec3 ActiveVolume<_Grid, _Container, _Index>::calcVolumeSize(const glm::iv
 }
 
 template<typename _Grid, typename _Container, typename _Index>
-void ActiveVolume<_Grid, _Container, _Index>::init(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release)
+void ActiveVolume<_Grid, _Container, _Index>::init(const Index &index, LoadRequests &load, std::vector<ContainerType *> &release)
 {
     glm::ivec3 regionSize=m_descriptors->getRegionSize();
 //    glm::ivec3 chunkSize=m_descriptors->getChunkSize();
@@ -100,6 +100,8 @@ void ActiveVolume<_Grid, _Container, _Index>::init(const Index &index, std::vect
 //    Index::offset(regionIndex, chunkIndex, -m_volumeCenterIndex, startRegion, startChunk);
     startIndex=Index::offset(index, -m_volumeCenterIndex);
 
+    initVolumeInfo();
+
 //    while(startChunk.x<0)
 //    {
 //        startRegion.x--;
@@ -132,7 +134,62 @@ void ActiveVolume<_Grid, _Container, _Index>::updateCamera(const Index &index)
 }
 
 template<typename _Grid, typename _Container, typename _Index>
-void ActiveVolume<_Grid, _Container, _Index>::update(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release)
+void ActiveVolume<_Grid, _Container, _Index>::initVolumeInfo()
+{
+    glm::ivec3 center(m_volumeSize.x/2, m_volumeSize.y/2, m_volumeSize.z/2);
+    glm::ivec3 chunkIndex(0, 0, 0);
+    size_t index=0;
+
+    glm::vec3 centerf=center;
+
+    bool borderZ;
+    bool borderY;
+    bool border;
+
+    //build volume info
+    chunkIndex.z=0;
+    for(size_t z=0; z<m_volumeSize.z; ++z)
+    {
+        if((z==0)||(z==m_volumeSize.z-1))
+            borderZ=true;
+        else
+            borderZ=false;
+
+        chunkIndex.y=0;
+        for(size_t y=0; y<m_volumeSize.y; ++y)
+        {
+            if((y==0)||(y==m_volumeSize.z-1))
+                borderY=true;
+            else
+                borderY=borderZ;
+
+            chunkIndex.x=0;
+            for(size_t x=0; x<m_volumeSize.x; ++x)
+            {
+                if((x==0)||(x==m_volumeSize.x-1))
+                    border=true;
+                else
+                    border=borderY;
+
+                ContainerInfo &info=m_volume[index];
+
+                float distance=glm::distance(glm::vec3(chunkIndex), centerf);
+
+                info.keepData=(distance<=3.0f);
+                info.lod=(distance/10.0f);
+                info.mesh=!border;
+
+                ++chunkIndex.x;
+                ++index;
+            }
+            ++chunkIndex.y;
+        }
+        ++chunkIndex.z;
+    }
+}
+
+template<typename _Grid, typename _Container, typename _Index>
+void ActiveVolume<_Grid, _Container, _Index>::update(const Index &index, LoadRequests &load, std::vector<ContainerType *> &release)
 {
     //no changes, skip update
 //    if((regionIndex==m_regionIndex)&&(chunkIndex==m_chunkIndex))
@@ -423,7 +480,7 @@ void ActiveVolume<_Grid, _Container, _Index>::releaseRegion(const glm::ivec3 &st
 }
 
 template<typename _Grid, typename _Container, typename _Index>
-void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, std::vector<ContainerType *> &load)
+void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, LoadRequests &load)
 {
     glm::ivec3 regionSize=m_descriptors->getRegionSize();
     size_t index=start.z*(m_volumeSize.y*m_volumeSize.x)+start.y*m_volumeSize.x+start.x;
@@ -458,7 +515,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
 #ifdef DEBUG_RENDERERS
                     Log::debug("MainThread - Container %x %s setHandle", container, renderIndex.pos().c_str());
 #endif//DEBUG_RENDERERS
-                    load.push_back(container);
+                    load.emplace_back(m_volume[index].lod, container);
                 }
                 else
                 {
@@ -482,7 +539,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
 }
 
 template<typename _Grid, typename _Container, typename _Index>
-void ActiveVolume<_Grid, _Container, _Index>::getMissingContainers(std::vector<ContainerType *> &load)
+void ActiveVolume<_Grid, _Container, _Index>::getMissingContainers(LoadRequests &load)
 {
     size_t index=0;
     Index startIndex=Index::offset(m_index, -m_volumeCenterIndex);
@@ -512,7 +569,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getMissingContainers(std::vector<C
 #ifdef DEBUG_RENDERERS
                     Log::debug("MainThread - Get missing Container %x %s setHandle", container, renderIndex.pos().c_str());
 #endif//DEBUG_RENDERERS
-                    load.push_back(container);
+                    load.emplace_back(m_volume[index].lod, container);
                 }
                 renderIndex.incX();
                 ++index;

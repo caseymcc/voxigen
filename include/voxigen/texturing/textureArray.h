@@ -1,5 +1,5 @@
-#ifndef _voxigen_textureAtlas_h_
-#define _voxigen_textureAtlas_h_
+#ifndef _voxigen_textureArray_h_
+#define _voxigen_textureArray_h_
 
 #include "voxigen/voxigen_export.h"
 #include "voxigen/texturing/texturePack.h"
@@ -22,7 +22,7 @@ namespace voxigen
 //need empty function for regular2DGrid
 inline bool empty(bool value) { return !value; }
 
-class VOXIGEN_EXPORT TextureAtlas
+class VOXIGEN_EXPORT TextureArray
 {
 public:
     struct TextureEntry
@@ -49,8 +49,8 @@ public:
 
     typedef std::unordered_map<std::string, size_t> BlockMap;
 
-    TextureAtlas(size_t maxTextureWidth=4096, size_t maxTextureHeight=4096);
-    ~TextureAtlas();
+    TextureArray(size_t maxTextureWidth=4096, size_t maxTextureHeight=4096);
+    ~TextureArray();
 
     void load(const std::string &path, const std::string &name);
     void save(const std::string &path, const std::string &name);
@@ -65,7 +65,7 @@ public:
     size_t size() const { return m_blockEntries.size(); }
 
     template<typename _FileIO>
-    friend std::shared_ptr<TextureAtlas> generateTextureAtlas(const std::vector<std::string> &blocks, const TexturePack &pack, void *userData);
+    friend std::shared_ptr<TextureArray> generateTextureArray(const std::vector<std::string> &blocks, const TexturePack &pack, void *userData);
 
 private:
     //these items are private and not used outside of the class api
@@ -89,9 +89,9 @@ private:
 #pragma warning(pop)
 };
 
-typedef std::shared_ptr<TextureAtlas> SharedTextureAtlas;
+typedef std::shared_ptr<TextureArray> SharedTextureArray;
 
-struct ImageEntry:public TextureAtlas::TextureEntry
+struct ImageEntry:public TextureArray::TextureEntry
 {
     size_t index;
     imglib::SimpleImage image;
@@ -100,16 +100,16 @@ struct ImageEntry:public TextureAtlas::TextureEntry
 };
 
 template<typename _FileIO=generic::io::StdFileIO>
-SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, const TexturePack &pack, void *userData=nullptr)
+SharedTextureArray generateTextureArray(const std::vector<std::string> &blocks, const TexturePack &pack, void *userData=nullptr)
 {
-    SharedTextureAtlas textureAtlas(new TextureAtlas());
+    SharedTextureArray textureArray(new TextureArray());
 
     const std::vector<TextureInfo> &textureInfo=pack.textureInfo();
     std::vector<size_t> textureMap(textureInfo.size(), 0);
     std::vector<size_t> blockIds(blocks.size());
     std::vector<size_t> textureIds;
 
-    textureAtlas->m_textureResolution=pack.getResolution();
+    textureArray->m_textureResolution=pack.getResolution();
 
     for(size_t i=0; i<blocks.size(); ++i)
         blockIds[i]=pack.getBlockInfoId(blocks[i]);
@@ -140,12 +140,11 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
     size_t textureCount=textureIds.size();
 
     std::vector<ImageEntry> imageEntries(textureCount);
-    textureAtlas->m_textureEntries.resize(textureCount);
-    //    std::vector<imglib::SimpleImage> images(textureCount);
+    textureArray->m_textureEntries.resize(textureCount);
 
-    //    size_t maxTilesX=0;
-    //    size_t maxTilesY=0;
-        //
+    size_t maxWidth=0;
+    size_t maxHeight=0;
+
     size_t textureTileCount=0;
     for(size_t i=0; i<textureCount; ++i)
     {
@@ -161,39 +160,20 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
 
         entry.index=i;
         entry.method=baseLayer.method;
-        entry.tileX=image.width/textureAtlas->m_textureResolution;
-        entry.tileY=image.height/textureAtlas->m_textureResolution;
+        entry.tileX=image.width/textureArray->m_textureResolution;
+        entry.tileY=image.height/textureArray->m_textureResolution;
 
-        //        maxTilesX=std::max(entry.tileX, maxTilesX);
-        //        maxTilesY=std::max(entry.tileY, maxTilesY);
+        if(image.width>maxWidth)
+            maxWidth=image.width;
+        if(image.height>maxHeight)
+            maxHeight=image.height;
 
         entry.tileCount=entry.tileX*entry.tileY;
         textureTileCount+=entry.tileCount;
     }
 
-    //figure out minimum texture atlas size
-//    size_t x=(int)sqrt((float)textureTileCount);
-//    size_t y=x;
-//
-//    if(x<maxTilesX)
-//        x=maxTilesX;
-//    if(y<maxTilesY)
-//        x=maxTilesY;
-//    
-//    while(x*y<textureTileCount)
-//    {
-//        x++;
-//        if(x*y>textureTileCount)
-//            break;
-//        y++;
-//    }
-//
-//    std::vector<bool> textureTiles(x*y, false);
-
-//    size_t textureWidth=x*textureAtlas->m_textureResolution;
-//    size_t textureHeight=y*textureAtlas->m_textureResolution;
-    size_t maxTextureTilesX=textureAtlas->m_maxTextureWidth/textureAtlas->m_textureResolution;
-    size_t maxTextureTilesY=textureAtlas->m_maxTextureHeight/textureAtlas->m_textureResolution;
+    size_t maxTextureTilesX=textureArray->m_maxTextureWidth/textureArray->m_textureResolution;
+    size_t maxTextureTilesY=textureArray->m_maxTextureHeight/textureArray->m_textureResolution;
     size_t tilesX=0;
     size_t tilesY=0;
     size_t tilePosX=0;
@@ -203,19 +183,19 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
     //    std::vector<bool> tiles(maxTilesX*maxTilesY, false);
     imglib::SimpleImage textureImage;
 
-    textureImage.allocData(imglib::Format::RGBA, imglib::Depth::Bit8, textureAtlas->m_maxTextureWidth, textureAtlas->m_maxTextureHeight);
+    textureImage.allocData(imglib::Format::RGBA, imglib::Depth::Bit8, textureArray->m_maxTextureWidth, textureArray->m_maxTextureHeight);
 
     //todo:need to take care of multiple resolution textures
     //copy textures over to atlas texture and update entries with position data
 //    imglib::ReuseImage image;
 
-    std::vector<size_t> sortedIndex(textureAtlas->m_textureEntries.size());
+    std::vector<size_t> sortedIndex(textureArray->m_textureEntries.size());
     std::sort(imageEntries.begin(), imageEntries.end(), [](const ImageEntry &entry1, const ImageEntry &entry2){return entry1.tileCount>entry2.tileCount; });
 
     int maxTilesX=0;
     int maxTilesY=0;
 
-    for(size_t i=0; i<textureAtlas->m_textureEntries.size(); ++i)
+    for(size_t i=0; i<textureArray->m_textureEntries.size(); ++i)
     {
         ImageEntry &entry=imageEntries[i];
         const TextureInfo &info=textureInfo[textureIds[i]];
@@ -240,8 +220,8 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
         maxTilesY=std::max(maxTilesY, (tilePos.y+tileSize.y));
 
         tiles.fill(tilePos, tileSize, true);
-        entry.x=tilePos.x*textureAtlas->m_textureResolution;
-        entry.y=tilePos.y*textureAtlas->m_textureResolution;
+        entry.x=tilePos.x*textureArray->m_textureResolution;
+        entry.y=tilePos.y*textureArray->m_textureResolution;
 
         imglib::copyTo(textureImage, entry.x, entry.y, image);
 
@@ -253,14 +233,14 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
         //        }
     }
 
-    textureAtlas->m_width=maxTilesX*textureAtlas->m_textureResolution;
-    textureAtlas->m_height=maxTilesY*textureAtlas->m_textureResolution;
+    textureArray->m_width=maxTilesX*textureArray->m_textureResolution;
+    textureArray->m_height=maxTilesY*textureArray->m_textureResolution;
 
-    textureAtlas->m_image.allocData(imglib::Format::RGBA, imglib::Depth::Bit8, textureAtlas->m_width, textureAtlas->m_height);
-    imglib::copyTo(textureAtlas->m_image, 0, 0, textureImage);
+    textureArray->m_image.allocData(imglib::Format::RGBA, imglib::Depth::Bit8, textureArray->m_width, textureArray->m_height);
+    imglib::copyTo(textureArray->m_image, 0, 0, textureImage);
 
     //build up block information base on the atlas texture
-    textureAtlas->m_blockEntries.resize(blockIds.size());
+    textureArray->m_blockEntries.resize(blockIds.size());
 
     for(size_t i=0; i<blockIds.size(); ++i)
     {
@@ -268,9 +248,9 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
             continue;
 
         const BlockInfo &blockInfo=pack.getBlockInfo(blockIds[i]);
-        TextureAtlas::BlockEntry &blockEntry=textureAtlas->m_blockEntries[i];
+        TextureArray::BlockEntry &blockEntry=textureArray->m_blockEntries[i];
 
-        textureAtlas->m_blockMap.emplace(blocks[i], i);
+        textureArray->m_blockMap.emplace(blocks[i], i);
         for(size_t face=0; face<6; ++face)
         {
             size_t id=blockInfo.faces[face];
@@ -280,15 +260,15 @@ SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, 
             if(textureEntryId==0)
                 continue;
 
-            //            TextureEntry &entry=textureAtlas->m_textureEntries[textureEntryId];
+            //            TextureEntry &entry=textureArray->m_textureEntries[textureEntryId];
             ImageEntry &entry=imageEntries[textureEntryId];
 
             blockEntry.faces[face]=entry;
         }
     }
 
-    return textureAtlas;
+    return textureArray;
 }
 }//namespace voxigen
 
-#endif //_voxigen_textureAtlas_h_
+#endif //_voxigen_textureArray_h_

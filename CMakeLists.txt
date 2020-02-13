@@ -200,6 +200,7 @@ set(voxigen_generators
     include/voxigen/generators/biome.h
     src/generators/biome.cpp
     include/voxigen/generators/equiRectWorldGenerator.h
+    include/voxigen/generators/equiRectWorldGenerator.inl
     src/generators/equiRectWorldGenerator.cpp
     include/voxigen/generators/generator.h
 )
@@ -330,6 +331,19 @@ if(VOXIGEN_RENDERING)
     )
     source_group("rendering" FILES ${voxigen_rendering})
 
+    set(voxigen_rendering_shaders
+        resources/shaders/chunk_frag.glsl
+        resources/shaders/chunk_vert.glsl
+        resources/shaders/chunkOutline_frag.glsl
+        resources/shaders/chunkOutline_vert.glsl
+        resources/shaders/region_frag.glsl
+        resources/shaders/region_vert.glsl
+        resources/shaders/regionOutline_frag.glsl
+        resources/shaders/regionOutline_vert.glsl
+    )
+    source_group("rendering\\shaders" FILES ${voxigen_rendering_shaders})
+    set_source_files_properties(${voxigen_rendering_shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
+
     set(voxigen_rendering_maths
         include/voxigen/maths/glm_point.h
     )
@@ -337,6 +351,7 @@ if(VOXIGEN_RENDERING)
 
     set(voxigen_source ${voxigen_source}
         ${voxigen_rendering}
+        ${voxigen_rendering_shaders}
         ${voxigen_rendering_maths}
     )
 
@@ -353,6 +368,8 @@ if(VOXIGEN_TEXTURE)
         src/texturing/blendMethod.cpp
         include/voxigen/texturing/layerMethod.h
         src/texturing/layerMethod.cpp
+#        include/voxigen/texturing/textureArray.h
+#        src/texturing/textureArray.cpp
         include/voxigen/texturing/textureAtlas.h
         src/texturing/textureAtlas.cpp
         include/voxigen/texturing/texturePack.h

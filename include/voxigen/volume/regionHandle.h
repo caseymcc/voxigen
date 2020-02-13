@@ -81,7 +81,7 @@ public:
 
     bool load(const std::string &name);
 
-    void addConfig(SharedChunkHandle handle);
+    void addConfig(ChunkHandleType *handle);
 
     RegionHash hash() { return m_hash; }
     bool cachedOnDisk() { return m_cachedOnDisk; }

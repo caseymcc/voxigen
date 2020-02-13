@@ -35,6 +35,8 @@ public:
     SimpleFpsCamera(glm::vec3 position=glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 direction=glm::vec3(0.0f, 1.0f, 0.0f));
     ~SimpleFpsCamera();
 
+    void forceUpdate();
+
     void setFov(float fov);
     void setClipping(float near, float far);
     void setView(size_t width, size_t height);

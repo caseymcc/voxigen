@@ -2,6 +2,7 @@
 #include "voxigen/search.h"
 #include "voxigen/rendering/openglDebug.h"
 
+//#define
 namespace voxigen
 {
 
@@ -21,7 +22,10 @@ m_activeRegionVolume(grid, &grid->getDescriptors(),
     std::bind(&SimpleRenderer<_Grid>::getFreeRegionRenderer, this),
     std::bind(&SimpleRenderer<_Grid>::releaseRegionRenderer, this, std::placeholders::_1)),
 m_showRegions(true),
-m_showChunks(true)
+m_showChunks(true),
+m_chunksLoading(0),
+m_chunksMeshing(0),
+m_meshUploading(0)
 {
     m_freeChunkRenders.setGrowSize(64);
     m_freeRegionRenders.setGrowSize(64);
@@ -83,8 +87,7 @@ void SimpleRenderer<_Grid>::build()
     //build texture for textureAtlas
     glGenTextures(1, &m_textureAtlasId);
 
-    ChunkRendererType::buildPrograms(); 
-    RegionRendererType::buildPrograms();
+    loadShaders();
 
     m_nativeGL.createSharedContext();
     m_mesherThread.start();
@@ -93,6 +96,25 @@ void SimpleRenderer<_Grid>::build()
 //        std::bind(&SimpleRenderer<_Grid>::terminatePrepThread, this, std::placeholders::_1));
 }
 
+template<typename _Grid>
+void SimpleRenderer<_Grid>::loadShaders()
+{
+    ChunkRendererType::buildPrograms();
+    RegionRendererType::buildPrograms();
+    m_forceUpdate=true;
+}
+
+template<typename _Grid>
+std::vector<std::string> SimpleRenderer<_Grid>::getShaderFileNames()
+{
+    std::vector<std::string> shaderFileNames;
+    std::vector<std::string> chunkShaderFileNames=ChunkRendererType::getShaderFileNames();
+    std::vector<std::string> regionShaderFileNames=ChunkRendererType::getShaderFileNames();
+
+    shaderFileNames.insert(chunkShaderFileNames.begin(), chunkShaderFileNames.end());
+    shaderFileNames.insert(regionShaderFileNames.begin(), regionShaderFileNames.end());
+    return shaderFileNames;
+}
 //template<typename _Grid>
 //void SimpleRenderer<_Grid>::initializePrepThread(NativeGL *nativeGL)
 //{
@@ -165,24 +187,24 @@ void SimpleRenderer<_Grid>::draw()
         m_textureAtlasDirty=false;
     }
 
-    if(cameraDirty)
-    {
-        std::ostringstream cameraInfo;
-
-        glm::ivec3 regionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
-        const glm::vec3 &cameraPos=m_camera->getPosition();
-
-        glm::ivec3 chunkIndex=m_grid->getChunkIndex(cameraPos);
-
-        cameraInfo<<"Pos: Region:"<<regionIndex.x<<" ,"<<regionIndex.y<<", "<<regionIndex.z<<" Chunk:"<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<" ("<<cameraPos.x<<" ,"<<cameraPos.y<<" ,"<<cameraPos.z<<")\n";
-        cameraInfo<<"Press \"q\" toggle camera/player movement\n";
-        cameraInfo<<"Press \"r\" reset camera to player\n";
-        cameraInfo<<"Press \"o\" toggle chunk overlay";
-        if(m_displayOutline)
-            cameraInfo<<"\nPress \"i\" toggle chunk info";
-
-        gltSetText(m_cameraInfo, cameraInfo.str().c_str());
-    }
+//    if(cameraDirty)
+//    {
+//        std::ostringstream cameraInfo;
+//
+//        glm::ivec3 regionIndex=m_grid->getRegionIndex(m_camera->getRegionHash());
+//        const glm::vec3 &cameraPos=m_camera->getPosition();
+//
+//        glm::ivec3 chunkIndex=m_grid->getChunkIndex(cameraPos);
+//
+//        cameraInfo<<"Pos: Region:"<<regionIndex.x<<" ,"<<regionIndex.y<<", "<<regionIndex.z<<" Chunk:"<<chunkIndex.x<<", "<<chunkIndex.y<<", "<<chunkIndex.z<<" ("<<cameraPos.x<<" ,"<<cameraPos.y<<" ,"<<cameraPos.z<<")\n";
+//        cameraInfo<<"Press \"q\" toggle camera/player movement\n";
+//        cameraInfo<<"Press \"r\" reset camera to player\n";
+//        cameraInfo<<"Press \"o\" toggle chunk overlay";
+//        if(m_displayOutline)
+//            cameraInfo<<"\nPress \"i\" toggle chunk info";
+//
+//        gltSetText(m_cameraInfo, cameraInfo.str().c_str());
+//    }
         
     
     //complete any outstanding mesh updates
@@ -229,8 +251,6 @@ void SimpleRenderer<_Grid>::draw()
         
         if(m_displayInfo)
         {
-//            m_activeChunkVolume.drawInfo(m_camera->getProjectionViewMat());
-//            m_activeRegionVolume.drawInfo(m_camera->getProjectionViewMat());
             drawActiveVolume<1>(m_activeChunkVolume);
             drawActiveVolume<1>(m_activeRegionVolume);
         }
@@ -256,8 +276,10 @@ void SimpleRenderer<_Grid>::drawActiveVolume(_ActiveVolume &activeVolume)
     glm::ivec3 regionIndex=activeVolume.relativeCameraIndex();
     const auto &volume=activeVolume.getVolume();
 
-    for(auto renderer:volume)
+    for(auto info:volume)
     {
+        auto renderer=info.container;
+
         if(renderer)
         {
             glm::ivec3 regionOffset=renderer->getRegionIndex()-regionIndex;
@@ -279,34 +301,50 @@ void SimpleRenderer<_Grid>::update(bool &regionsUpdated, bool &chunksUpdated)
     m_activeChunkVolume.update(m_playerIndex, m_loadChunk, m_releaseChunk);
     m_activeRegionVolume.update(RegionIndexType(m_playerIndex.region), m_loadRegion, m_releaseRegion);
 
-    for(auto renderer:m_loadChunk)
+    LoadRequests failedLoads;
+
+    for(auto info:m_loadChunk)
     {
+        auto renderer=info.container;
         auto handle=renderer->getHandle();
 
-        if(handle->state() != voxigen::HandleState::Memory)
+        if((handle->state() != voxigen::HandleState::Memory) ||
+            (handle->getLod() != info.lod))
         {
             //make sure we are not already requesting something from it
             if(handle->action()==voxigen::HandleAction::Idle)
-                m_grid->loadChunk(handle, 0);
+            {
+                if(m_grid->loadChunk(handle.get(), info.lod))
+                {
+                    m_chunksLoading++;
+                }
+                else
+                {
+                    failedLoads.push_back(info);
+                }
+            }
         }
         else
         {
-            if((handle->action()==voxigen::HandleAction::Idle) && (!handle->empty()))
-            {
-                handle->addInUse();
-                renderer->setAction(RenderAction::Meshing);
-//                m_mesherThread.requestMesh<_Grid>(renderer, m_textureAtlas.get());
-                if(!m_mesherThread.requestMesh(renderer, m_textureAtlas.get()))
-                    renderer->setAction(RenderAction::Idle);
-            }
+            m_meshChunk.push_back(renderer);
         }
     }
     m_loadChunk.clear();
+    //push back any chunks that could not be loaded
+    if(!failedLoads.empty())
+        m_loadChunk.insert(m_loadChunk.end(), failedLoads.begin(), failedLoads.end());
+
 
     for(auto renderer:m_releaseChunk)
     {
         if(renderer->getAction() == RenderAction::Meshing)
             m_mesherThread.requestCancelMesh(renderer);
+        
+        auto iter=std::find(m_meshChunk.begin(), m_meshChunk.end(), renderer);
+
+        if(iter!=m_meshChunk.end())
+            m_meshChunk.erase(iter);
+
         m_activeChunkVolume.releaseInfo(renderer);
     }
     m_releaseChunk.clear();
@@ -347,6 +385,29 @@ void SimpleRenderer<_Grid>::update(bool &regionsUpdated, bool &chunksUpdated)
 
     //update render prep chunk
     updatePrepChunks();
+
+    //send chunks off the need to be meshed
+    for(auto iter=m_meshChunk.begin(); iter!=m_meshChunk.end();)
+    {
+        auto renderer=*iter;
+        auto handle=renderer->getHandle();
+
+        if((handle->action()==voxigen::HandleAction::Idle)&&(!handle->empty()))
+        {
+            if(m_mesherThread.requestMesh(renderer, m_textureAtlas.get()))
+            {
+                m_chunksMeshing++;
+                handle->addInUse();
+                renderer->setAction(RenderAction::Meshing);
+                iter=m_meshChunk.erase(iter);
+                continue;
+            }
+            else
+                break; //failed to add
+        }
+        else
+            ++iter;
+    }
 }
 
 template<typename _Grid>
@@ -395,6 +456,8 @@ void SimpleRenderer<_Grid>::updateChunkHandles(bool &regionsUpdated, bool &chunk
 
     for(size_t i=0; i<updatedChunks.size(); ++i)
     {
+        m_chunksLoading--;
+
         Key &key=updatedChunks[i];
 
         index.region=descriptors.getRegionIndex(key.regionHash);
@@ -405,13 +468,11 @@ void SimpleRenderer<_Grid>::updateChunkHandles(bool &regionsUpdated, bool &chunk
         if(renderer==nullptr)
             continue;
 
-        //update finished back to idle
-        if(!renderer->getChunkHandle()->empty())
+        SharedChunkHandle chunkHandle=renderer->getChunkHandle();
+
+        if(!chunkHandle->empty())
         {
-            //Chunk ready and renderer set so lets get a mesh
-            renderer->setAction(RenderAction::Meshing);
-            if(!m_mesherThread.requestMesh(renderer, m_textureAtlas.get()))
-                renderer->setAction(RenderAction::Idle);
+            m_meshChunk.push_back(renderer);
         }
     }
 }
@@ -433,7 +494,9 @@ void SimpleRenderer<_Grid>::updatePrepChunks()
             switch(request->type)
             {
             case prep::Mesh:
-                processMesh(request);
+                {
+                    processChunkMesh(request);
+                }
                 break;
             }
         }
@@ -442,40 +505,17 @@ void SimpleRenderer<_Grid>::updatePrepChunks()
 }
 
 template<typename _Grid>
-void SimpleRenderer<_Grid>::processMesh(typename MesherThread::Request *request)
-{
-    if(request->type==prep::Mesh)
-    {
-        processChunkMesh(request);
-    }
-//    ChunkRequestMesh *chunkMeshRequest=dynamic_cast<ChunkRequestMesh *>(request);
-//
-//    if(chunkMeshRequest)
-//    {
-//        processChunkMesh(chunkMeshRequest);
-//        return;
-//    }
-//
-//    RegionRequestMesh *regionMeshRequest=dynamic_cast<RegionRequestMesh *>(request);
-//
-//    if(regionMeshRequest)
-//    {
-//        processRegionMesh(regionMeshRequest);
-//        return;
-//    }
-}
-
-template<typename _Grid>
 void SimpleRenderer<_Grid>::processChunkMesh(typename MesherThread::Request *request)//ChunkRequestMesh *request)
 {
-    ChunkRenderType const *renderer=request->getObject();
+    ChunkRenderType *renderer=request->getObject();
 
     //updated chunks just need to swap out the mesh as that is all that should have been changed
 #ifdef DEBUG_MESH
     glm::ivec3 regionIndex=renderer->getRegionIndex();
     glm::ivec3 chunkIndex=renderer->getChunkIndex();
 
-    Log::debug("MainThread - ChunkRenderer %x (%d, %d, %d) (%d, %d, %d) mesh complete", renderer,
+    Log::debug("MainThread - ChunkRenderer %x,%x (%d, %d, %d) (%d, %d, %d) mesh complete", renderer,
+        renderer->getHandle().get(),
         regionIndex.x, regionIndex.y, regionIndex.z,
         chunkIndex.x, chunkIndex.y, chunkIndex.z);
 #endif//DEBUG_MESH
@@ -495,8 +535,10 @@ void SimpleRenderer<_Grid>::processChunkMesh(typename MesherThread::Request *req
         //need to let the renderCube know that the renderer is idle again
         nonConstRenderer->setAction(RenderAction::Idle); //renderer is idle again, make sure it can be cleaned up
 
-        m_mesherThread.returnMesh(request->getMesh());
-        m_mesherThread.returnRequest(request);
+//        m_mesherThread.returnMesh(request->getMesh());
+//        m_mesherThread.returnRequest(request);
+        m_mesherThread.returnMeshRequest(request);
+        m_chunksMeshing--;
         return;
     }
 
@@ -504,7 +546,7 @@ void SimpleRenderer<_Grid>::processChunkMesh(typename MesherThread::Request *req
 
     chunkHandle->removeInUse();
     if(!chunkHandle->inUse())
-        m_grid->releaseChunk(cubeRenderer->getChunkHandle());
+        m_grid->releaseChunk(cubeRenderer->getChunkHandle().get());
     uploadMesh(request);
 
 //    MeshBuffer mesh=cubeRenderer->setMesh(request->mesh);
@@ -539,10 +581,12 @@ void SimpleRenderer<_Grid>::uploadMesh(typename MesherThread::Request *request)
     glm::ivec3 regionIndex=renderer->getRegionIndex();
     glm::ivec3 chunkIndex=renderer->getChunkIndex();
 
-    Log::debug("MainThread - ChunkRenderer %x (%d, %d, %d) (%d, %d, %d) mesh start upload", renderer,
+    Log::debug("MainThread - ChunkRenderer %x,%x (%d, %d, %d) (%d, %d, %d) mesh start upload", renderer,
+        renderer->getHandle().get(),
         regionIndex.x, regionIndex.y, regionIndex.z,
         chunkIndex.x, chunkIndex.y, chunkIndex.z);
 #endif//DEBUG_MESH
+    
 
     if(!indices.empty())
     {
@@ -553,13 +597,21 @@ void SimpleRenderer<_Grid>::uploadMesh(typename MesherThread::Request *request)
         gl::glBufferData(gl::GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(uint32_t), indices.data(), gl::GL_STATIC_DRAW);
 
         meshBuffer.sync=gl::glFenceSync(gl::GL_SYNC_GPU_COMMANDS_COMPLETE, gl::UnusedMask::GL_NONE_BIT);
+
+        meshBuffer.valid=true;
+        meshBuffer.indices=indices.size();
+
+        info.request=request;
+        m_meshUpdate.push_back(info);
+
+        m_meshUploading++;
     }
-
-    meshBuffer.valid=true;
-    meshBuffer.indices=indices.size();
-
-    info.request=request;
-    m_meshUpdate.push_back(info);
+    else
+    {
+        //nothing to upload likely canceled, dump it
+        m_mesherThread.returnMeshRequest(request);
+        m_chunksMeshing--;
+    }
 }
 
 template<typename _Grid>
@@ -596,7 +648,8 @@ void SimpleRenderer<_Grid>::completeMeshUploads()
                 glm::ivec3 regionIndex=renderer->getRegionIndex();
                 glm::ivec3 chunkIndex=renderer->getChunkIndex();
 
-                Log::debug("MainThread - ChunkRenderer %x (%d, %d, %d) (%d, %d, %d) mesh upload complete", renderer,
+                Log::debug("MainThread - ChunkRenderer %x, %x (%d, %d, %d) (%d, %d, %d) mesh upload complete", renderer,
+                    renderer->getHandle().get(),
                     regionIndex.x, regionIndex.y, regionIndex.z,
                     chunkIndex.x, chunkIndex.y, chunkIndex.z);
 #endif//DEBUG_MESH
@@ -610,8 +663,12 @@ void SimpleRenderer<_Grid>::completeMeshUploads()
                     gl::glDeleteBuffers(1, &prevMesh.indexBuffer); 
                 }
 
-                m_mesherThread.returnMesh(request->getMesh());
-                m_mesherThread.returnRequest(request);
+//                m_mesherThread.returnMesh(request->getMesh());
+//                m_mesherThread.returnRequest(request);
+                m_mesherThread.returnMeshRequest(request);
+                
+                m_chunksMeshing--;
+                m_meshUploading--;
 
                 remove=true;
             }
@@ -692,6 +749,9 @@ void SimpleRenderer<_Grid>::setViewRadius(const glm::ivec3 &radius)
 
     m_activeChunkVolume.setViewRadius(radius);
     m_activeRegionVolume.setViewRadius(radius*10);
+    
+//    //set maximum request size to number of containers
+//    m_grid->setChunkRequestSize(m_activeChunkVolume.getContainerCount());
 
     size_t chunkContainerCount=m_activeChunkVolume.getContainerCount();
     m_freeChunkRenders.setMaxSize((chunkContainerCount/2)*3);
@@ -753,7 +813,7 @@ void SimpleRenderer<_Grid>::releaseRegionRenderer(RegionRendererType *renderer)
 }
 
 template<typename _Grid>
-std::vector<typename SimpleRenderer<_Grid>::ChunkRendererType *> SimpleRenderer<_Grid>::getChunkRenderers()
+typename SimpleRenderer<_Grid>::ActiveVolumeType::VolumeInfo &SimpleRenderer<_Grid>::getVolumeInfo()
 {
     return m_activeChunkVolume.getVolume();
 }

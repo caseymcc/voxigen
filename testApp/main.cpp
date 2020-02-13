@@ -10,6 +10,9 @@
 #include "voxigen/fileio/filesystem.h"
 #include "voxigen/fileio/log.h"
 
+#include "generic/watchFiles.h"
+#include "generic/log.h"
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -79,11 +82,13 @@ bool lastUpdateAdded;
 void updatePosition(World &world);
 void updateChunkInfo();
 
+generic::io::WatchFiles g_fileWatcher;
+
 void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
 {
 //    if(severity != DEBUG_SEVERITY_NOTIFICATION)
     if(type == GL_DEBUG_TYPE_ERROR)
-        LOG(INFO)<<"Opengl - error: "<<message;
+        LOG(INFO)<<"Opengl error: "<<message;
 //    else
 //        LOG(INFO)<<"Opengl : "<<message;
 }
@@ -117,6 +122,13 @@ public:
 
 int main(int argc, char ** argv)
 {
+#ifndef NDEBUG
+    std::vector<std::string>  chunkRendererShaders=ChunkRenderer::getShaderFileNames();
+
+    for(std::string &fileName:chunkRendererShaders)
+        g_fileWatcher.add(fileName);
+#endif
+
     FLAGS_log_dir="E:/projects/lumberyard_git/dev/Code/SDKs/voxigen/log";
 //    FLAGS_logtostderr=true;
     FLAGS_alsologtostderr=true;
@@ -138,7 +150,7 @@ int main(int argc, char ** argv)
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, (int)GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -247,7 +259,9 @@ int main(int argc, char ** argv)
     glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
-    worldMiddle.z+=worldMiddle.z/2;
+    int baseHeight=world.getBaseHeight(glm::vec2(worldMiddle.x, worldMiddle.y));
+//    worldMiddle.z+=worldMiddle.z/2;
+    worldMiddle.z=baseHeight;
 //    worldMiddle=glm::ivec3(1536, 1536, 384);
 
     renderingOptions.camera.setYaw(0.0f);
@@ -275,8 +289,8 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&renderingOptions.camera);
     renderer.build();
-    renderer.setViewRadius(glm::ivec3(128, 128, 128));
-//    renderer.setViewRadius(glm::ivec3(1024, 1024, 1024));
+//    renderer.setViewRadius(glm::ivec3(512, 512, 128));
+    renderer.setViewRadius(glm::ivec3(2048, 2048, 256));
 
     renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
@@ -295,6 +309,16 @@ int main(int argc, char ** argv)
     debugScreen->build();
     while(!glfwWindowShouldClose(window))
     {
+#ifndef NDEBUG
+        std::vector<std::string> updatedFiles=g_fileWatcher.check();
+
+        if(!updatedFiles.empty())
+        {
+            g_renderer->loadShaders();
+            renderingOptions.camera.forceUpdate();//for re-upload of projection and view mats
+            updatedFiles.clear();
+        }
+#endif
         if(renderingOptions.resetCamera)
         {
             glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
@@ -481,6 +505,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         return;
     }
 
+    //commands
+    if(mods==GLFW_MOD_CONTROL)
+    {
+        if((key==GLFW_KEY_R)&&(action==GLFW_RELEASE))
+        {
+            g_renderer->loadShaders();
+            renderingOptions.camera.forceUpdate();//for re-upload of projection and view mats
+        }
+        return;
+    }
     if(key==GLFW_KEY_W)
     {
         if(action==GLFW_PRESS)
@@ -668,16 +702,16 @@ void updatePosition(World &world)
 void updateChunkInfo()
 {
     std::ostringstream chunkInfoStream;
-    auto chunkRenderers=g_renderer->getChunkRenderers();
+    auto volumeInfo=g_renderer->getVolumeInfo();
 
-    for(auto chunkRenderer:chunkRenderers)
+    for(auto &info:volumeInfo)
     {
-        if(!chunkRenderer)
+        if(!info.container)
             continue;
 
         std::string chunkInfo;
 
-        chunkRenderer->updateInfo(chunkInfo);
+        info.container->updateInfo(chunkInfo);
         chunkInfoStream<<chunkInfo;
     }
 

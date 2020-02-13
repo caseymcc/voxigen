@@ -221,6 +221,27 @@ public:
     virtual size_t length(){return sizeof(_ValueType);}
 };
 
+class UniformDummy:public Uniform
+{
+public:
+    UniformDummy():Uniform("dummy", Uniform::Type::Unknown, 0) {}
+
+    Uniform &operator=(const bool &value) override { return *this; }
+    Uniform &operator=(const int &value) override { return *this; }
+    Uniform &operator=(const unsigned int &value) override { return *this; }
+    Uniform &operator=(const float &value) override { return *this; }
+    Uniform &operator=(const double &value) override { return *this; }
+    Uniform &operator=(const glm::ivec2 &matrix) override { return *this; }
+    Uniform &operator=(const glm::ivec3 &matrix) override { return *this; }
+    Uniform &operator=(const glm::ivec4 &matrix) override { return *this; }
+    Uniform &operator=(const glm::vec2 &matrix) override { return *this; }
+    Uniform &operator=(const glm::vec3 &matrix) override { return *this; }
+    Uniform &operator=(const glm::vec4 &matrix) override { return *this; }
+    Uniform &operator=(const glm::mat4 &matrix) override { return *this; }
+
+    size_t length() override { return 0; }
+};
+
 } //namespace _opengl_util_uniform_h_
 
 

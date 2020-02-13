@@ -23,18 +23,28 @@ public:
     Generator() {}
     virtual ~Generator() {}
 
-    virtual void initialize(IGridDescriptors *descriptors)=0;
-    virtual void save(IGridDescriptors *descriptors)=0;
+    virtual void create(IGridDescriptors *descriptors)=0;
+    virtual bool load(IGridDescriptors *descriptors, const std::string &directoryName)=0;
+    virtual void save(const std::string &directoryName)=0;
+
+    virtual void loadDescriptors(IGridDescriptors *descriptors)=0;
+    virtual void saveDescriptors(IGridDescriptors *descriptors)=0;
     //    virtual void terminate()=0;
 
     //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size)=0;
     virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod)=0;
     virtual unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod)=0;
+
+    //used to get the general height at a location, may not be exact
+    //exepected limited use
+    //pos grid coordinates
+    virtual int getBaseHeight(const glm::vec2 &pos)=0;
 };
+
 typedef std::shared_ptr<Generator> SharedGenerator;
 
-template<typename _Generator>
-class GeneratorTemplate:public RegisterClass<GeneratorTemplate<_Generator>, Generator>
+template<typename _Generator, typename _FileIO>
+class GeneratorTemplate:public RegisterClass<GeneratorTemplate<_Generator, _FileIO>, Generator>
 {
 public:
     GeneratorTemplate():m_generator(new _Generator()) {}
@@ -42,13 +52,19 @@ public:
 
     static const char *typeName() { return _Generator::typeName(); }
 
-    virtual void initialize(IGridDescriptors *descriptors) { m_generator->initialize(descriptors); }
-    virtual void save(IGridDescriptors *descriptors) { m_generator->save(descriptors); }
-    //    virtual void terminate() { m_generator->terminate(); }
+    void create(IGridDescriptors *descriptors) override { m_generator->create(descriptors); }
+    bool load(IGridDescriptors *descriptors, const std::string &directoryName) override { return m_generator->load<_FileIO>(descriptors, directoryName); }
+    void save(const std::string &directoryName) override { m_generator->save<_FileIO>(directoryName); }
 
-    //    virtual void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
-    virtual unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
-    virtual unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod) { return m_generator->generateRegion(startPos, size, buffer, bufferSize, lod); };
+    void loadDescriptors(IGridDescriptors *descriptors) override { m_generator->loadDescriptors(descriptors); }
+    void saveDescriptors(IGridDescriptors *descriptors) override { m_generator->saveDescriptors(descriptors); }
+    //    void terminate() { m_generator->terminate(); }
+
+    //    void generateChunk(unsigned int hash, void *buffer, size_t size) { m_generator->generateChunk(hash, buffer, size); };
+    unsigned int generateChunk(const glm::vec3 &startPos, const glm::ivec3 &chunkSize, void *buffer, size_t bufferSize, size_t lod) override { return m_generator->generateChunk(startPos, chunkSize, buffer, bufferSize, lod); };
+    unsigned int generateRegion(const glm::vec3 &startPos, const glm::ivec3 &size, void *buffer, size_t bufferSize, size_t lod) override { return m_generator->generateRegion(startPos, size, buffer, bufferSize, lod); };
+
+    int getBaseHeight(const glm::vec2 &pos) override { return m_generator->getBaseHeight(pos); };
 
     _Generator *get() { return m_generator.get(); }
 private:

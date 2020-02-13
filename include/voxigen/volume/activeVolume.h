@@ -25,16 +25,16 @@ struct RegionIndex
     }
 
     template<typename _Grid>
-    static void load(_Grid *grid, Handle handle, size_t lod)
+    static bool load(_Grid *grid, Handle handle, size_t lod)
     {
         //lets at least go for 1+ lod
-        grid->loadRegion(handle, lod>0?lod:1);
+        return grid->loadRegion(handle.get(), lod>0?lod:1);
     }
 
     template<typename _Grid>
-    static void cancelLoad(_Grid *grid, Handle handle)
+    static bool cancelLoad(_Grid *grid, Handle handle)
     {
-        grid->cancelLoadRegion(handle);
+        return grid->cancelLoadRegion(handle.get());
     }
 
     static glm::ivec3 difference(const RegionIndex &index1, const RegionIndex &index2)
@@ -141,15 +141,15 @@ struct RegionChunkIndex
     }
 
     template<typename _Grid>
-    static void load(_Grid *grid, Handle handle, size_t lod)
+    static bool load(_Grid *grid, Handle handle, size_t lod)
     {
-        grid->loadChunk(handle, lod);
+        return grid->loadChunk(handle, lod);
     }
 
     template<typename _Grid>
-    static void cancelLoad(_Grid *grid, Handle handle)
+    static bool cancelLoad(_Grid *grid, Handle handle)
     {
-        grid->cancelLoadChunk(handle);
+        return grid->cancelLoadChunk(handle.get());
     }
 
     static glm::ivec3 difference(const RegionChunkIndex &index, const RegionChunkIndex &index2)
@@ -288,11 +288,27 @@ public:
     typedef std::function<_Container *()> GetContainer;
     typedef std::function<void (_Container *)> ReleaseContainer;
 
-    struct VolumeInfo
+    struct ContainerInfo
     {
+        //keep data after meshing
+        bool keepData; 
+        //mesh chunk, only mesh if neighbors will be loaded
+        bool mesh;
+        //what lod to load and mesh
+        size_t lod;
+        //render container
+        ContainerType *container;
+    };
+    typedef std::vector<ContainerInfo> VolumeInfo;
+
+    struct LoadContainer
+    {
+        LoadContainer():lod(1), container(nullptr) {}
+        LoadContainer(size_t lod, ContainerType *container):lod(lod), container(container) {}
         size_t lod;
         ContainerType *container;
     };
+    typedef std::vector<LoadContainer> LoadRequests;
 
     ActiveVolume(GridType *grid, DescriptorType *descriptors, GetContainer getContainer, ReleaseContainer releaseContainer);
     ~ActiveVolume();
@@ -302,9 +318,9 @@ public:
 
     void setOutlineInstance(unsigned int outlineInstanceId);
 
-    void init(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
+    void init(const Index &index, LoadRequests &load, std::vector<ContainerType *> &release);
     void updateCamera(const Index &index);
-    void update(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
+    void update(const Index &index, LoadRequests &load, std::vector<ContainerType *> &release);
 
 //    void draw();
 //    void drawInfo(const glm::mat4x4 &projectionViewMat);
@@ -313,17 +329,19 @@ public:
     glm::ivec3 relativeCameraIndex();
 //    ChunkRenderInfoType *getChunkRenderInfo(const Key &key);
     ContainerType *getRenderInfo(const Index &index);// const Key &key);
-    const std::vector<ContainerType *> &getVolume() { return m_volume; }
+    VolumeInfo &getVolume() { return m_volume; }
 
     void releaseInfo(_Container *containerInfo);
 
 private:
+    void initVolumeInfo();
+
     glm::ivec3 calcVolumeSize(const glm::ivec3 &radius);
 
     _Container *getFreeContainer();
     void releaseFreeContainer(_Container *container);
 
-    void getMissingContainers(std::vector<ContainerType *> &load);
+    void getMissingContainers(LoadRequests &load);
 
     GetContainer getContainer;
     ReleaseContainer releaseContainer;
@@ -331,7 +349,7 @@ private:
 //    void updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size);
     void releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size, std::vector<ContainerType *> &release);
 //    void getRegion(const glm::ivec3 &start, const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, const glm::ivec3 &size);
-    void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, std::vector<ContainerType *> &load);
+    void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, LoadRequests &load);
 
 //    void releaseChunkInfo(ChunkRenderInfoType &renderInfo);
     
@@ -354,7 +372,7 @@ private:
 
 //    std::unordered_map<Key::Type, size_t> m_volumeMap;
 //    std::vector<ChunkRenderInfoType> m_volume;
-    std::vector<VolumeInfo> m_volume;
+    VolumeInfo m_volume;
     glm::ivec3 m_volumeSize;
     glm::ivec3 m_volumeCenterIndex;
 

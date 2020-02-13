@@ -27,6 +27,12 @@ m_worldUp(0.0f, 0.0f, 1.0f)
 SimpleFpsCamera::~SimpleFpsCamera()
 {}
 
+void SimpleFpsCamera::forceUpdate()
+{
+    m_projectionDirty=true;
+    m_viewDirty=true;
+}
+
 void SimpleFpsCamera::setFov(float fov)
 {
     m_fov=fov;

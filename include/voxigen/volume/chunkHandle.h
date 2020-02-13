@@ -108,6 +108,13 @@ public:
     void setRegionOffset(const glm::ivec3 &offset) { m_regionOffset=offset; }
 
     ChunkType *chunk() { return m_chunk.get(); }
+    size_t getLod()
+    {
+        if(m_chunk)
+            return m_chunk->getLod();
+        else
+            return -1;
+    }
 
     size_t memoryUsed() { return m_memoryUsed; }
 

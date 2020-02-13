@@ -79,4 +79,42 @@ void EquiRectDescriptors::init(IGridDescriptors *gridDescriptors)
     calculateInfluenceSize(gridDescriptors);
 }
 
+//this is expecting cylindrical wrap
+std::vector<size_t> get2DCellNeighbors_eq(const glm::ivec2 &index, const glm::ivec2 &size)
+{
+    glm::ivec2 neighborIndex(index.x-1, index.y-1);
+    std::vector<size_t> neighbors(9);
+
+    size_t i=0;
+    size_t nIndex;
+
+    for(size_t y=0; y<3; ++y)
+    {
+        if(neighborIndex.y<0)
+            neighborIndex.y=size.y+neighborIndex.y;
+        else if(neighborIndex.y>=size.y)
+            neighborIndex.y=neighborIndex.y-size.y;
+
+        nIndex=size.x*(size_t)neighborIndex.y;
+
+        neighborIndex.x=index.x-1;
+        for(size_t x=0; x<3; ++x)
+        {
+            if(neighborIndex.x<0)
+                neighborIndex.x=size.x+neighborIndex.x;
+            else if(neighborIndex.x>=size.x)
+                neighborIndex.x=neighborIndex.x-size.x;
+
+            neighbors[i]=nIndex+(size_t)neighborIndex.x;
+//            assert(neighbors[i]<size.x*size.y);
+            i++;
+            neighborIndex.x++;
+        }
+
+        neighborIndex.y++;
+    }
+
+    return neighbors;
+}
+
 }//namespace voxigen

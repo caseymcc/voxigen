@@ -42,6 +42,7 @@ struct TextureInfo
 
     BlendMethod blendMethod;
 };
+
 struct TextureKey
 {
     TextureKey(TextureInfo *info):textures(nullptr), id(0), textureInfo(info) {}
@@ -124,7 +125,7 @@ public:
     TexturePack();
     ~TexturePack();
 
-//    template<typename _FileIO=generic::StdFileIO>
+//    template<typename _FileIO=generic::io::StdFileIO>
 //    bool load(const std::string &path, void *userData=nullptr);
 
     size_t getLayerInfoId(std::string name);
@@ -173,50 +174,50 @@ private:
 
 typedef std::shared_ptr<TexturePack> SharedTexturePack;
 
-template<typename _FileIO=generic::StdFileIO>
+template<typename _FileIO=generic::io::StdFileIO>
 inline SharedTexturePack generateTexturePack(const std::string &path, void *userData=nullptr)
 {
     std::shared_ptr<TexturePack> texturePack(new TexturePack());
     generic::JsonDeserializer deserializer;
 
-    typename _FileIO::Type *pathFile=generic::open<_FileIO>(path+"/pack.json", "rb", userData);
+    typename _FileIO::Type *pathFile=generic::io::open<_FileIO>(path+"/pack.json", "rb", userData);
 
     if(pathFile==nullptr)
         return false;
 
-    typename _FileIO::Type *layerFile=generic::open<_FileIO>(path+"/layerProperties.json", "rb", userData);
-
-    if(pathFile==nullptr)
-    {
-        generic::close<_FileIO>(pathFile);
-        return false;
-    }
-
-    typename _FileIO::Type *textureFile=generic::open<_FileIO>(path+"/blockTextureMapping.json", "rb", userData);
+    typename _FileIO::Type *layerFile=generic::io::open<_FileIO>(path+"/layerProperties.json", "rb", userData);
 
     if(pathFile==nullptr)
     {
-        generic::close<_FileIO>(pathFile);
-        generic::close<_FileIO>(layerFile);
+        generic::io::close<_FileIO>(pathFile);
         return false;
     }
 
-    size_t packFileSize=generic::size<_FileIO>(pathFile);
-    size_t layerFileSize=generic::size<_FileIO>(layerFile);
-    size_t textureFileSize=generic::size<_FileIO>(textureFile);
+    typename _FileIO::Type *textureFile=generic::io::open<_FileIO>(path+"/blockTextureMapping.json", "rb", userData);
+
+    if(pathFile==nullptr)
+    {
+        generic::io::close<_FileIO>(pathFile);
+        generic::io::close<_FileIO>(layerFile);
+        return false;
+    }
+
+    size_t packFileSize=generic::io::size<_FileIO>(pathFile);
+    size_t layerFileSize=generic::io::size<_FileIO>(layerFile);
+    size_t textureFileSize=generic::io::size<_FileIO>(textureFile);
 
     size_t bufferSize=std::max(packFileSize+1, std::max(layerFileSize+1, textureFileSize+1));
     std::string buffer(bufferSize, 0);
     size_t readSize;
 
 //load pack info
-    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), packFileSize, pathFile);
+    readSize=generic::io::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), packFileSize, pathFile);
 
     if(readSize==0)
     {
-        generic::close<_FileIO>(pathFile);
-        generic::close<_FileIO>(layerFile);
-        generic::close<_FileIO>(textureFile);
+        generic::io::close<_FileIO>(pathFile);
+        generic::io::close<_FileIO>(layerFile);
+        generic::io::close<_FileIO>(textureFile);
         return false;
     }
 
@@ -225,13 +226,13 @@ inline SharedTexturePack generateTexturePack(const std::string &path, void *user
     texturePack->loadConfig(deserializer);
 
 //load layer information
-    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), layerFileSize, layerFile);
+    readSize=generic::io::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), layerFileSize, layerFile);
 
     if(readSize==0)
     {
-        generic::close<_FileIO>(pathFile);
-        generic::close<_FileIO>(layerFile);
-        generic::close<_FileIO>(textureFile);
+        generic::io::close<_FileIO>(pathFile);
+        generic::io::close<_FileIO>(layerFile);
+        generic::io::close<_FileIO>(textureFile);
         return false;
     }
 
@@ -240,13 +241,13 @@ inline SharedTexturePack generateTexturePack(const std::string &path, void *user
     texturePack->loadLayers(deserializer);
 
 //load block textures
-    readSize=generic::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), textureFileSize, textureFile);
+    readSize=generic::io::read<_FileIO>((void *)buffer.data(), sizeof(uint8_t), textureFileSize, textureFile);
 
     if(readSize==0)
     {
-        generic::close<_FileIO>(pathFile);
-        generic::close<_FileIO>(layerFile);
-        generic::close<_FileIO>(textureFile);
+        generic::io::close<_FileIO>(pathFile);
+        generic::io::close<_FileIO>(layerFile);
+        generic::io::close<_FileIO>(textureFile);
         return false;
     }
 
@@ -254,9 +255,9 @@ inline SharedTexturePack generateTexturePack(const std::string &path, void *user
     deserializer.parse(buffer);
     texturePack->loadBlocks(deserializer);
     
-    generic::close<_FileIO>(pathFile);
-    generic::close<_FileIO>(layerFile);
-    generic::close<_FileIO>(textureFile);
+    generic::io::close<_FileIO>(pathFile);
+    generic::io::close<_FileIO>(layerFile);
+    generic::io::close<_FileIO>(textureFile);
 
     texturePack->m_path=path;
     return texturePack;

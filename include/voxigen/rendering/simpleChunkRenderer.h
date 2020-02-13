@@ -36,6 +36,11 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
+    const static std::string m_chunkVertFile;
+    const static std::string m_chunkFragFile;
+    const static std::string m_chunkOutlineVertFile;
+    const static std::string m_chunkOutlineFragFile;
+    
     SimpleChunkRenderer();
     ~SimpleChunkRenderer();
     
@@ -53,6 +58,8 @@ public:
     };
 
     static void buildPrograms();
+    static std::vector<std::string> getShaderFileNames();
+
     static void useProgram();
     static void updateProgramProjection(const glm::mat4 &projection);
     static void useOutlineProgram();
@@ -140,14 +147,16 @@ private:
     SharedChunkHandle m_chunkHandle;
     SharedTextureAtlas m_textureAtlas;
 
-    static std::string vertShader;
-    static std::string fragmentShader;
+    static bool m_renderShaderLoaded;
+//    static std::string vertShader;
+//    static std::string fragmentShader;
     static opengl_util::Program m_program;
     static size_t m_projectionViewId;
     static size_t m_offsetId;
 
-    static std::string vertOutlineShader;
-    static std::string fragmentOutlineShader;
+    static bool m_outlineShaderLoaded;
+//    static std::string vertOutlineShader;
+//    static std::string fragmentOutlineShader;
     static opengl_util::Program m_outlineProgram;
     static size_t m_outlineProjectionViewId;
     static size_t m_outlineOffsetId;

@@ -68,6 +68,7 @@ public:
     typedef ActiveVolume<GridType, ChunkRendererType, RegionChunkIndexType> ActiveVolumeType;
     typedef RegionIndex<typename _Grid::RegionType> RegionIndexType;
     typedef ActiveVolume<GridType, RegionRendererType, RegionIndexType> RegionActiveVolumeType;
+    typedef typename ActiveVolumeType::LoadRequests LoadRequests;
 
 //    typedef prep::RequestMesh<_Grid, ChunkRendererType> ChunkRequestMesh;
 //    typedef prep::RequestMesh<_Grid, RegionRendererType> RegionRequestMesh;
@@ -85,6 +86,7 @@ public:
     GridType *getGrid() { return m_grid; }
 
     void build();
+    void loadShaders();
     void destroy();
     
     void updateProjection(size_t width, size_t height);
@@ -105,7 +107,7 @@ public:
 
     void setTextureAtlas(SharedTextureAtlas textureAtlas) { m_textureAtlas=textureAtlas; m_textureAtlasDirty=true; }
 
-    std::vector<ChunkRendererType *> getChunkRenderers();
+    typename ActiveVolumeType::VolumeInfo &getVolumeInfo();
 
 ////    void addPrepQueue(ChunkRenderType *chunkRenderer);
 //    void addPrepQueue(const std::vector<ChunkRenderType *> &chunkRenderers);
@@ -138,16 +140,18 @@ public:
     RegionRendererType *getFreeRegionRenderer();
     void releaseRegionRenderer(RegionRendererType *renderer);
 
+    size_t getChunksLoading() { return m_chunksLoading; }
+    size_t getChunksWaitingMesh() { return m_meshChunk.size(); }
+    size_t getChunksMeshing() { return m_chunksMeshing; }
+    size_t getMeshUploading() { return m_meshUploading; }
+
+    std::vector<std::string> getShaderFileNames();
+
 private:
     void updateChunkHandles(bool &regionsUpdated, bool &chunksUpdated);
     void updatePrepChunks();
 
-//    void processAdd(typename RenderPrepThread::RequestAdd *request);
-//    void processRemove(typename RenderPrepThread::RequestRemove *request);
-    void processMesh(typename MesherThread::Request *request);
     void processChunkMesh(typename MesherThread::Request *request);
-//    void processChunkMesh(ChunkRequestMesh *request);
-//    void processRegionMesh(RegionRequestMesh *request);
 
     void uploadMesh(typename MesherThread::Request *request);
     void completeMeshUploads();
@@ -187,9 +191,12 @@ private:
     ActiveVolumeType m_activeChunkVolume;
     RegionActiveVolumeType m_activeRegionVolume;
 
-    std::vector<ChunkRendererType *> m_loadChunk;
+//    std::vector<ChunkRendererType *> m_loadChunk;
+    LoadRequests m_loadChunk;
+    std::vector<ChunkRendererType *> m_meshChunk;
     std::vector<ChunkRendererType *> m_releaseChunk;
-    std::vector<RegionRendererType *> m_loadRegion;
+//    std::vector<RegionRendererType *> m_loadRegion;
+    typename RegionActiveVolumeType::LoadRequests m_loadRegion;
     std::vector<RegionRendererType *> m_releaseRegion;
 
     gl::GLuint m_textureAtlasId;
@@ -270,6 +277,11 @@ private:
     std::vector<ChunkRenderType *> m_chunksUpdated;
 
     unsigned int m_outlineInstanceVertices;
+
+    //stats
+    size_t m_chunksLoading;
+    size_t m_chunksMeshing;
+    size_t m_meshUploading;
 };
 
 }//namespace voxigen

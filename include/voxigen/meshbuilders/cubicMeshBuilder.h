@@ -453,8 +453,6 @@ void checkY(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm:
     checkX<_Chunk, _ChunkMesh, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride);
 }
 
-
-
 template<typename _Chunk, typename _ChunkMesh>
 void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
 {
@@ -480,7 +478,7 @@ void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
     }
 
     checkY<_Chunk, _ChunkMesh, true, false>(mesh, cells, index, position, stride);
-
+}
 
 #endif//SIMPLE_MESH
 
@@ -489,7 +487,7 @@ void buildCubicMesh(_ChunkMesh &mesh, _Chunk *chunk)
 //Neighbor check
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename _Chunk, typename _ChunkMesh, bool _YNegFace=true, bool _YPosFace=true, bool _ZNegFace=true, bool _ZPosFace=true>
-void checkX(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride, std::vector<_Chunk *> *neighbors=nullptr)
+void checkX_Neighbor(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &index, glm::ivec3 &position, size_t stride, std::vector<_Chunk *> *neighbors=nullptr)
 {
     position.x=0;
 
@@ -514,18 +512,18 @@ void checkY_Neighbor(_ChunkMesh &mesh, typename _Chunk::Cells &cells, size_t &in
 {
     position.y=0;
 
-    checkX<_Chunk, _ChunkMesh, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+    checkX_Neighbor<_Chunk, _ChunkMesh, false, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
     position.y++;
 
     for(size_t y=stride; y<_Chunk::sizeY::value-stride; y+=stride)
     {
         position.x=0;
 
-        checkX<_Chunk, _ChunkMesh, true, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+        checkX_Neighbor<_Chunk, _ChunkMesh, true, true, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
         position.y++;
     }
 
-    checkX<_Chunk, _ChunkMesh, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
+    checkX_Neighbor<_Chunk, _ChunkMesh, true, false, _ZNegFace, _ZPosFace>(mesh, cells, index, position, stride, neighbors);
 }
 
 
