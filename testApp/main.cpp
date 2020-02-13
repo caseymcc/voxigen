@@ -289,8 +289,8 @@ int main(int argc, char ** argv)
 
     renderer.setCamera(&renderingOptions.camera);
     renderer.build();
-//    renderer.setViewRadius(glm::ivec3(512, 512, 128));
-    renderer.setViewRadius(glm::ivec3(2048, 2048, 256));
+    renderer.setViewRadius(glm::ivec3(512, 512, 128));
+//    renderer.setViewRadius(glm::ivec3(2048, 2048, 256));
 
     renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
