@@ -67,10 +67,18 @@ public:
 
     static glm::ivec3 getSize() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
-    State getState() { return m_state; }
+//    State getState() { return m_state; }
     void setDirty() { m_state=Dirty; }
     
-    RenderAction getAction(){ return m_action; }
+    RenderAction getAction()
+    {
+        if(m_chunkHandle)
+        {
+            if(m_chunkHandle->action()!=HandleAction::Idle)
+                return RenderAction::HandleBusy;
+        }
+        return m_action; 
+    }
     void setAction(RenderAction action){m_action=action;}
     
 

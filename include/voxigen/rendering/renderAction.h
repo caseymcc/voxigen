@@ -7,6 +7,7 @@ namespace voxigen
 enum class RenderAction
 {
     Idle,
+    HandleBusy, //handle busy somehome loading, etc...
     RequestRenderer,
     Meshing,
     Updating
@@ -18,6 +19,9 @@ inline std::string getActionName(RenderAction action)
     {
     case RenderAction::Idle:
         return "Idle";
+        break;
+    case RenderAction::HandleBusy:
+        return "HandleBusy";
         break;
     case RenderAction::RequestRenderer:
         return "RequestRenderer";

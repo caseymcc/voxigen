@@ -31,6 +31,7 @@ public:
 
     static glm::ivec3 getSize() { return details::regionCellSize<Region, Chunk>(); }
 
+    int getState() { return 0; }
     RenderAction getAction() { return m_action; }
     void setAction(RenderAction action) { m_action=action; }
 

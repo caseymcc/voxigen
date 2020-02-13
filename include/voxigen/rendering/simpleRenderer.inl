@@ -308,6 +308,9 @@ void SimpleRenderer<_Grid>::update(bool &regionsUpdated, bool &chunksUpdated)
         auto renderer=info.container;
         auto handle=renderer->getHandle();
 
+        if(!handle)
+            continue;
+
         if((handle->state() != voxigen::HandleState::Memory) ||
             (handle->getLod() != info.lod))
         {
@@ -391,6 +394,13 @@ void SimpleRenderer<_Grid>::update(bool &regionsUpdated, bool &chunksUpdated)
     {
         auto renderer=*iter;
         auto handle=renderer->getHandle();
+
+        if(!handle)
+        {
+            //chunk has been released so meshing no longer needed
+            iter=m_meshChunk.erase(iter);
+            continue;
+        }
 
         if((handle->action()==voxigen::HandleAction::Idle)&&(!handle->empty()))
         {

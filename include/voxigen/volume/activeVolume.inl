@@ -513,7 +513,7 @@ void ActiveVolume<_Grid, _Container, _Index>::getRegion(const glm::ivec3 &start,
                     container->setAction(RenderAction::Idle);
                     container->setHandle(handle);
 #ifdef DEBUG_RENDERERS
-                    Log::debug("MainThread - Container %x %s setHandle", container, renderIndex.pos().c_str());
+                    Log::debug("MainThread - Container %x %s setHandle %x", container, renderIndex.pos().c_str(), handle.get());
 #endif//DEBUG_RENDERERS
                     load.emplace_back(m_volume[index].lod, container);
                 }
@@ -804,6 +804,10 @@ typename ActiveVolume<_Grid, _Container, _Index>::ContainerType *ActiveVolume<_G
 //    ContainerType *container=m_containerQueue.get([&](ContainerType *container){container->build(); });
     ContainerType *container=getContainer();
     
+#ifdef DEBUG_RENDERERS
+    Log::debug("MainThread - getFreeContainer Container %x", container);
+#endif//DEBUG_RENDERERS
+
     return container;
 }
 
@@ -814,6 +818,9 @@ void ActiveVolume<_Grid, _Container, _Index>::releaseFreeContainer(ContainerType
 //
 //    if(mesh.valid)
 //        m_meshHandler->releaseMesh(mesh);
+#ifdef DEBUG_RENDERERS
+    Log::debug("MainThread - Container %x release Handle %x action: %d", container, container->getHandle().get(), container->getAction());
+#endif//DEBUG_RENDERERS
 
     container->clear();
 //    m_containerQueue.release(container);
