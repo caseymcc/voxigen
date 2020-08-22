@@ -5,6 +5,7 @@
 # ![logo](https://github.com/caseymcc/voxigen/raw/master/resources/voxigen_64_tr.png) voxigen
 Voxel handling library, generating/loading/saving/meshing/memory managment.  
 
+Documentation - https://github.com/caseymcc/voxigen/wiki
 Video of current version - https://www.youtube.com/watch?v=KFW_KskYbPA  
 HeightMap Imposter testing - https://www.youtube.com/watch?v=NAaNWuHsJkQ
 
