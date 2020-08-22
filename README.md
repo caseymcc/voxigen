@@ -5,9 +5,9 @@
 # ![logo](https://github.com/caseymcc/voxigen/raw/master/resources/voxigen_64_tr.png) voxigen
 Voxel handling library, generating/loading/saving/meshing/memory managment.  
 
-Documentation - https://github.com/caseymcc/voxigen/wiki
-Video of current version - https://www.youtube.com/watch?v=KFW_KskYbPA  
-HeightMap Imposter testing - https://www.youtube.com/watch?v=NAaNWuHsJkQ
+- Documentation - https://github.com/caseymcc/voxigen/wiki
+- Video of current version - https://www.youtube.com/watch?v=KFW_KskYbPA  
+- Region HeightMap testing - https://www.youtube.com/watch?v=NAaNWuHsJkQ
 
 ![screenshot](https://github.com/caseymcc/voxigen/raw/master/resources/screenshot1.png)
 
@@ -39,6 +39,7 @@ This is still very new and likely at any point things may change and also not wo
 
 ## Planned Features:
 - [ ] Build large scale polygon replacement terrain for lower LOD levels
+- [ ] Build 2D imposters for distant regions based on the voxel data
 - [ ] Intergration with Lumberyard
 - [ ] Add physics (through Lumberyard)
 - [ ] More complex base generator
