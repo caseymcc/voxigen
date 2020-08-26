@@ -7,6 +7,7 @@
 
 #ifdef DEBUG_ALLOCATION
 #include <glog/logging.h>
+#include <atomic>
 #endif//DEBUG_ALLOCATION
 
 #ifndef NDEBUG
@@ -21,10 +22,6 @@ class Generator;
 
 template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
 class RegularGrid;
-
-#ifdef DEBUG_ALLOCATION
-std::atomic<int> allocated=0;
-#endif
 
 template<typename _Chunk>
 class ChunkHandle
@@ -47,7 +44,8 @@ public:
         m_stateThreadIdSet(false),
         m_actionThreadIdSet(false),
 #endif
-        m_memoryUsed(0)
+        m_memoryUsed(0),
+        m_inUse(0)
         
     {
         m_regionOffset=chunkIndex*glm::ivec3(_Chunk::sizeX::value, _Chunk::sizeY::value, _Chunk::sizeZ::value);
@@ -61,6 +59,7 @@ public:
     glm::ivec3 size() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
     HandleState state(){ return m_state; }
+    HandleState getState() { return m_state; }
     void setState(HandleState state)
     {
 #ifndef NDEBUG
@@ -77,6 +76,7 @@ public:
     }
 
     HandleAction action() { return m_action; }
+    HandleAction getAction() { return m_action; }
     void setAction(HandleAction action)
     {
 #ifndef NDEBUG
@@ -108,12 +108,27 @@ public:
     void setRegionOffset(const glm::ivec3 &offset) { m_regionOffset=offset; }
 
     ChunkType *chunk() { return m_chunk.get(); }
+    size_t getLod()
+    {
+        if(m_chunk)
+            return m_chunk->getLod();
+        else
+            return -1;
+    }
 
     size_t memoryUsed() { return m_memoryUsed; }
 
     bool inUse() { return (m_inUse>0); }
     void addInUse() { m_inUse++; }
-    void removeInUse() { m_inUse--; }
+    void removeInUse() 
+    { 
+        m_inUse--; 
+        if(m_inUse >10) 
+        {
+            m_inUse=0;
+        } 
+    }
+    size_t getInUse() { return m_inUse; }
 
 private:
     template<typename _Cell, size_t _ChunkSizeX, size_t _ChunkSizeY, size_t _ChunkSizeZ, size_t _RegionSizeX, size_t _RegionSizeY, size_t _RegionSizeZ, bool _Thread>
@@ -149,6 +164,10 @@ private:
     std::thread::id m_actionThreadId;
     bool m_actionThreadIdSet;
 #endif
+#ifdef DEBUG_ALLOCATION
+    static std::atomic<int> allocated;
+#endif
+
 };
 
 } //namespace voxigen

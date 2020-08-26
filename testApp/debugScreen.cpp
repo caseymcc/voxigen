@@ -39,7 +39,7 @@ void DebugScreen::update(World *world)
     bool show=true;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(450, 450));
+    ImGui::SetNextWindowSize(ImVec2(600, 450));
     ImGui::Begin("Info", &show, 
         ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoBackground|ImGuiWindowFlags_NoBringToFrontOnFocus|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize);
 
@@ -86,7 +86,7 @@ void DebugScreen::updateChunkInfo(World *world, WorldRenderer *renderer)
 {
     bool show=true;
 
-    auto chunkRenderers=renderer->getChunkRenderers();
+//    auto volumeInfo=renderer->getVolumeInfo();
     std::string info;
 
     ImGui::SetNextWindowPos(ImVec2(m_width-350, 0));
@@ -100,16 +100,28 @@ void DebugScreen::updateChunkInfo(World *world, WorldRenderer *renderer)
     const glm::vec3 &cameraPos=m_renderingOptions->camera.getPosition();
     glm::ivec3 cameraChunkIndex=world->getChunkIndex(cameraPos);
 
-    for(ChunkRenderer *chunkRenderer:chunkRenderers)
-    {
-        if(!chunkRenderer)
-            continue;
+//    for(auto &info:volumeInfo)
+//    {
+//        if(!info.container)
+//            continue;
+//
+//        if(info.container->getChunkIndex() == cameraChunkIndex)
+//            cameraChunk=info.container;
+//        if(info.container->getChunkIndex() == m_renderingOptions->playerChunkIndex)
+//            playerChunk=info.container;
+//    }
 
-        if(chunkRenderer->getChunkIndex() == cameraChunkIndex)
-            cameraChunk=chunkRenderer;
-        if(chunkRenderer->getChunkIndex() == m_renderingOptions->playerChunkIndex)
-            playerChunk=chunkRenderer;
-    }
+    ImGui::Text("Chunks");
+    ImGui::Text("  Loading: %d", renderer->getChunksLoading());
+    ImGui::Text("  Renderers: %d", renderer->getChunkRenderersTotal());
+    ImGui::Text("    In Use: %d", renderer->getChunkRenderersInUse());
+    ImGui::Text("      Releasing: %d", renderer->getChunkRenderersReleasing());
+    ImGui::Text("    Free: %d", renderer->getChunkRenderersFree());
+    ImGui::Text("  Mesh:");
+    ImGui::Text("    Waiting: %d", renderer->getChunksWaitingMesh());
+    ImGui::Text("    Generating: %d", renderer->getChunksMeshing());
+    ImGui::Text("    Uploading: %d", renderer->getMeshUploading());
+    ImGui::Text("");
 
     if(cameraChunk)
     {

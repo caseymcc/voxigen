@@ -22,10 +22,16 @@ public:
     typedef typename _RegionHandle::RegionType Region;
     typedef typename Region::ChunkType Chunk;
 
+    static const std::string m_regionVertFile;
+    static const std::string m_regionFragFile;
+    static const std::string m_regionOutlineVertFile;
+    static const std::string m_regionOutlineFragFile;
+
     RegionRenderer();
 
     static glm::ivec3 getSize() { return details::regionCellSize<Region, Chunk>(); }
 
+    int getState() { return 0; }
     RenderAction getAction() { return m_action; }
     void setAction(RenderAction action) { m_action=action; }
 
@@ -46,6 +52,10 @@ public:
     MeshBuffer setMesh(MeshBuffer &mesh);
     MeshBuffer clearMesh();
 
+    void setChunkRender(size_t chunkIndex, bool render);
+    void clearChunkRender();
+
+    static bool m_renderShaderLoaded;
     static opengl_util::Program m_program;
     static std::string vertShader;
     static std::string fragmentShader;
@@ -53,6 +63,7 @@ public:
     static size_t m_projectionViewId;
     static size_t m_offsetId;
 
+    static bool m_outlineShaderLoaded;
     static opengl_util::Program m_outlineProgram;
     static std::string vertOutlineShader;
     static std::string fragmentOutlineShader;
@@ -69,6 +80,8 @@ public:
     static void updateOutlineProgramProjection(const glm::mat4 &projection);
 
     unsigned int refCount;
+
+    std::vector<std::string> getShaderFileNames();
 private:
     void updateInfo();
 
@@ -87,6 +100,8 @@ private:
 
     static glm::mat4 m_infoMat;
     GLTtext *m_infoText;
+
+    std::vector<bool> m_renderChunk;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////

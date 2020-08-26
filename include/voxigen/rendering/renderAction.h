@@ -7,9 +7,8 @@ namespace voxigen
 enum class RenderAction
 {
     Idle,
-    RequestRenderer,
-    Meshing,
-    Updating
+    HandleBusy, //handle busy (loading, generating, etc...)
+    Meshing
 };
 
 inline std::string getActionName(RenderAction action)
@@ -19,19 +18,44 @@ inline std::string getActionName(RenderAction action)
     case RenderAction::Idle:
         return "Idle";
         break;
-    case RenderAction::RequestRenderer:
-        return "RequestRenderer";
+    case RenderAction::HandleBusy:
+        return "HandleBusy";
         break;
     case RenderAction::Meshing:
         return "Meshing";
-        break;
-    case RenderAction::Updating:
-        return "Updating";
         break;
     }
     return "Invalid";
 }
 
+enum class MeshState
+{
+    Invalid,
+    Meshing,
+    Uploading,
+    Ready
+};
+
+
+inline std::string getMeshStateName(MeshState state)
+{
+    switch(state)
+    {
+    case MeshState::Invalid:
+        return "Invalid";
+        break;
+    case MeshState::Meshing:
+        return "Meshing";
+        break;
+    case MeshState::Uploading:
+        return "Uploading";
+        break;
+    case MeshState::Ready:
+        return "Ready";
+        break;
+    }
+    return "Invalid";
+}
 
 }//namespace voxigen
 

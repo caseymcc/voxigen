@@ -200,7 +200,7 @@ public:
 
         float value=(coord.y-info.lowerLatitude)/info.size;
 
-        glm::vec2 direction;
+//        glm::vec2 direction;
 
         return (cell.windDirectionUpper-cell.windDirectionLower)*value+cell.windDirectionLower;
     }
@@ -222,7 +222,7 @@ public:
     float getMoisture(const glm::vec2 &coord)
     {
         size_t index=getBandIndex(coord);
-        int x=floor(coord.x/glm::two_pi<float>()*m_size.x);
+        int x=(int)floor(coord.x/glm::two_pi<float>()*m_size.x);
 
         WeatherBand &band=m_bands[index];
         WeatherBandInfo &info=m_bandsInfo[index][x];
@@ -234,12 +234,12 @@ public:
 
         if(value<0.5f)
         {
-            value=2*value;
+            value=2.0f*value;
             return (band.moistureMiddle-band.moistureLower)*(1.0f-pow(value-1.0f, 2))+band.moistureLower;
         }
         else
         {
-            value=2*(value-0.5);
+            value=2.0f*(value-0.5f);
             return (band.moistureUpper-band.moistureMiddle)*(pow(value, 2))+band.moistureMiddle;
         }
     }

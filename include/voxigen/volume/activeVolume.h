@@ -1,8 +1,11 @@
 #ifndef _voxigen_activeVolume_h_
 #define _voxigen_activeVolume_h
 
-#include "voxigen/volume/regularGrid.h"
-#include "voxigen/freeQueue.h"
+#include "voxigen/volume/regionIndex.h"
+#include "voxigen/volume/regionChunkIndex.h"
+#include "voxigen/volume/containerVolume.h"
+
+#include <generic/objectHeap.h>
 
 #include <memory>
 #include <functional>
@@ -10,349 +13,165 @@
 namespace voxigen
 {
 
-template<typename _Region>
-struct RegionIndex
+template<typename _Container>
+struct ChunkContainerInfo
 {
-    typedef std::shared_ptr<RegionHandle<_Region>> Handle;
-
-    RegionIndex(){}
-    RegionIndex(const glm::ivec3 &index):index(index){}
-
-    template<typename _Grid>
-    static Handle getHandle(_Grid *grid, const RegionIndex<_Region> &index)
-    {
-        return grid->getRegion(index.index);
-    }
-
-    template<typename _Grid>
-    static void load(_Grid *grid, Handle handle, size_t lod)
-    {
-        //lets at least go for 1+ lod
-        grid->loadRegion(handle, lod>0?lod:1);
-    }
-
-    template<typename _Grid>
-    static void cancelLoad(_Grid *grid, Handle handle)
-    {
-        grid->cancelLoadRegion(handle);
-    }
-
-    static glm::ivec3 difference(const RegionIndex &index1, const RegionIndex &index2)
-    {
-        return index2.index-index1.index;
-    }
-
-    static RegionIndex offset(const RegionIndex &startIndex, const glm::ivec3 &delta)
-    {
-        RegionIndex regionIndex;
-
-        regionIndex.index=startIndex.index+delta;
-        return regionIndex;
-    }
-
-    static glm::ivec3 cells(glm::ivec3 &offset)
-    {
-        return glm::ivec3(0, 0, 0);
-    }
-
-    glm::ivec3 regionIndex()
-    {
-        return index;
-    }
-
-    bool operator==(const RegionIndex &that) const
-    {
-        return (index==that.index);
-    }
-
-    void setX(const RegionIndex &setIndex)
-    {
-        index.x=setIndex.index.x;
-    }
-
-    void setY(const RegionIndex &setIndex)
-    {
-        index.y=setIndex.index.y;
-    }
-
-    void setZ(const RegionIndex &setIndex)
-    {
-        index.z=setIndex.index.z;
-    }
-
-    void incX()
-    {
-        index.x++;
-    }
-
-    void incY()
-    {
-        index.y++;
-    }
-
-    void incZ()
-    {
-        index.z++;
-    }
-
-    std::string pos()
-    {
-        size_t size=std::snprintf(nullptr, 0, "(%d, %d, %d)", index.x, index.y, index.z);
-        std::string value(size, 0);
-        std::snprintf(&value[0], size+1, "(%d, %d, %d)", index.x, index.y, index.z);
-        return value;
-    }
-
-    glm::ivec3 index;
+    //keep data after meshing
+    bool keepData;
+    //mesh chunk, only mesh if neighbors will be loaded
+    bool mesh;
+    //what lod to load and mesh
+    size_t lod;
+    //render container
+    _Container *container;
 };
 
-template<typename _Region>
-glm::ivec3 operator+(const RegionIndex<_Region> &value1, const RegionIndex<_Region> &value2)
+template<typename _Container>
+struct RegionContainerInfo
 {
-    return value1.index+value2.index;
-}
-
-template<typename _Region>
-glm::ivec3 operator+(const RegionIndex<_Region> &value1, const glm::ivec3 &value2)
-{
-    return value1.index+value2;
-}
-template<typename _Region>
-glm::ivec3 operator-(const RegionIndex<_Region> &value1, const RegionIndex<_Region> &value2)
-{
-    return value1.index-value2.index;
-}
-
-template<typename _Region>
-glm::ivec3 operator-(const RegionIndex<_Region> &value1, const glm::ivec3 &value2)
-{
-    return value1.index-value2;
-}
-
-template<typename _Region, typename _Chunk>
-struct RegionChunkIndex
-{
-    typedef std::shared_ptr<ChunkHandle<_Chunk>> Handle;
-
-    template<typename _Grid>
-    static Handle getHandle(_Grid *grid, const RegionChunkIndex<_Region, _Chunk> &index)
-    {
-        return grid->getChunk(index.region, index.chunk);
-    }
-
-    template<typename _Grid>
-    static void load(_Grid *grid, Handle handle, size_t lod)
-    {
-        grid->loadChunk(handle, lod);
-    }
-
-    template<typename _Grid>
-    static void cancelLoad(_Grid *grid, Handle handle)
-    {
-        grid->cancelLoadChunk(handle);
-    }
-
-    static glm::ivec3 difference(const RegionChunkIndex &index, const RegionChunkIndex &index2)
-    {
-//        glm::ivec3 regionSize=details::regionSize<_Region>();
-
-        return details::difference<_Region>(index.region, index.chunk, index2.region, index2.chunk);
-    }
-
-    static RegionChunkIndex offset(const RegionChunkIndex &startIndex, const glm::ivec3 &delta)
-    {
-        RegionChunkIndex rcIndex;
-
-        details::offsetIndexes<_Region>(startIndex.region, startIndex.chunk, delta, rcIndex.region, rcIndex.chunk);
-        return rcIndex;
-    }
-
-    static glm::ivec3 cells(glm::ivec3 &offset)
-    {
-        return offset*details::regionCellSize<_Region, _Chunk>();
-    }
-
-    glm::ivec3 regionIndex()
-    {
-        return region;
-    }
-
-    bool operator==(const RegionChunkIndex &that) const
-    {
-        if(region!=that.region)
-            return false;
-        if(chunk!=that.chunk)
-            return false;
-        return true;
-    }
-
-    void setX(const RegionChunkIndex &index)
-    {
-        region.x=index.region.x;
-        chunk.x=index.chunk.x;
-    }
-
-    void setY(const RegionChunkIndex &index)
-    {
-        region.y=index.region.y;
-        chunk.y=index.chunk.y;
-    }
-
-    void setZ(const RegionChunkIndex &index)
-    {
-        region.z=index.region.z;
-        chunk.z=index.chunk.z;
-    }
-
-    void incX()
-    {
-        chunk.x++;
-        if(chunk.x>=details::regionSize<_Region>().x)
-        {
-            chunk.x-=details::regionSize<_Region>().x;
-            region.x++;
-        }
-    }
-
-    void incY()
-    {
-        chunk.y++;
-        if(chunk.y>=details::regionSize<_Region>().y)
-        {
-            chunk.y-=details::regionSize<_Region>().y;
-            region.y++;
-        }
-    }
-
-    void incZ()
-    {
-        chunk.z++;
-        if(chunk.z>=details::regionSize<_Region>().z)
-        {
-            chunk.z-=details::regionSize<_Region>().z;
-            region.z++;
-        }
-    }
-
-    glm::ivec3 region;
-    glm::ivec3 chunk;
-
-    std::string pos()
-    {
-        size_t size=std::snprintf(nullptr, 0, "(%d, %d, %d) (%d, %d, %d)", region.x, region.y, region.z, chunk.x, chunk.y, chunk.z);
-        std::string value(size, 0);
-        std::snprintf(&value[0], size+1, "(%d, %d, %d) (%d, %d, %d)", region.x, region.y, region.z, chunk.x, chunk.y, chunk.z);
-        return value;
-    }
+    //what lod to load and mesh
+    size_t lod;
+    //render container
+    _Container *container;
 };
 
-template<typename _Region, typename _Chunk>
-glm::ivec3 operator+(const RegionChunkIndex<_Region, _Chunk> &value1, const RegionChunkIndex<_Region, _Chunk> &value2)
+template<typename _Container, typename _Mesh>
+struct MeshUpdate
 {
-    return value1.region+value2.region;
-}
+    MeshUpdate(){}
+    MeshUpdate(_Container *container, _Mesh *mesh):container(container), mesh(mesh){}
 
-template<typename _Region, typename _Chunk>
-glm::ivec3 operator+(const RegionChunkIndex<_Region, _Chunk> &value1, const glm::ivec3 &value2)
-{
-    return value1.region+value2;
-}
+    _Container *container;
+    _Mesh *mesh;
+};
 
-template<typename _Region, typename _Chunk>
-glm::ivec3 operator-(const RegionChunkIndex<_Region, _Chunk> &value1, const RegionChunkIndex<_Region, _Chunk> &value2)
-{
-    return value1.region-value2.region;
-}
-
-template<typename _Region, typename _Chunk>
-glm::ivec3 operator-(const RegionChunkIndex<_Region, _Chunk> &value1, const glm::ivec3 &value2)
-{
-    return value1.region-value2;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//ActiveVolume
-/////////////////////////////////////////////////////////////////////////////////////////
-template<typename _Grid, typename _Container, typename _Index>
-class ActiveVolume//:public RegularGridTypes<_Grid>
+template<typename _Grid, typename _ChunkContainer, typename _RegionContainer>//typename _Index>
+class ActiveVolume
 {
 public:
-    typedef typename _Grid::GridType GridType;
-    typedef typename _Grid::DescriptorType DescriptorType;
+    typedef typename _Grid::Type Grid;
+    typedef typename _Grid::DescriptorType Descriptor;
 
-    typedef _Container ContainerType;
-    typedef std::vector<ContainerType> Renderers;
+    typedef typename _Grid::ChunkHandleType ChunkHandle;
+    typedef typename _Grid::SharedChunkHandle SharedChunkHandle;
 
-    typedef _Index Index;
+    typedef _RegionContainer RegionContainer;
+    typedef std::vector<RegionContainer *> RegionContainers;
+    typedef _ChunkContainer ChunkContainer;
+    typedef std::vector<ChunkContainer *> ChunkContainers;
 
-    typedef std::function<_Container *()> GetContainer;
-    typedef std::function<void (_Container *)> ReleaseContainer;
+    typedef RegionIndex<typename Grid::Region> RegionIndex;
+    typedef RegionChunkIndex<typename Grid::Region, typename Grid::Chunk> RegionChunkIndex;
 
-    ActiveVolume(GridType *grid, DescriptorType *descriptors, GetContainer getContainer, ReleaseContainer releaseContainer);
+    typedef RegionContainerInfo<RegionContainer> RegionContainerInfo;
+    typedef ContainerVolume<Grid, RegionIndex, RegionContainerInfo, RegionContainer> RegionVolume;
+    typedef typename RegionVolume::VolumeInfo RegionVolumeInfo;
+    typedef typename RegionVolume::LoadRequests RegionLoadRequests;
+    typedef std::vector<RegionContainer *> RegionContainers;
+
+    typedef ChunkContainerInfo<ChunkContainer> ChunkContainerInfo;
+    typedef ContainerVolume<Grid, RegionChunkIndex, ChunkContainerInfo, ChunkContainer> ChunkVolume;
+    typedef typename ChunkVolume::VolumeInfo ChunkVolumeInfo;
+    typedef typename ChunkVolume::LoadContainer ChunkLoadContainer;
+    typedef typename ChunkVolume::UpdateContainer ChunkUpdateContainer;
+    typedef typename ChunkVolume::UpdateContainers ChunkUpdateContainers;
+    typedef typename ChunkVolume::LoadRequests ChunkLoadRequests;
+    typedef std::vector<ChunkContainer *> ChunkContainers;
+    
+    
+    typedef ChunkTextureMesh Mesh;
+    typedef MeshUpdate<ChunkContainer, Mesh> MeshUpdate;
+    typedef std::vector<MeshUpdate> MeshUpdates;
+//    typedef std::function<_Container *()> GetContainer;
+//    typedef std::function<void (_Container *)> ReleaseContainer;
+
+    ActiveVolume(Grid *grid, Descriptor *descriptors);
     ~ActiveVolume();
 
     void setViewRadius(const glm::ivec3 &radius);
-    size_t getContainerCount() { return m_containerCount; }
+//    size_t getContainerCount() { return 0;/* m_containerCount;*/ }
+    size_t getChunkContainerCount() { return m_chunkVolume.getContainerCount(); }
 
-    void setOutlineInstance(unsigned int outlineInstanceId);
+    void init(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
+    void initRegionVolumeInfo(std::vector<RegionContainerInfo> &volume, glm::ivec3 &volumeSize, glm::ivec3 &volumeCenter);
+    void initChunkVolumeInfo(std::vector<ChunkContainerInfo> &volume, glm::ivec3 &volumeSize, glm::ivec3 &volumeCenter);
 
-    void init(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
-    void updateCamera(const Index &index);
-    void update(const Index &index, std::vector<ContainerType *> &load, std::vector<ContainerType *> &release);
+    const glm::ivec3 &getRegionPosition() { return m_chunkIndex.regionIndex(); }
 
-//    void draw();
-//    void drawInfo(const glm::mat4x4 &projectionViewMat);
-//    void drawOutline();
+    void updatePosition(const glm::ivec3 &regionIndex, const glm::ivec3 &chunkIndex);
 
-    glm::ivec3 relativeCameraIndex();
-//    ChunkRenderInfoType *getChunkRenderInfo(const Key &key);
-    ContainerType *getRenderInfo(const Index &index);// const Key &key);
-    const std::vector<ContainerType *> &getVolume() { return m_volume; }
+    void update(MeshUpdates &loadedMeshes, MeshUpdates &releaseMeshes);
+//    void updateRegions(RegionContainers &newContainers, ChunkContainers &releasedContainers);
+//    void updateChunks(RegionContainers &newRegionContainers, ChunkContainers &newChunkContainers);
+//    void updateRegions(RegionContainers &newRegionContainers, ChunkContainers &newChunkContainers);
 
-    void releaseInfo(_Container *containerInfo);
+    RegionVolumeInfo &getRegionVolume() { return m_regionVolume.getVolume(); }
+    ChunkVolumeInfo &getChunkVolume() { return m_chunkVolume.getVolume(); }
+
+//container allocation
+    RegionContainer *getRegionContainer();
+    void releaseRegionContainer(RegionContainer *container);
+
+    ChunkContainer *getChunkContainer();
+    void releaseChunkContainer(ChunkContainer *container);
+
+//stats
+    size_t getLoadedChunkCount() { return m_loadedChunks; }
+    size_t getLoadingChunkCount() { return m_loadingChunks; }
+
+    size_t getChunkRenderersTotal() { return m_chunkContainers.getMaxSize(); }
+    size_t getChunkRenderersInUse() { return m_chunkContainers.getMaxSize()-m_chunkContainers.getFreeSize(); }
+    size_t getChunkRenderersReleasing() { return m_releaseChunkContainers.size(); }
+    size_t getChunkRenderersFree() { return m_chunkContainers.getFreeSize(); }
+    
+    size_t getMeshingWaitChunkCount() { return m_chunkMeshQueue.size(); }
+    size_t getMeshingChunkCount() { return m_meshingChunks; }
+
 private:
-    glm::ivec3 calcVolumeSize(const glm::ivec3 &radius);
+    void updateChunkVolume();
 
-    _Container *getFreeContainer();
-    void releaseFreeContainer(_Container *container);
+    void releaseContainers();
+    void updateRegions();
+    void updateChunks();
+    void updateMeshes(MeshUpdates &loadedMeshes, MeshUpdates &releaseMeshes);
+    void completeMeshRequest(process::Request *request, MeshUpdates &loadedMeshes);
+    bool requestChunkContainerMesh(_ChunkContainer *container);
+    void generateMeshRequest();
 
-    void getMissingContainers(std::vector<ContainerType *> &load);
+    Grid *m_grid;
+    const Descriptor *m_descriptors;
 
-    GetContainer getContainer;
-    ReleaseContainer releaseContainer;
+    //region/chunk memory
+    generic::ObjectHeap<RegionContainer> m_regionContainers;
+    generic::ObjectHeap<ChunkContainer> m_chunkContainers;
+    generic::ObjectHeap<typename Grid::Chunk> m_chunks;
+    generic::ObjectHeap<Mesh> m_chunkMeshes;
 
-//    void updateRegion(glm::ivec3 &startRegionIndex, glm::ivec3 &startChunkIndex, glm::ivec3 &size);
-    void releaseRegion(const glm::ivec3 &start, const glm::ivec3 &size, std::vector<ContainerType *> &release);
-//    void getRegion(const glm::ivec3 &start, const glm::ivec3 &startRegionIndex, const glm::ivec3 &startChunkIndex, const glm::ivec3 &size);
-    void getRegion(const glm::ivec3 &start, const Index &startIndex, const glm::ivec3 &size, std::vector<ContainerType *> &load);
+    std::vector<RegionHash> m_updatedRegions;
+    std::vector<Key> m_updatedChunks;
+    RequestQueue m_completedRequests;
 
-//    void releaseChunkInfo(ChunkRenderInfoType &renderInfo);
-    
-    
-    GridType *m_grid;
-    const DescriptorType *m_descriptors;
+    ChunkContainers m_chunkMeshQueue;
 
-    glm::ivec3 m_viewRadius;
-    size_t m_containerCount;
+    RegionIndex m_regionIndex;
+    RegionChunkIndex m_chunkIndex;
 
-//    glm::ivec3 m_cameraRegionIndex;
-//    glm::ivec3 m_cameraChunkIndex;
-    Index m_cameraIndex;
+    RegionVolume m_regionVolume;
+    RegionLoadRequests m_regionLoadRequests;
+    RegionContainers m_regionReleases;
 
-    Index m_index;
-//    glm::ivec3 m_regionIndex;
-//    glm::ivec3 m_chunkIndex;
+    ChunkVolume m_chunkVolume;
+    ChunkLoadRequests m_chunkLoadRequests;
+    ChunkUpdateContainers m_chunkUpdates;
 
+    std::vector<ChunkContainer *> m_releaseChunkContainers;
 
+//    std::vector<MeshRequestInfo> m_meshUpdate;
 
-//    std::unordered_map<Key::Type, size_t> m_volumeMap;
-//    std::vector<ChunkRenderInfoType> m_volume;
-    std::vector<ContainerType *> m_volume;
-    glm::ivec3 m_volumeSize;
-    glm::ivec3 m_volumeCenterIndex;
-
-    std::vector<ContainerType *>m_containerReleaseQueue;
-    FreeQueue<ContainerType> m_containerQueue;
+    int m_chunkCount;
+    int m_loadedChunks;
+    int m_loadingChunks;
+    int m_meshingChunks;
 };
 
 }//namespace voxigen

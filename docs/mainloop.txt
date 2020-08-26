@@ -1,0 +1,78 @@
+
+main()
+{
+    //renderLoop
+    {
+        updatePosition
+
+        SimpleRenderer::draw()
+        {
+            //draw and update meshes
+
+            SimpleRenderer::completeMeshUploads()
+            {
+                //check if mesh upload complete if so add to SimpleRenderer::m_releaseMeshes
+            }
+        }
+
+        SimpleRenderer::update()
+        {
+            ActiveVolume::update(SimpleRenderer::m_loadedMeshes, SimpleRenderer::m_releaseMeshes)
+            {
+                RegularGrid:getUpdated(ActiveVolume::m_updatedRegions, ActiveVolume::m_updatedChunks, ActiveVolume::m_completedRequests);
+
+                ActiveVolume::releaseContainers(); //releases all idle containers in ActiveVolume::m_releaseChunkContainers that were busy before
+
+                ActiveVolume::updateRegions();
+
+                ActiveVolume::updateChunks(); //process m_updatedChunks
+
+                ActiveVolume::updateChunkVolume()
+                {
+                    ContainerVolume::update(ActiveVolume::m_chunkIndex, ActiveVolume::m_chunkLoadRequests, ActiveVolume::m_chunkUpdates)
+                    {
+                        ActiveVolume::releaseChunkContainer(); //releases idle containers or cancels action and adds to ActiveVolume::m_releaseChunkContainers
+                    }
+
+                    //if container in m_chunkLoadRequests is idle request load
+                    {
+                        RegularGrid::loadChunk()
+                    }
+                    //if container in m_chunkUpdates needs a mesh
+                    {
+                        //add to m_chunkMeshQueue
+                    }
+                }
+
+                ActiveVolume::updateMeshes(MeshUpdates &loadedMeshes, MeshUpdates &releaseMeshes)
+                {
+                    //release meshes from releaseMeshes to ActiveVolume::m_chunkMeshes
+
+                    //complete meshes from ActiveVolume::m_completedRequests
+                    {
+                        ActiveVolume::completeMeshRequest()
+                    }
+
+                    ActiveVolume::generateMeshRequest()
+                    {
+
+                    }
+                }
+            }
+
+            SimpleRenderer::updateMeshes()
+            {
+                //process meshes from SimpleRenderer::m_loadedMeshes
+                SimpleRenderer::processChunkMesh()
+                {
+                    //queue mesh uploads to SimpleRenderer::m_meshUploadQueue
+                    //uploadMesh()
+                }
+            }
+
+            SimpleRenderer::uploadMeshes()
+        }
+    }
+}
+
+

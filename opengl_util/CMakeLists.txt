@@ -31,6 +31,7 @@ set(opengl_util_headers
 set(opengl_util_libraries
 #    glew::glew
     glbinding::glbinding
+    generic
 )
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

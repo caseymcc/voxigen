@@ -103,9 +103,10 @@ public:
 
     bool requestPositionUpdate(const glm::ivec3 &region, const glm::ivec3 &chunk);
     bool requestMesh(_Object *object, TextureAtlas *textureAtlas);
-    bool returnMesh(voxigen::ChunkTextureMesh *mesh);
+//    bool returnMesh(voxigen::ChunkTextureMesh *mesh);
+    void returnMeshRequest(Request *request);
     bool requestCancelMesh(_Object *object);
-    void returnRequest(Request *request);
+//    void returnRequest(Request *request);
 
     void updateQueues(Requests &completedQueue);// ChunkRenderers &added, ChunkRenderers &updated, ChunkRenderers &removed);
 

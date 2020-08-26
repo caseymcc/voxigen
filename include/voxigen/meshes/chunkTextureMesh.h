@@ -17,7 +17,7 @@ class ChunkTextureMesh
 public:
     struct Vertex
     {
-        uint8_t x, y, z;
+        uint8_t x, y, z, w; //w used for barycentric position
         int8_t nx, ny, nz;
         uint16_t tx, ty;
         uint32_t data;
@@ -81,8 +81,8 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
         entry.y=0;
     }
 
-    short texX=entry.x;
-    short texY=entry.y;
+    short texX=(short)entry.x;
+    short texY=(short)entry.y;
     short resolution=(short)m_textureAtlas->resolution();
 
     if(entry.method==LayerMethod::repeat)
@@ -130,6 +130,7 @@ inline void ChunkTextureMesh::addFace(size_t face, unsigned int cellType, const 
         vertex.x=quad[i].x;
         vertex.y=quad[i].y;
         vertex.z=quad[i].z;
+        vertex.w=(uint8_t)i;
         vertex.nx=quad[4].x;
         vertex.ny=quad[4].y;
         vertex.nz=quad[4].z;

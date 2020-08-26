@@ -7,6 +7,9 @@
 #include "uniform.h"
 #include "uniformBuffer.h"
 
+#include <generic/fileIO.h>
+#include <generic/stdFileIO.h>
+
 namespace opengl_util
 {
 
@@ -63,9 +66,14 @@ public:
     Uniform &uniform(size_t id);
     Uniform &uniform(std::string key);
 
+    template<typename _FilIO=generic::io::StdFileIO>
+    std::string loadShader(const std::string &shaderFile, void *userData=nullptr);
+
+    template<typename _FilIO=generic::io::StdFileIO>
+    bool load(const std::string &vertShaderFile, const std::string &fragShaderFile, std::string &error, void *userData=nullptr);
+
     bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error);
     bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string insert, std::string &error);
-
 
     bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error);
     bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error);
@@ -85,6 +93,7 @@ public:
 protected:
     void generateProgram();
     void addUniform(std::string key, Uniform::Type type, GLuint location);
+    void clear();
 
     Shader *m_vertexShader;
     Shader *m_fragmentShader;
@@ -99,8 +108,40 @@ protected:
 
     UniformIdMap m_uniformIdMap;
     Uniforms m_uniforms;
+
+#ifndef NDEBUG
+    UniformDummy m_dummyUniform; //used to return on invalid uniform
+#endif
 };
 typedef std::shared_ptr<Program> SharedProgram;
+
+template<typename _FileIO>
+std::string Program::loadShader(const std::string &shaderFile, void *userData)
+{
+    std::string shader;
+    _FileIO::Type *file=generic::io::open<_FileIO>(shaderFile, "rb", userData);
+
+    if(!file)
+        return shader;
+
+    size_t bufferSize=generic::io::size<_FileIO>(file);
+
+    shader.resize(bufferSize);
+    generic::io::read<_FileIO>(shader.data(), sizeof(std::string::value_type), bufferSize, file);
+
+    generic::io::close<_FileIO>(file);
+
+    return shader;
+}
+
+template<typename _FileIO>
+bool Program::load(const std::string &vertShaderFile, const std::string &fragShaderFile, std::string &error, void *userData)
+{
+    std::string vertShader=loadShader<_FileIO>(vertShaderFile, userData);
+    std::string fragShader=loadShader<_FileIO>(fragShaderFile, userData);
+
+    return attachLoadAndCompileShaders(vertShader, fragShader, error);
+}
 
 } //namespace opengl_util
 

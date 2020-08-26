@@ -34,9 +34,9 @@ enum class HandleAction
     Idle,
     Reading,
     Writing,
-    Generating,
-    Updating,
-    Releasing
+    Generating//,
+//    Updating,
+//    Releasing
 };
 
 inline std::string getHandleActionName(HandleAction action)
@@ -55,12 +55,12 @@ inline std::string getHandleActionName(HandleAction action)
     case HandleAction::Generating:
         return "Generating";
         break;
-    case HandleAction::Updating:
-        return "Updating";
-        break;
-    case HandleAction::Releasing:
-        return "Releasing";
-        break;
+//    case HandleAction::Updating:
+//        return "Updating";
+//        break;
+//    case HandleAction::Releasing:
+//        return "Releasing";
+//        break;
     }
     return "Invalid";
 }

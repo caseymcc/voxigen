@@ -200,6 +200,7 @@ set(voxigen_generators
     include/voxigen/generators/biome.h
     src/generators/biome.cpp
     include/voxigen/generators/equiRectWorldGenerator.h
+    include/voxigen/generators/equiRectWorldGenerator.inl
     src/generators/equiRectWorldGenerator.cpp
     include/voxigen/generators/generator.h
 )
@@ -233,20 +234,28 @@ set(voxigen_volume
     include/voxigen/volume/cell.h
     include/voxigen/volume/chunk.h
     include/voxigen/volume/chunkFunctions.h
+    src/volume/chunkFunctions.cpp
     include/voxigen/volume/chunkHandle.h
     include/voxigen/volume/chunkHandle.inl
+    include/voxigen/volume/containerVolume.h
+    include/voxigen/volume/containerVolume.inl
     include/voxigen/volume/dataHandler.h
     include/voxigen/volume/dataStore.h
+    include/voxigen/volume/dataStore.inl
     include/voxigen/volume/gridDescriptors.h
     src/volume/gridDescriptors.cpp
     include/voxigen/volume/gridFunctions.h
+    src/volume/gridFunctions.cpp
     include/voxigen/volume/handleState.h
     include/voxigen/volume/region.h
+    include/voxigen/volume/regionChunkIndex.h
     include/voxigen/volume/regionHandle.h
     include/voxigen/volume/regionHandle.inl
+    include/voxigen/volume/regionIndex.h
     include/voxigen/volume/regular2DGrid.h
     src/volume/regular2DGrid.cpp
     include/voxigen/volume/regularGrid.h
+    include/voxigen/volume/regularGrid.inl
 )
 source_group("volume" FILES ${voxigen_volume})
 
@@ -255,12 +264,20 @@ set(voxigen_source
     include/voxigen/defines.h
     include/voxigen/entity.h
     src/entity.cpp
+    include/voxigen/loadProgress.h
+#    src/loadProgress.cpp
     include/voxigen/noise.h
     src/noise.cpp
     include/voxigen/object.h
     src/object.cpp
-    include/voxigen/processQueue.h
-    include/voxigen/processQueue.inl
+#    include/voxigen/processQueue.h
+#    include/voxigen/processQueue.inl
+    include/voxigen/processRequests.h
+    src/processRequests.cpp
+    include/voxigen/processingThread.h
+    src/processingThread.cpp
+    include/voxigen/queueThread.h
+    src/queueThread.cpp
     include/voxigen/search.h
     include/voxigen/simpleCamera.h
     src/simpleCamera.cpp
@@ -330,6 +347,19 @@ if(VOXIGEN_RENDERING)
     )
     source_group("rendering" FILES ${voxigen_rendering})
 
+    set(voxigen_rendering_shaders
+        resources/shaders/chunk_frag.glsl
+        resources/shaders/chunk_vert.glsl
+        resources/shaders/chunkOutline_frag.glsl
+        resources/shaders/chunkOutline_vert.glsl
+        resources/shaders/region_frag.glsl
+        resources/shaders/region_vert.glsl
+        resources/shaders/regionOutline_frag.glsl
+        resources/shaders/regionOutline_vert.glsl
+    )
+    source_group("rendering\\shaders" FILES ${voxigen_rendering_shaders})
+    set_source_files_properties(${voxigen_rendering_shaders} PROPERTIES HEADER_FILE_ONLY TRUE)
+
     set(voxigen_rendering_maths
         include/voxigen/maths/glm_point.h
     )
@@ -337,6 +367,7 @@ if(VOXIGEN_RENDERING)
 
     set(voxigen_source ${voxigen_source}
         ${voxigen_rendering}
+        ${voxigen_rendering_shaders}
         ${voxigen_rendering_maths}
     )
 
@@ -353,6 +384,8 @@ if(VOXIGEN_TEXTURE)
         src/texturing/blendMethod.cpp
         include/voxigen/texturing/layerMethod.h
         src/texturing/layerMethod.cpp
+#        include/voxigen/texturing/textureArray.h
+#        src/texturing/textureArray.cpp
         include/voxigen/texturing/textureAtlas.h
         src/texturing/textureAtlas.cpp
         include/voxigen/texturing/texturePack.h
@@ -421,6 +454,8 @@ if(VOXIGEN_TESTAPP)
     set(testApp_sources
         testApp/debugScreen.h
         testApp/debugScreen.cpp
+        testApp/loadingScreen.h
+        testApp/loadingScreen.cpp
         testApp/main.cpp
         testApp/marker.h
         testApp/marker.cpp

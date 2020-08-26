@@ -55,6 +55,7 @@ set(generic_sources
     fileIO.cpp
     jsonSerializer.cpp
     log.cpp
+    watchFiles.cpp
 )
 
 set(generic_headers
@@ -72,6 +73,7 @@ set(generic_headers
     generic/serializer.h
     generic/stdFileIO.h
     generic/types.h
+    generic/watchFiles.h
 )
 
 set(generic_libraries RapidJSON::rapidjson)

@@ -70,7 +70,7 @@ struct IGridDescriptors
 
     virtual glm::ivec3 getRegionCellSize() const=0;
 
-    virtual glm::ivec3 getRegionCount() const=0;
+    virtual const glm::ivec3 &getRegionCount() const=0;
 
     virtual RegionHash getRegionHash(const glm::ivec3 &index) const=0;
     virtual glm::ivec3 getRegionIndex(RegionHash hash) const=0;
@@ -163,7 +163,7 @@ struct GridDescriptors:IGridDescriptors
 
     glm::ivec3 getRegionCellSize() const override { return m_regionCellSize; }
 
-    glm::ivec3 getRegionCount() const override { return m_regionCount; }
+    const glm::ivec3 &getRegionCount() const override { return m_regionCount; }
 
     RegionHash getRegionHash(const glm::ivec3 &index) const override { return regionHash(index); }
     glm::ivec3 getRegionIndex(RegionHash hash) const override { return regionIndex(hash); }
