@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 
 #pragma warning(push)
 #pragma warning(disable:4251)

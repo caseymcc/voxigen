@@ -4,6 +4,7 @@
 #include "generic/generic_export.h"
 
 #include <string>
+#include <system_error>
 
 namespace generic
 {

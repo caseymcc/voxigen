@@ -66,7 +66,7 @@ namespace io
             for(size_t i=0; i<sizes.size(); ++i)
             {
                 updatedFiles[i].resize(sizes[i]-1); //string will add extra for null terminator
-                updatedFilesPtr[i]=updatedFiles[i].data();
+                updatedFilesPtr[i]=const_cast<char *>(updatedFiles[i].data());
             }
 
             if(check(updatedFilesPtr.data(), sizes.data(), count))
