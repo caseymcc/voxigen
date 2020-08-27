@@ -114,6 +114,7 @@ template<typename _Region, typename _Chunk>
 void SimpleChunkRenderer<_Region, _Chunk>::buildPrograms()
 {
     std::string error;
+    std::ostringstream insertFrag;
 
 //    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
     if(!m_program.load(m_chunkVertFile, m_chunkFragFile, error))
@@ -130,8 +131,9 @@ void SimpleChunkRenderer<_Region, _Chunk>::buildPrograms()
         m_offsetId=m_program.getUniformId("regionOffset");
     }
 
+    insertFrag<<"vec3 dim=vec3("<<(float)ChunkType::sizeX::value<<", "<<(float)ChunkType::sizeY::value<<", "<<(float)ChunkType::sizeZ::value<<");\n";
 //    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
-    if(!m_outlineProgram.load(m_chunkOutlineVertFile, m_chunkOutlineFragFile, error))
+    if(!m_outlineProgram.load(m_chunkOutlineVertFile, "", m_chunkOutlineFragFile, insertFrag.str(), error))
     {
         Log::error("SimpleChunkRenderer outline shader compile failed\n %s", error.c_str());
         m_outlineShaderLoaded=false;

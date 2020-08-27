@@ -42,8 +42,8 @@ EquiRectWorldGenerator<_Grid>::~EquiRectWorldGenerator()
 template<typename _Grid>
 void EquiRectWorldGenerator<_Grid>::create(IGridDescriptors *descriptors, LoadProgress &progress)
 {
-    initialize(descriptors);
-    generateWorldOverview(progress);
+//    initialize(descriptors);
+//    generateWorldOverview(progress);
 }
 
 template<typename _Grid>

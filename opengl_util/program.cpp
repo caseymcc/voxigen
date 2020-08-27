@@ -235,19 +235,24 @@ void Program::clear()
     m_lastBlockBinding=1;
 }
 
-bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error)
+bool Program::attachLoadAndCompileShaders(const std::string &vertSource, std::string vertInsert, const std::string &fragSource, std::string fragInsert, std::string &error)
 {
     clear();
 
-    if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, error))
+    if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, vertInsert, error))
     {
-        if(attachAndLoadShader(fragSource, GL_FRAGMENT_SHADER, error))
+        if(attachAndLoadShader(fragSource, GL_FRAGMENT_SHADER, fragInsert, error))
         {
             if(compile(error))
                 return true;
         }
     }
     return false;
+}
+
+bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error)
+{
+    return attachLoadAndCompileShaders(vertSource, "", fragSource, "", error);
 }
 
 bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error)

@@ -370,6 +370,7 @@ template<typename _RegionHandle>
 void RegionRenderer<_RegionHandle>::buildPrograms()
 {
     std::string error;
+    std::ostringstream insertFrag;
 
 //    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
     if(!m_program.load(m_regionVertFile, m_regionFragFile, error))
@@ -387,8 +388,11 @@ void RegionRenderer<_RegionHandle>::buildPrograms()
         m_offsetId=m_program.getUniformId("regionOffset");
     }
 
+    glm::ivec3 regionSize=getSize();
+
+    insertFrag<<"vec3 dim=vec3("<<(float)regionSize.x<<", "<<(float)regionSize.y<<", "<<(float)regionSize.z<<");\n";
 //    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
-    if(!m_outlineProgram.load(m_regionOutlineVertFile, m_regionOutlineFragFile, error))
+    if(!m_outlineProgram.load(m_regionOutlineVertFile, "", m_regionOutlineFragFile, insertFrag.str(), error))
     {
         Log::error("RegionRenderer outline shader compile failed\n %s", error.c_str());
         m_outlineShaderLoaded=false;
