@@ -11,6 +11,8 @@
 
 #include <imglib/draw.h>
 
+LoadProgress g_loadProgress;
+
 std::vector<char> packVectorString(const std::vector<std::string> &values)
 {
     std::vector<char> packed;
@@ -70,7 +72,7 @@ void MapGen::initialize()
 {
 //    fs::path worldsDirectory("worlds");
     //pull out generator so we can work on it directly
-    m_world.create("", "TestApWorld", glm::ivec3(m_worldWidth, m_worldHeight, m_worldDepth), "EquiRectWorldGenerator");
+    m_world.create("", "TestApWorld", glm::ivec3(m_worldWidth, m_worldHeight, m_worldDepth), "EquiRectWorldGenerator", g_loadProgress);
 
     WorldGeneratorTemplate *genTemplate=(WorldGeneratorTemplate *)&m_world.getGenerator();
     m_worldGenerator=(WorldGenerator *)genTemplate->get();
@@ -772,7 +774,7 @@ void MapGen::generate()
 {
     m_worldGenerator->m_plateSeed=m_noiseSeed;
     m_worldGenerator->m_plateCount=m_plateCount;
-    m_worldGenerator->generateWorldOverview();
+    m_worldGenerator->generateWorldOverview(g_loadProgress);
 
 //    updateTexture();
 }
