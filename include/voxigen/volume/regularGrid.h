@@ -12,6 +12,7 @@
 #include "voxigen/updateQueue.h"
 #include "voxigen/processRequests.h"
 //#include "voxigen/processQueue.h"
+#include "voxigen/processingThread.h"
 
 //#include "octomap/OcTree.h"
 
