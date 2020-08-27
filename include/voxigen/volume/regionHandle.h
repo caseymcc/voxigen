@@ -61,7 +61,7 @@ public:
 //    };
 
 //    RegionHandle(RegionHash regionHash, GridDescriptors<_Grid> *descriptors, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue);
-    RegionHandle(RegionHash regionHash, IGridDescriptors *descriptors, UpdateQueue *updateQueue);
+    RegionHandle(RegionHash regionHash, IGridDescriptors *descriptors);
 
     const glm::ivec3 &getRegionIndex() { return m_index; }
 
@@ -81,7 +81,7 @@ public:
 
     bool load(const std::string &name);
 
-    void addConfig(SharedChunkHandle handle);
+    void addConfig(ChunkHandleType *handle);
 
     RegionHash hash() { return m_hash; }
     bool cachedOnDisk() { return m_cachedOnDisk; }

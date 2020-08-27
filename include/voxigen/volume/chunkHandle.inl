@@ -3,6 +3,11 @@
 namespace voxigen
 {
 
+#ifdef DEBUG_ALLOCATION
+template<typename _Chunk>
+std::atomic<int> ChunkHandle<_Chunk>::allocated=0;
+#endif //DEBUG_ALLOCATION
+
 template<typename _Chunk>
 void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *generator, size_t lod)
 {
@@ -12,9 +17,11 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
 
     startPos+=chunkOffset;
 
+    MEMORY_CHECK
+
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    Log::debug("ChunkHandle (%d, %d) allocating by generate\n", m_regionHash, m_hash);
+    Log::debug("ChunkHandle::generate %llx hash:(%d, %d) allocating by generate", this, m_regionHash, m_hash);
 #endif
     m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, chunkOffset, lod);
 
@@ -31,10 +38,11 @@ void ChunkHandle<_Chunk>::generate(IGridDescriptors *descriptors, Generator *gen
     if(validCells<=0)
     {
 #ifdef DEBUG_ALLOCATION
-        allocated++;
-        Log::debug("ChunkHandle (%d, %d) deleting by generate\n", m_regionHash, m_hash);
+        allocated--;
+        Log::debug("ChunkHandle::generate %llx hash:(%d, %d) empty deleting chunk data:%llx", this, m_regionHash, m_hash, m_chunk.get());
 #endif
         m_chunk.reset(nullptr);//drop chunks that are empty
+        MEMORY_CHECK
         setEmpty(true);
     }
     else
@@ -51,10 +59,11 @@ void ChunkHandle<_Chunk>::release()
     {
 #ifdef DEBUG_ALLOCATION
         allocated--;
-        Log::debug("ChunkHandle (%d, %d) freeing (%d)\n", m_regionHash, m_hash, allocated);
+        Log::debug("ChunkHandle::release %llx hash:(%d, %d) freeing (%d)", this, m_regionHash, m_hash, allocated);
 #endif
     }
     m_chunk.reset(nullptr); 
+    MEMORY_CHECK
     m_memoryUsed=0;  
 //    setState(HandleState::Unknown);
 }
@@ -67,9 +76,12 @@ void ChunkHandle<_Chunk>::read(IGridDescriptors *descriptors, const std::string 
 
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    Log::debug("ChunkHandle (%d, %d) allocating by read\n", m_regionHash, m_hash);
+    Log::debug("ChunkHandle::read %llx hash:(%d, %d) allocating by read", this, m_regionHash, m_hash);
 #endif
     m_chunk=std::make_unique<ChunkType>(m_hash, 0, chunkIndex, offset, lod);
+#ifdef DEBUG_ALLOCATION
+    Log::debug("ChunkHandle::read %llx hash:(%d, %d) allocated chunk: %llx", this, m_regionHash, m_hash, m_chunk.get());
+#endif
 
     auto &cells=m_chunk->getCells();
     std::ifstream file;

@@ -12,7 +12,7 @@ namespace imglib
 template<typename _ImageType>
 bool load(_ImageType &image, const std::string &location)
 {
-    std::string ext=generic::getExtension(location);
+    std::string ext=generic::io::getExtension(location);
 
     if(ext==".png")
         return loadPng(image, location.c_str());
@@ -27,14 +27,14 @@ bool load(_ImageType &image, const std::string &location)
 template<typename _FileIO, typename _ImageType>
 bool load(_ImageType &image, const std::string &location, void *userData=nullptr)
 {
-    std::string ext=generic::getExtension(location);
+    std::string ext=generic::io::getExtension(location);
 
-    _FileIO::Type *fileType=generic::open<_FileIO>(location, "rb", userData);
+    _FileIO::Type *fileType=generic::io::open<_FileIO>(location, "rb", userData);
 
-    size_t bufferSize=generic::size<_FileIO>(fileType);
+    size_t bufferSize=generic::io::size<_FileIO>(fileType);
     uint8_t *buffer=(uint8_t *)malloc(sizeof(uint8_t)*bufferSize);
 
-    generic::read<_FileIO>(buffer, sizeof(uint8_t), bufferSize, fileType);
+    generic::io::read<_FileIO>(buffer, sizeof(uint8_t), bufferSize, fileType);
 
     if(ext==".png")
         return loadPngBuffer(image, buffer, bufferSize);
@@ -56,7 +56,7 @@ bool loadBuffer(_ImageType &image, const uint8_t *buffer, size_t size, std::stri
 template<typename _ImageType>
 bool save(_ImageType &image, const std::string &location)
 {
-    std::string ext=generic::getExtension(location);
+    std::string ext=generic::io::getExtension(location);
 
     if(ext==".png")
         return savePng(image, location.c_str());

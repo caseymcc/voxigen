@@ -2,7 +2,7 @@ namespace voxigen
 {
 
 template<typename _Region>
-RegionHandle<_Region>::RegionHandle(RegionHash regionHash, IGridDescriptors *descriptors, /*GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore,*/ UpdateQueue *updateQueue):
+RegionHandle<_Region>::RegionHandle(RegionHash regionHash, IGridDescriptors *descriptors/*, GeneratorQueue<_Grid> *generatorQueue, DataStore<_Grid> *dataStore, UpdateQueue *updateQueue*/):
 //m_status(Unknown),
 m_state(HandleState::Unknown),
 m_action(HandleAction::Idle),
@@ -11,7 +11,7 @@ m_hash(regionHash),
 m_descriptors(descriptors),
 //m_generatorQueue(generatorQueue),
 //m_dataStore(dataStore),
-m_updateQueue(updateQueue),
+//m_updateQueue(updateQueue),
 m_cachedOnDisk(false),
 m_empty(false)
 {
@@ -25,7 +25,7 @@ void RegionHandle<_Region>::generate(IGridDescriptors *descriptors, Generator *g
 
 #ifdef DEBUG_ALLOCATION
     allocated++;
-    LOG(INFO)<<"RegionHandle ("<<m_hash<<") allocating by generate\n";
+    Log::debug("RegionHandle (%llx) allocating by generate\n", m_hash);
 #endif
     glm::ivec3 size=details::regionCellSize<RegionType, ChunkType>();
 
@@ -55,7 +55,7 @@ void RegionHandle<_Region>::release()
     {
 #ifdef DEBUG_ALLOCATION
         allocated--;
-        LOG(INFO)<<"RegionHandle ("<<m_hash<<") freeing ("<<allocated<<")\n";
+        Log::debug("RegionHandle (%llx) freeing (%d)\n", m_hash, allocated);
 #endif
     }
     m_heightMap.clear();
@@ -181,7 +181,7 @@ void RegionHandle<_Region>::saveConfigTo(std::string configFile)
 }
 
 template<typename _Region>
-void RegionHandle<_Region>::addConfig(SharedChunkHandle handle)
+void RegionHandle<_Region>::addConfig(ChunkHandleType *handle)
 {
     if(handle->empty())
     {

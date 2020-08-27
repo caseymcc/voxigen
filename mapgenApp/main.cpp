@@ -20,7 +20,7 @@ void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsize
 {
 //    if(severity != DEBUG_SEVERITY_NOTIFICATION)
     if(type == GL_DEBUG_TYPE_ERROR)
-        LOG(INFO)<<"Opengl - error: "<<message;
+        LOG(INFO)<<"Opengl error: "<<message;
 //    else
 //        LOG(INFO)<<"Opengl : "<<message;
 }

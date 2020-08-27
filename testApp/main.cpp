@@ -10,6 +10,11 @@
 #include "voxigen/fileio/filesystem.h"
 #include "voxigen/fileio/log.h"
 
+#include "voxigen/processingThread.h"
+
+#include "generic/watchFiles.h"
+#include "generic/log.h"
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -17,6 +22,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include "loadingScreen.h"
 #include "debugScreen.h"
 #include "marker.h"
 #include "renderingOptions.h"
@@ -30,6 +36,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
 
+#include <chrono>
+using namespace std::chrono_literals;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -66,7 +74,10 @@ DebugScreen *debugScreen=nullptr;
 //template class GeneratorTemplate<EquiRectWorldGenerator<World>>;
 //}
 //voxigen::SimpleRenderer<World> *g_renderer;
+World world;
 WorldRenderer *g_renderer;
+
+LoadProgress g_loadProgress;
 
 //Player info
 Marker marker;
@@ -79,11 +90,13 @@ bool lastUpdateAdded;
 void updatePosition(World &world);
 void updateChunkInfo();
 
+generic::io::WatchFiles g_fileWatcher;
+
 void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void *userParam)
 {
 //    if(severity != DEBUG_SEVERITY_NOTIFICATION)
     if(type == GL_DEBUG_TYPE_ERROR)
-        LOG(INFO)<<"Opengl - error: "<<message;
+        LOG(INFO)<<"Opengl error: "<<message;
 //    else
 //        LOG(INFO)<<"Opengl : "<<message;
 }
@@ -115,8 +128,62 @@ public:
     }
 };
 
+void loadThreadFunc()
+{
+    g_loadProgress.update("Load started.", 0, false);
+
+    fs::path worldsDirectory("worlds");
+
+    if(!fs::exists(worldsDirectory))
+        fs::create_directory(worldsDirectory);
+
+    std::vector<fs::directory_entry> worldDirectories;
+
+    for(auto &entry:fs::directory_iterator(worldsDirectory))
+        worldDirectories.push_back(entry);
+
+    if(worldDirectories.empty())
+    {
+        std::string worldName="TestAppWorld";
+        std::string worldDirectory=worldsDirectory.string()+"/"+worldName;
+        fs::path worldPath(worldDirectory);
+
+        fs::create_directory(worldPath);
+
+        g_loadProgress.update("Generating world.", 0, false);
+
+        //creating earth sizes
+//        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
+        world.create(worldDirectory, worldName, glm::ivec3(204800, 102400, 10240), "EquiRectWorldGenerator", g_loadProgress);
+    }
+    else
+    {
+        g_loadProgress.update("Loading world.", 0, false);
+        world.load(worldDirectories[0].path().string(), g_loadProgress);
+    }
+
+    g_loadProgress.update("Complete", 100, true);
+}
+
 int main(int argc, char ** argv)
 {
+    LoadingScreen *loadingScreen=nullptr;
+    std::thread loadThread;
+
+    g_loadProgress.update("Load unknown", 0, false);
+
+#ifdef VOXIGEN_MEMORY_DEBUG
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_CHECK_ALWAYS_DF);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+#endif
+
+#ifndef NDEBUG
+    std::vector<std::string>  chunkRendererShaders=ChunkRenderer::getShaderFileNames();
+
+    for(std::string &fileName:chunkRendererShaders)
+        g_fileWatcher.add(fileName);
+#endif
+
     FLAGS_log_dir="E:/projects/lumberyard_git/dev/Code/SDKs/voxigen/log";
 //    FLAGS_logtostderr=true;
     FLAGS_alsologtostderr=true;
@@ -138,7 +205,7 @@ int main(int argc, char ** argv)
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 #endif
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, (int)GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -172,6 +239,11 @@ int main(int argc, char ** argv)
 #endif
 
     ImGui::StyleColorsDark();
+
+    loadingScreen=new LoadingScreen(&renderingOptions);
+
+    loadingScreen->initialize();
+    loadingScreen->setSize(width, height);
 
     debugScreen=new DebugScreen(&renderingOptions);
     
@@ -211,43 +283,59 @@ int main(int argc, char ** argv)
     }
 #endif
 
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
 
 //create player marker
     marker.init();
 
     framebuffer_size_callback(window, width, height);
 
-    World world;
+    voxigen::ProcessThread &processThread=voxigen::getProcessThread();
 
-    fs::path worldsDirectory("worlds");
-
-    if(!fs::exists(worldsDirectory))
-        fs::create_directory(worldsDirectory);
-
-    std::vector<fs::directory_entry> worldDirectories;
-
-    for(auto &entry:fs::directory_iterator(worldsDirectory))
-        worldDirectories.push_back(entry);
-
-    if(worldDirectories.empty())
-    {
-        std::string worldName="TestAppWorld";
-        std::string worldDirectory=worldsDirectory.string()+"/"+worldName;
-        fs::path worldPath(worldDirectory);
-        
-        fs::create_directory(worldPath);
-
-        //creating earth sizes
-//        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
-        world.create(worldDirectory, worldName, glm::ivec3(204800, 102400, 10240), "EquiRectWorldGenerator");
-    }
-    else
-        world.load(worldDirectories[0].path().string());
+    processThread.setSizes(voxigen::details::regionSize<typename World::RegionType>(), voxigen::details::chunkSize<typename World::ChunkType>());
+    processThread.start();
     
+    loadThread=std::thread(&loadThreadFunc);
+
+    std::string loadStatus;
+    int loadProgress=0;
+    bool loadComplete=false;
+
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //used while loading world
+    while(!glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        g_loadProgress.get(loadStatus, loadProgress, loadComplete);
+
+        if(loadComplete)
+            break;
+
+        loadingScreen->start();
+        loadingScreen->update(loadStatus, loadProgress);
+        loadingScreen->build();
+        loadingScreen->draw();
+
+        // Swap front and back buffers when opengl ready
+        glfwSwapBuffers(window);
+
+        // Poll for and process events
+        glfwPollEvents();
+
+        std::this_thread::sleep_for(33ms);
+    }
+
     glm::ivec3 regionCellSize=world.regionCellSize();
     glm::ivec3 worldMiddle=(world.getDescriptors().m_size)/2;
 
-    worldMiddle.z+=worldMiddle.z/2;
+    int baseHeight=world.getBaseHeight(glm::vec2(worldMiddle.x, worldMiddle.y));
+//    worldMiddle.z+=worldMiddle.z/2;
+    worldMiddle.z=baseHeight;
 //    worldMiddle=glm::ivec3(1536, 1536, 384);
 
     renderingOptions.camera.setYaw(0.0f);
@@ -260,41 +348,47 @@ int main(int argc, char ** argv)
     renderingOptions.playerRegionIndex=world.getRegionIndex(renderingOptions.playerRegion);
     renderingOptions.playerChunkIndex=world.getChunkIndex(renderingOptions.playerChunk);
     
-    //set player position to local region
+    //set player position to localgion
     glm::vec3 regionPos=world.gridPosToRegionPos(renderingOptions.playerRegion, glm::vec3(worldMiddle))+glm::vec3(32.0f, 32.0f, 0.0f);
     
     renderingOptions.camera.setPosition(renderingOptions.playerRegion, regionPos);
     renderingOptions.player.setPosition(renderingOptions.playerRegionIndex, regionPos);
 
-    world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
-
     voxigen::SimpleRenderer<World> renderer(&world);
 
     g_renderer=&renderer;
+
     renderer.setTextureAtlas(textureAtlas);
 
     renderer.setCamera(&renderingOptions.camera);
     renderer.build();
-    renderer.setViewRadius(glm::ivec3(128, 128, 128));
-//    renderer.setViewRadius(glm::ivec3(1024, 1024, 1024));
+//    renderer.setViewRadius(glm::ivec3(128, 128, 64));
+    renderer.setViewRadius(glm::ivec3(512, 512, 128));
+//    renderer.setViewRadius(glm::ivec3(2048, 2048, 512));
+    processThread.setRequestSize((renderer.getRendererCount()*3)/2);
 
+//    world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setCameraChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
     renderer.setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
 //    lastUpdateAdded=renderer.updateChunks();
 //    renderer.updateChunks();
 
-    lastFrame=glfwGetTime();
-
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     debugScreen->startBuild();
     debugScreen->update(&world);
     debugScreen->build();
+    lastFrame=glfwGetTime();
     while(!glfwWindowShouldClose(window))
     {
+#ifndef NDEBUG
+        std::vector<std::string> updatedFiles=g_fileWatcher.check();
+
+        if(!updatedFiles.empty())
+        {
+            g_renderer->loadShaders();
+            renderingOptions.camera.forceUpdate();//for re-upload of projection and view mats
+            updatedFiles.clear();
+        }
+#endif
         if(renderingOptions.resetCamera)
         {
             glm::ivec3 regionIndex=renderingOptions.player.getRegionIndex();
@@ -364,6 +458,8 @@ int main(int argc, char ** argv)
         // Poll for and process events
         glfwPollEvents();
     }
+
+    processThread.stop();
 
     //bring renderers down before world is terminated;
     renderer.destroy();
@@ -481,6 +577,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         return;
     }
 
+    //commands
+    if(mods==GLFW_MOD_CONTROL)
+    {
+        if((key==GLFW_KEY_R)&&(action==GLFW_RELEASE))
+        {
+            g_renderer->loadShaders();
+            renderingOptions.camera.forceUpdate();//for re-upload of projection and view mats
+        }
+        return;
+    }
     if(key==GLFW_KEY_W)
     {
         if(action==GLFW_PRESS)
@@ -644,7 +750,7 @@ void updatePosition(World &world)
                 renderingOptions.playerChunkIndex=chunkIndex;
 
                 g_renderer->setPlayerChunk(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
-                world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
+//                world.updatePosition(renderingOptions.playerRegionIndex, renderingOptions.playerChunkIndex);
             }
 
             if((cameraRegionIndex!=regionIndex)||(cameraPosition!=position))
@@ -668,18 +774,18 @@ void updatePosition(World &world)
 void updateChunkInfo()
 {
     std::ostringstream chunkInfoStream;
-    auto chunkRenderers=g_renderer->getChunkRenderers();
-
-    for(auto chunkRenderer:chunkRenderers)
-    {
-        if(!chunkRenderer)
-            continue;
-
-        std::string chunkInfo;
-
-        chunkRenderer->updateInfo(chunkInfo);
-        chunkInfoStream<<chunkInfo;
-    }
+//    auto volumeInfo=g_renderer->getVolumeInfo();
+//
+//    for(auto &info:volumeInfo)
+//    {
+//        if(!info.container)
+//            continue;
+//
+//        std::string chunkInfo;
+//
+//        info.container->updateInfo(chunkInfo);
+//        chunkInfoStream<<chunkInfo;
+//    }
 
 //    debugScreen->setChunkInfo(chunkInfoStream.str());
 }

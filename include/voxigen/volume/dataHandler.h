@@ -38,21 +38,35 @@ public:
 protected:
     virtual DataHandle *newHandle(HashType hash)=0;
 
+    void checkThreadSafety();
+
 //Data handles
-    std::mutex m_dataMutex;
+//    std::mutex m_dataMutex;
+#ifndef NDEBUG
+    std::thread::id m_threadId;
+    bool m_threadIdSet;
+#endif
+
+    size_t m_handlesInUse;
+
     SharedDataHandleMap m_dataHandles;
     WeakDataHandleMap m_weakDataHandles;
 };
 
 template<typename _HashType, typename _DataHandle, typename _Data>
-DataHandler<_HashType, _DataHandle, _Data>::DataHandler()
+DataHandler<_HashType, _DataHandle, _Data>::DataHandler():
+    m_handlesInUse(0)
+#ifndef NDEBUG
+    ,m_threadIdSet(false)
+#endif
 {
 }
 
 template<typename _HashType, typename _DataHandle, typename _Data>
 size_t DataHandler<_HashType, _DataHandle, _Data>::handlesInUse()
 {
-    std::unique_lock<std::mutex> lock(m_dataMutex);
+//    std::unique_lock<std::mutex> lock(m_dataMutex);
+    checkThreadSafety();
 
     size_t count=0;
     for(auto iter:m_weakDataHandles)
@@ -67,7 +81,8 @@ size_t DataHandler<_HashType, _DataHandle, _Data>::handlesInUse()
 template<typename _HashType, typename _DataHandle, typename _Data>
 typename DataHandler<_HashType, _DataHandle, _Data>::SharedDataHandle DataHandler<_HashType, _DataHandle, _Data>::getDataHandle(HashType hash)
 {
-    std::unique_lock<std::mutex> lock(m_dataMutex);
+//    std::unique_lock<std::mutex> lock(m_dataMutex);
+    checkThreadSafety();
 
     auto iter=m_weakDataHandles.find(hash);
     SharedDataHandle returnHandle;
@@ -107,6 +122,7 @@ typename DataHandler<_HashType, _DataHandle, _Data>::SharedDataHandle DataHandle
         returnHandle.reset(dataHandle, std::bind(&DataHandler<_HashType, _DataHandle, _Data>::removeHandle, this, std::placeholders::_1));
     }
 
+    m_handlesInUse++;
     m_weakDataHandles[hash]=returnHandle;
 
     if(!returnHandle)
@@ -117,16 +133,36 @@ typename DataHandler<_HashType, _DataHandle, _Data>::SharedDataHandle DataHandle
 template<typename _HashType, typename _DataHandle, typename _Data>
 void DataHandler<_HashType, _DataHandle, _Data>::removeHandle(DataHandle *dataHandle)
 {
-    std::unique_lock<std::mutex> lock(m_dataMutex);
+//    std::unique_lock<std::mutex> lock(m_dataMutex);
+    checkThreadSafety();
 
     auto iter=m_weakDataHandles.find(dataHandle->hash());
 
     if(iter!=m_weakDataHandles.end())
+    {
+        m_handlesInUse--;
         m_weakDataHandles.erase(iter);
+    }
+
 
 //    //we are not releasing the handle here as we hold it in a different map
 //    //but we want to release any data attached to it as no one is using it
 //    dataHandle->release();
+}
+
+template<typename _HashType, typename _DataHandle, typename _Data>
+void DataHandler<_HashType, _DataHandle, _Data>::checkThreadSafety()
+{
+#ifndef NDEBUG
+    //lets make sure only one thread is changing the input queue
+    if(!m_threadIdSet)
+    {
+        m_threadId=std::this_thread::get_id();
+        m_threadIdSet=true;
+    }
+
+    assert(std::this_thread::get_id()==m_threadId);
+#endif
 }
 
 } //namespace voxigen

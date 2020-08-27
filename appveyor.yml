@@ -16,13 +16,17 @@ environment:
 #      PROJECT_DIR: .\
 #      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
+    - TOOLCHAIN: "vs-16-2019-win64-cxx17"
+      PROJECT_DIR: .\
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+
     - TOOLCHAIN: "vs-15-2017-win64-cxx17"
       PROJECT_DIR: .\
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
-    - TOOLCHAIN: "vs-14-2015-win64"
-      PROJECT_DIR: .\
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+#    - TOOLCHAIN: "vs-14-2015-win64"
+#      PROJECT_DIR: .\
+#      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 
 #glm issue
 #    - TOOLCHAIN: "mingw-cxx17"

@@ -4,113 +4,125 @@
 namespace voxigen
 {
 
-template<typename _RegionHandle>
-std::string RegionRenderer<_RegionHandle>::vertShader=
-"#version 330 core\n"
-"layout (location = 0) in uvec3 packedPosition;\n"
-"layout (location = 1) in ivec2 vTexCoords;\n"
-"layout (location = 2) in uint data;\n"
-"\n"
-"out vec3 position;\n"
-"out vec2 texCoords;\n"
-"flat out uint type;\n"
-"\n"
-"uniform mat4 projectionView;\n"
-"uniform vec3 regionOffset;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   vec3 decodedPosition=packedPosition;\n"
-"   decodedPosition=decodedPosition;\n"
-"   position=regionOffset+decodedPosition;\n"
-"   texCoords=vec2(vTexCoords.x, vTexCoords.y);\n"
-"   type=data;\n"
-"   gl_Position=projectionView*vec4(position, 1.0);\n"
+//template<typename _RegionHandle>
+//std::string RegionRenderer<_RegionHandle>::vertShader=
+//"#version 330 core\n"
+//"layout (location = 0) in uvec3 packedPosition;\n"
+//"layout (location = 1) in ivec2 vTexCoords;\n"
+//"layout (location = 2) in uint data;\n"
+//"\n"
+//"out vec3 position;\n"
+//"out vec2 texCoords;\n"
+//"flat out uint type;\n"
+//"\n"
+//"uniform mat4 projectionView;\n"
+//"uniform vec3 regionOffset;\n"
+//"\n"
+//"void main()\n"
+//"{\n"
+//"   vec3 decodedPosition=packedPosition;\n"
+//"   decodedPosition=decodedPosition;\n"
+//"   position=regionOffset+decodedPosition;\n"
+//"   texCoords=vec2(vTexCoords.x, vTexCoords.y);\n"
+//"   type=data;\n"
+//"   gl_Position=projectionView*vec4(position, 1.0);\n"
+//
+//"}\n"
+//"";
+//
+//template<typename _RegionHandle>
+//std::string RegionRenderer<_RegionHandle>::fragmentShader=
+//"#version 330 core\n"
+//"\n"
+//"in vec3 position;\n"
+//"in vec2 texCoords;\n"
+//"flat in uint type;\n"
+//"out vec4 color;\n"
+//"\n"
+//"uniform vec3 lightPos;\n"
+//"uniform vec3 lightColor;\n"
+//"\n"
+//"uniform sampler2D textureSampler;\n"
+//"\n"
+//"void main()\n"
+//"{\n"
+//"   vec3 normal = cross(dFdy(position), dFdx(position));\n"
+//"   normal=normalize(normal);\n"
+//"\n"
+//"   // ambient\n"
+//"   float ambientStrength=0.5;\n"
+//"   vec3 ambient=ambientStrength * lightColor;\n"
+//"   \n"
+//"   // diffuse \n"
+//"   vec3 lightDir=normalize(lightPos-position); \n"
+//"   float diff=max(dot(normal, lightDir), 0.0); \n"
+//"   vec3 diffuse=diff * lightColor; \n"
+//"   color=texelFetch(textureSampler, ivec2(texCoords), 0);\n"
+//"}\n"
+//"";
+//
+//template<typename _RegionHandle>
+//std::string RegionRenderer<_RegionHandle>::vertOutlineShader=
+//"#version 330 core\n"
+//"layout (location = 0) in vec3 inputVertex;\n"
+//"layout (location = 1) in vec3 inputNormal;\n"
+//"layout (location = 2) in vec2 inputTexCoord;\n"
+//"\n"
+//"uniform mat4 projectionView;\n"
+//"uniform vec3 regionOffset;\n"
+//"\n"
+//"out vec3 position;\n"
+//"\n"
+//"void main()\n"
+//"{\n"
+//"   position=inputVertex;\n"
+//"   gl_Position=projectionView*vec4(position+regionOffset, 1.0);\n"
+//"}\n"
+//"";
+//
+//template<typename _RegionHandle>
+//std::string RegionRenderer<_RegionHandle>::fragmentOutlineShader=
+//"#version 330 core\n"
+//"\n"
+//"in vec3 position;\n"
+//"\n"
+//"out vec4 color;\n"
+//"\n"
+//"uniform vec3 statusColor;\n"
+//"uniform float lineWidth=0.2;\n"
+//"\n"
+//"void main()\n"
+//"{\n"
+//"   vec3 distance=min(position, vec3(1024.0, 1024.0, 256.0)-position);\n"
+//"   float ambientStrength=0.5; \n"
+//"   \n"
+//"   int count=0;\n"
+//"   if(distance.x < lineWidth)\n"
+//"       count++;\n"
+//"   if(distance.y < lineWidth)\n"
+//"       count++;\n"
+//"   if(distance.z < lineWidth)\n"
+//"       count++;\n"
+//"   if(count<2)\n"
+//"       discard;\n"
+//"   color=vec4(statusColor, 1.0f);\n"
+//"}\n"
+//"";
 
-"}\n"
-"";
-
 template<typename _RegionHandle>
-std::string RegionRenderer<_RegionHandle>::fragmentShader=
-"#version 330 core\n"
-"\n"
-"in vec3 position;\n"
-"in vec2 texCoords;\n"
-"flat in uint type;\n"
-"out vec4 color;\n"
-"\n"
-"uniform vec3 lightPos;\n"
-"uniform vec3 lightColor;\n"
-"\n"
-"uniform sampler2D textureSampler;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   vec3 normal = cross(dFdy(position), dFdx(position));\n"
-"   normal=normalize(normal);\n"
-"\n"
-"   // ambient\n"
-"   float ambientStrength=0.5;\n"
-"   vec3 ambient=ambientStrength * lightColor;\n"
-"   \n"
-"   // diffuse \n"
-"   vec3 lightDir=normalize(lightPos-position); \n"
-"   float diff=max(dot(normal, lightDir), 0.0); \n"
-"   vec3 diffuse=diff * lightColor; \n"
-"   color=texelFetch(textureSampler, ivec2(texCoords), 0);\n"
-"}\n"
-"";
-
+const std::string RegionRenderer<_RegionHandle>::m_regionVertFile="resources/shaders/region_vert.glsl";
 template<typename _RegionHandle>
-std::string RegionRenderer<_RegionHandle>::vertOutlineShader=
-"#version 330 core\n"
-"layout (location = 0) in vec3 inputVertex;\n"
-"layout (location = 1) in vec3 inputNormal;\n"
-"layout (location = 2) in vec2 inputTexCoord;\n"
-"\n"
-"uniform mat4 projectionView;\n"
-"uniform vec3 regionOffset;\n"
-"\n"
-"out vec3 position;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   position=inputVertex;\n"
-"   gl_Position=projectionView*vec4(position+regionOffset, 1.0);\n"
-"}\n"
-"";
-
+const std::string RegionRenderer<_RegionHandle>::m_regionFragFile="resources/shaders/region_frag.glsl";
 template<typename _RegionHandle>
-std::string RegionRenderer<_RegionHandle>::fragmentOutlineShader=
-"#version 330 core\n"
-"\n"
-"in vec3 position;\n"
-"\n"
-"out vec4 color;\n"
-"\n"
-"uniform vec3 statusColor;\n"
-"uniform float lineWidth=0.2;\n"
-"\n"
-"void main()\n"
-"{\n"
-"   vec3 distance=min(position, vec3(1024.0, 1024.0, 256.0)-position);\n"
-"   float ambientStrength=0.5; \n"
-"   \n"
-"   int count=0;\n"
-"   if(distance.x < lineWidth)\n"
-"       count++;\n"
-"   if(distance.y < lineWidth)\n"
-"       count++;\n"
-"   if(distance.z < lineWidth)\n"
-"       count++;\n"
-"   if(count<2)\n"
-"       discard;\n"
-"   color=vec4(statusColor, 1.0f);\n"
-"}\n"
-"";
+const std::string RegionRenderer<_RegionHandle>::m_regionOutlineVertFile="resources/shaders/regionOutline_vert.glsl";
+template<typename _RegionHandle>
+const std::string RegionRenderer<_RegionHandle>::m_regionOutlineFragFile="resources/shaders/regionOutline_frag.glsl";
 
 template<typename _RegionHandle>
 bool RegionRenderer<_RegionHandle>::m_outlineInstanceGen=false;
+
+template<typename _RegionHandle>
+bool RegionRenderer<_RegionHandle>::m_renderShaderLoaded=false;
 
 template<typename _RegionHandle>
 opengl_util::Program RegionRenderer<_RegionHandle>::m_program;
@@ -120,6 +132,9 @@ size_t RegionRenderer<_RegionHandle>::m_projectionViewId;
 
 template<typename _RegionHandle>
 size_t RegionRenderer<_RegionHandle>::m_offsetId;
+
+template<typename _RegionHandle>
+bool RegionRenderer<_RegionHandle>::m_outlineShaderLoaded=false;
 
 template<typename _RegionHandle>
 opengl_util::Program RegionRenderer<_RegionHandle>::m_outlineProgram;
@@ -146,7 +161,7 @@ m_vertexArrayGen(false),
 m_outlineGen(false),
 refCount(0)
 {
-
+    m_renderChunk.resize(Region::sizeX::value*Region::sizeY::value*Region::sizeZ::value, false);
 }
 
 template<typename _RegionHandle>
@@ -259,7 +274,8 @@ void RegionRenderer<_RegionHandle>::draw(const glm::ivec3 &offset)
 
         // Draw the mesh
         gl::glDrawElements(gl::GL_TRIANGLES, m_meshBuffer.indices, (gl::GLenum)m_meshBuffer.indexType, 0);
-        assert(gl::glGetError()==gl::GL_NO_ERROR);
+        checkGLError();
+//        assert(gl::glGetError()==gl::GL_NO_ERROR);
     }
 }
 
@@ -340,28 +356,65 @@ MeshBuffer RegionRenderer<_RegionHandle>::clearMesh()
 }
 
 template<typename _RegionHandle>
+void RegionRenderer<_RegionHandle>::setChunkRender(size_t chunkIndex, bool render)
+{
+}
+
+template<typename _RegionHandle>
+void RegionRenderer<_RegionHandle>::clearChunkRender()
+{
+
+}
+
+template<typename _RegionHandle>
 void RegionRenderer<_RegionHandle>::buildPrograms()
 {
     std::string error;
 
-    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
+//    if(!m_program.attachLoadAndCompileShaders(vertShader, fragmentShader, error))
+    if(!m_program.load(m_regionVertFile, m_regionFragFile, error))
     {
-        assert(false);
-        return;
+        Log::error("RegionRenderer render shader compile failed\n %s", error.c_str());
+        m_renderShaderLoaded=false;
+//        assert(false);
+//        return;
+    }
+    else
+    {
+        m_renderShaderLoaded=true;
+
+        m_projectionViewId=m_program.getUniformId("projectionView");
+        m_offsetId=m_program.getUniformId("regionOffset");
     }
 
-    m_projectionViewId=m_program.getUniformId("projectionView");
-    m_offsetId=m_program.getUniformId("regionOffset");
-
-    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
+//    if(!m_outlineProgram.attachLoadAndCompileShaders(vertOutlineShader, fragmentOutlineShader, error))
+    if(!m_outlineProgram.load(m_regionOutlineVertFile, m_regionOutlineFragFile, error))
     {
-        assert(false);
-        return;
+        Log::error("RegionRenderer outline shader compile failed\n %s", error.c_str());
+        m_outlineShaderLoaded=false;
+//        assert(false);
+//        return;
     }
+    else
+    {
+        m_outlineShaderLoaded=true;
+        m_outlineProjectionViewId=m_outlineProgram.getUniformId("projectionView");
+        m_outlineOffsetId=m_outlineProgram.getUniformId("regionOffset");
+        m_outlineColorId=m_outlineProgram.getUniformId("statusColor");
+    }
+}
 
-    m_outlineProjectionViewId=m_outlineProgram.getUniformId("projectionView");
-    m_outlineOffsetId=m_outlineProgram.getUniformId("regionOffset");
-    m_outlineColorId=m_outlineProgram.getUniformId("statusColor");
+template<typename _RegionHandle>
+std::vector<std::string> RegionRenderer<_RegionHandle>::getShaderFileNames()
+{
+    std::vector<std::string> shaderFileNames;
+
+    shaderFileNames.push_back(m_regionVertFile);
+    shaderFileNames.push_back(m_regionFragFile);
+    shaderFileNames.push_back(m_chunkOutlineVertFile);
+    shaderFileNames.push_back(m_chunkOutlineFragFile);
+
+    return shaderFileNames;
 }
 
 template<typename _RegionHandle>

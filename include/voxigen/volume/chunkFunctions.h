@@ -280,6 +280,9 @@ std::vector<std::vector<_Node *>> buildRingSearchMap(_Grid *grid, const glm::ive
 //        moveSearchMap_posX(searchMap, direction, removedNodes, createNode);
 //}
 
+VOXIGEN_EXPORT void spiralIndex(glm::ivec3 &volumeSize, std::vector<size_t> &indexes);
+VOXIGEN_EXPORT void spiralIndexXYPlane(int z, int pos, glm::ivec3 &volumeSize, glm::ivec3 &center, std::vector<size_t> &indexes);
+
 }//namespace voxigen
 
 #endif //_voxigen_chunkFunctions_h_

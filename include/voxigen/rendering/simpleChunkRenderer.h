@@ -11,7 +11,7 @@
 #include "voxigen/texturing/textureAtlas.h"
 #include "voxigen/meshes/chunkTextureMesh.h"
 #include "voxigen/rendering/renderAction.h"
-#include "voxigen/rendering/renderPrepThread.h"
+//#include "voxigen/rendering/renderPrepThread.h"
 #include "voxigen/rendering/voxigen_gltext.h"
 
 #include <string>
@@ -23,6 +23,56 @@
 
 namespace voxigen
 {
+
+enum ChunkState
+{
+    Init,
+    Invalid,
+    Occluded,
+    Query,
+    QueryWait,
+    Dirty,
+    Copy,
+    Built,
+    Empty
+};
+
+static std::string getChunkStateName(ChunkState state)
+{
+    std::string name;
+
+    switch(state)
+    {
+    case ChunkState::Init:
+        name="Init";
+        break;
+    case ChunkState::Invalid:
+        name="Invalid";
+        break;
+    case ChunkState::Occluded:
+        name="Occluded";
+        break;
+    case ChunkState::Query:
+        name="Query";
+        break;
+    case ChunkState::QueryWait:
+        name="QueryWait";
+        break;
+    case ChunkState::Dirty:
+        name="Dirty";
+        break;
+    case ChunkState::Copy:
+        name="Copy";
+        break;
+    case ChunkState::Built:
+        name="Built";
+        break;
+    case ChunkState::Empty:
+        name="Empty";
+        break;
+    }
+    return name;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //SimpleChunkRenderer
@@ -36,23 +86,17 @@ public:
     typedef ChunkHandle<ChunkType> ChunkHandleType;
     typedef std::shared_ptr<ChunkHandleType> SharedChunkHandle;
 
+    const static std::string m_chunkVertFile;
+    const static std::string m_chunkFragFile;
+    const static std::string m_chunkOutlineVertFile;
+    const static std::string m_chunkOutlineFragFile;
+    
     SimpleChunkRenderer();
     ~SimpleChunkRenderer();
-    
-    enum State
-    {
-        Init,
-        Invalid,
-        Occluded,
-        Query, 
-        QueryWait,
-        Dirty,
-        Copy,
-        Built,
-        Empty
-    };
 
     static void buildPrograms();
+    static std::vector<std::string> getShaderFileNames();
+
     static void useProgram();
     static void updateProgramProjection(const glm::mat4 &projection);
     static void useOutlineProgram();
@@ -60,11 +104,22 @@ public:
 
     static glm::ivec3 getSize() { return glm::ivec3(ChunkType::sizeX::value, ChunkType::sizeY::value, ChunkType::sizeZ::value); }
 
-    State getState() { return m_state; }
+//    State getState() { return m_state; }
     void setDirty() { m_state=Dirty; }
     
-    RenderAction getAction(){ return m_action; }
+    RenderAction getAction()
+    {
+        if(m_chunkHandle)
+        {
+            if(m_chunkHandle->action()!=HandleAction::Idle)
+                return RenderAction::HandleBusy;
+        }
+        return m_action; 
+    }
     void setAction(RenderAction action){m_action=action;}
+
+    MeshState getMeshState() { return m_meshState; }
+    void setMeshState(MeshState state) { m_meshState=state; }
     
 
     Key getKey(){return Key(m_chunkHandle->regionHash(), m_chunkHandle->hash());}
@@ -72,6 +127,7 @@ public:
     void setChunk(SharedChunkHandle chunk);
     void setHandle(SharedChunkHandle chunk);
     SharedChunkHandle getHandle() { return m_chunkHandle; }
+    bool isValid() { return (bool)m_chunkHandle; }
 
     void setTextureAtlas(SharedTextureAtlas textureAtlas) { m_textureAtlas=textureAtlas; }
     void setEmpty();
@@ -85,13 +141,25 @@ public:
     bool update();
     void updated();
     void updateInfo(std::string &value);
+    std::string getActionString();
 
     void updateOutline();
-    void invalidate();
+//    void invalidate();
 
+    void release();
     void releaseChunkMemory();
 
-    bool incrementCopy();
+//    bool incrementCopy();
+    void incrementMesh()
+    {
+//        assert(m_meshRequestCount<2);
+//        m_meshRequestCount++;
+    }
+    void decrementMesh()
+    {
+//        assert(m_meshRequestCount>0);
+//        m_meshRequestCount--;
+    }
     
     void draw(const glm::ivec3 &offset);
     void drawInfo(const glm::mat4x4 &projectionViewMat, const glm::ivec3 &offset);
@@ -130,24 +198,28 @@ public:
     unsigned int refCount;
 
 private:
+    int m_meshRequestCount;
+
     void updateInfoText();
     void calculateMemoryUsed();
 
 //    RenderType *m_parent;
 
-    State m_state;
+    ChunkState m_state;
     RenderAction m_action;
     SharedChunkHandle m_chunkHandle;
     SharedTextureAtlas m_textureAtlas;
 
-    static std::string vertShader;
-    static std::string fragmentShader;
+    static bool m_renderShaderLoaded;
+//    static std::string vertShader;
+//    static std::string fragmentShader;
     static opengl_util::Program m_program;
     static size_t m_projectionViewId;
     static size_t m_offsetId;
 
-    static std::string vertOutlineShader;
-    static std::string fragmentOutlineShader;
+    static bool m_outlineShaderLoaded;
+//    static std::string vertOutlineShader;
+//    static std::string fragmentOutlineShader;
     static opengl_util::Program m_outlineProgram;
     static size_t m_outlineProjectionViewId;
     static size_t m_outlineOffsetId;
@@ -162,6 +234,7 @@ private:
 //#endif
     unsigned int m_queryId;
 
+    MeshState m_meshState;
     MeshBuffer m_meshBuffer;
     glm::vec3 m_chunkOffset;
 
@@ -176,13 +249,15 @@ private:
     size_t m_memoryUsed;
 //    ChunkTextureMesh m_mesh;
 
-    gl::GLsync m_vertexBufferSync;
-    int m_delayedFrames;
+//    gl::GLsync m_vertexBufferSync;
+//    int m_delayedFrames;
 
     bool m_outlineGen;
     unsigned int m_outlineVertexArray;
     unsigned int m_outlineOffsetVBO;
 };
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //Prep thread mesh code for SimpleChunkRenderer

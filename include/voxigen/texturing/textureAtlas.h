@@ -99,7 +99,7 @@ struct ImageEntry:public TextureAtlas::TextureEntry
     size_t tileCount;
 };
 
-template<typename _FileIO=generic::StdFileIO>
+template<typename _FileIO=generic::io::StdFileIO>
 SharedTextureAtlas generateTextureAtlas(const std::vector<std::string> &blocks, const TexturePack &pack, void *userData=nullptr)
 {
     SharedTextureAtlas textureAtlas(new TextureAtlas());

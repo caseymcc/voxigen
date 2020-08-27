@@ -145,6 +145,7 @@ inline float calculateDivergentCurve(float distance, bool plate1Ocean, bool plat
         return divergentCurve(distance, 0.7f);
     return divergentCurve(distance);
 }
+
 }//namespace voxigen
 
 #endif //_voxigen_tectonics_h_

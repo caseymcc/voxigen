@@ -1,8 +1,11 @@
 #include "opengl_util/program.h"
 #include "opengl_util/initOpenGL.h"
 
+#include "generic/log.h"
+
 //#include <filesystem>
 #include <regex>
+#include <limits>
 
 namespace opengl_util
 {
@@ -161,13 +164,24 @@ bool Program::useUniformBuffer(UniformBuffer *buffer)
 
 size_t Program::getUniformId(std::string key)
 {
-    assert(m_uniformIdMap.find(key)!=m_uniformIdMap.end()); //uniform does not exist in program
+#ifndef NDEBUG
+//    assert(m_uniformIdMap.find(key)!=m_uniformIdMap.end()); //uniform does not exist in program
+    if(m_uniformIdMap.find(key)==m_uniformIdMap.end())
+    {
+        generic::Log::error("getUniformId - request for unknown uniform: %s\n", key.c_str());
+        return std::numeric_limits<size_t>::max();
+    }
+#endif
     return m_uniformIdMap[key];
 }
 
 Uniform &Program::uniform(size_t id)
 {
-    assert(id>=0 && id<m_uniforms.size());
+#ifndef NDEBUG
+//   assert(id>=0 && id<m_uniforms.size());
+    if(id>=m_uniforms.size())
+        return m_dummyUniform;
+#endif
     return *(m_uniforms[id]);
 }
 
@@ -212,10 +226,19 @@ bool Program::attachAndLoadShader(const std::string &shaderSource, GLenum shader
     return false;
 }
 
-
+void Program::clear()
+{
+    m_uniforms.clear();
+    m_uniformIdMap.clear();
+    m_attributeDetails.clear();
+    m_uniformBufferDetails.clear();
+    m_lastBlockBinding=1;
+}
 
 bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error)
 {
+    clear();
+
     if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, error))
     {
         if(attachAndLoadShader(fragSource, GL_FRAGMENT_SHADER, error))
@@ -227,10 +250,10 @@ bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const s
     return false;
 }
 
-
-
 bool Program::attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error)
 {
+    clear();
+
     if(attachAndLoadShader(vertSource, GL_VERTEX_SHADER, error))
     {
         if(attachAndLoadShader(geomSource, GL_GEOMETRY_SHADER, error))
