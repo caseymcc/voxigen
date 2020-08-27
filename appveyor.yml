@@ -8,10 +8,6 @@ environment:
 
   matrix:
 
-     - TOOLCHAIN: "vs-16-2019-win64-cxx17"
-      PROJECT_DIR: .\
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-
 #    - TOOLCHAIN: "ninja-vs-15-2017-win64-cxx17"
 #      PROJECT_DIR: .\
 #      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
@@ -19,6 +15,10 @@ environment:
 #    - TOOLCHAIN: "nmake-vs-15-2017-win64-cxx17"
 #      PROJECT_DIR: .\
 #      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+
+    - TOOLCHAIN: "vs-16-2019-win64-cxx17"
+      PROJECT_DIR: .\
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 
     - TOOLCHAIN: "vs-15-2017-win64-cxx17"
       PROJECT_DIR: .\
