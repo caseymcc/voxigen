@@ -583,7 +583,8 @@ bool SimpleRenderer<_Grid>::processChunkMesh(MeshUpdate &update)
 template<typename _Grid>
 void SimpleRenderer<_Grid>::uploadMeshes()
 {
-    size_t count=std::min(m_meshUploadQueue.size(), m_maxMeshUploadCount);
+//    size_t count=std::min(m_meshUploadQueue.size(), m_maxMeshUploadCount);
+    size_t count=m_meshUploadQueue.size();
 
     //only send 5 at time
     for(size_t i=0; i<count; ++i)

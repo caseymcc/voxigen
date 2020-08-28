@@ -7,7 +7,10 @@
 #include "voxigen/rendering/simpleRenderer.h"
 #include "voxigen/generators/equiRectWorldGenerator.h"
 
+static std::string defaultWorldName="TestAppWorld";
 typedef voxigen::RegularGrid<voxigen::Cell, 64, 64, 16> World;
+//static std::string defaultWorldName="TestAppWorld_128";
+//typedef voxigen::RegularGrid<voxigen::Cell, 128, 128, 128> World;
 
 namespace voxigen
 {

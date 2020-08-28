@@ -69,12 +69,15 @@ public:
     template<typename _FilIO=generic::io::StdFileIO>
     std::string loadShader(const std::string &shaderFile, void *userData=nullptr);
 
+    template<typename _FileIO=generic::io::StdFileIO>
+    bool load(const std::string &vertShaderFile, std::string vertInsert, const std::string &fragShaderFile, std::string fragInsert, std::string &error, void *userData=nullptr);
     template<typename _FilIO=generic::io::StdFileIO>
     bool load(const std::string &vertShaderFile, const std::string &fragShaderFile, std::string &error, void *userData=nullptr);
 
     bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string &error);
     bool attachAndLoadShader(const std::string &shaderSource, GLenum shaderType, std::string insert, std::string &error);
 
+    bool attachLoadAndCompileShaders(const std::string &vertSource, std::string vertInsert, const std::string &fragSource, std::string fragInsert, std::string &error);
     bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &fragSource, std::string &error);
     bool attachLoadAndCompileShaders(const std::string &vertSource, const std::string &geomSource, const std::string &fragSource, std::string &error);
 
@@ -135,13 +138,21 @@ std::string Program::loadShader(const std::string &shaderFile, void *userData)
 }
 
 template<typename _FileIO>
-bool Program::load(const std::string &vertShaderFile, const std::string &fragShaderFile, std::string &error, void *userData)
+bool Program::load(const std::string &vertShaderFile, std::string vertInsert, const std::string &fragShaderFile, std::string fragInsert, std::string &error, void *userData)
 {
     std::string vertShader=loadShader<_FileIO>(vertShaderFile, userData);
     std::string fragShader=loadShader<_FileIO>(fragShaderFile, userData);
 
-    return attachLoadAndCompileShaders(vertShader, fragShader, error);
+    return attachLoadAndCompileShaders(vertShader, vertInsert, fragShader, fragInsert, error);
 }
+
+template<typename _FileIO>
+bool Program::load(const std::string &vertShaderFile, const std::string &fragShaderFile, std::string &error, void *userData)
+{
+    return load(vertShaderFile, "", fragShaderFile, "", error, userData);
+}
+
+
 
 } //namespace opengl_util
 

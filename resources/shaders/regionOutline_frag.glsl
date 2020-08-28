@@ -1,5 +1,8 @@
 #version 330 core
 
+//program will inject
+//vec3 dim - dimension of chunk
+
 in vec3 position;
 
 out vec4 color;
@@ -9,7 +12,7 @@ uniform float lineWidth=0.2;
 
 void main()
 {
-   vec3 distance=min(position, vec3(1024.0, 1024.0, 256.0)-position);
+   vec3 distance=min(position, dim-position);
    float ambientStrength=0.5; 
    
    int count=0;

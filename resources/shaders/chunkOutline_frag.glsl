@@ -1,5 +1,8 @@
 #version 330 core
 
+//program will inject
+//vec3 dim - dimension of chunk
+
 in vec3 position;
 in vec3 normal;
 in vec3 texCoords;
@@ -16,8 +19,8 @@ void main()
 {
 //   float value=1.0f;
 //   vec3 lightColor=vec3(1.0f, 1.0f, 1.0f);
-   vec3 distance=(min(cubePos, vec3(64.0, 64.0, 16.0)-cubePos)/vec3(64.0, 64.0, 16.0));
-//   vec3 distanceVec=min(cubePos, vec3(64.0, 64.0, 16.0)-cubePos);
+   vec3 distance=(min(cubePos, dim-cubePos)/dim);
+//   vec3 distanceVec=min(cubePos, dim-cubePos);
 //   float distance = min(min(distanceVec.x, distanceVec.y), distanceVec.z);
    vec3 distanceDelta=lineWidth*fwidth(distance);
 

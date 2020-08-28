@@ -142,10 +142,26 @@ void loadThreadFunc()
     for(auto &entry:fs::directory_iterator(worldsDirectory))
         worldDirectories.push_back(entry);
 
-    if(worldDirectories.empty())
+    bool create=true;
+
+    std::string worldName=defaultWorldName;
+    std::string worldDirectory=worldsDirectory.string()+"/"+worldName;
+
+    if(!worldDirectories.empty())
     {
-        std::string worldName="TestAppWorld";
-        std::string worldDirectory=worldsDirectory.string()+"/"+worldName;
+        for(size_t i=0; i<worldDirectories.size(); ++i)
+        {
+            if(worldDirectories[i].path().string() == worldDirectory)
+            {
+                g_loadProgress.update("Loading world.", 0, false);
+                world.load(worldDirectories[i].path().string(), g_loadProgress);
+                create=false;
+            }
+        }
+    }
+
+    if(create)
+    {
         fs::path worldPath(worldDirectory);
 
         fs::create_directory(worldPath);
@@ -156,12 +172,6 @@ void loadThreadFunc()
 //        world.create(worldDirectory, "TestApWorld", glm::ivec3(20971520, 10485760, 2560), "EquiRectWorldGenerator");
         world.create(worldDirectory, worldName, glm::ivec3(204800, 102400, 10240), "EquiRectWorldGenerator", g_loadProgress);
     }
-    else
-    {
-        g_loadProgress.update("Loading world.", 0, false);
-        world.load(worldDirectories[0].path().string(), g_loadProgress);
-    }
-
     g_loadProgress.update("Complete", 100, true);
 }
 

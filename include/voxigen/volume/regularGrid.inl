@@ -62,10 +62,12 @@ void RegularGrid<_Cell, _ChunkSizeX, _ChunkSizeY, _ChunkSizeZ, _RegionSizeX, _Re
 
     fs::create_directory(regionPath.c_str());
 
-    m_generator->create(&m_descriptors, progress);
+//    m_generator->create(&m_descriptors, progress);
 
     std::string generatorDirectory=directory+"/generator";
-    m_generator->save(generatorDirectory);
+
+    m_generator->load(&m_descriptors, generatorDirectory, progress);//will create if not there and save
+//    m_generator->save(generatorDirectory);
 
     m_dataStore.initialize();
 //    m_generatorQueue.initialize();
